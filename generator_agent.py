@@ -12,6 +12,8 @@ generator_agent.py
 
 import os
 import re
+import json
+import urllib.request
 from typing import List, Dict, Any, Optional
 
 
@@ -23,10 +25,71 @@ class GeneratorAgent:
         self.name = name
         self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.openai_key = os.getenv("OPENAI_API_KEY")
+        self.ollama_base_url = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+    def get_ollama_status(self) -> Dict[str, Any]:
+        """로컬 Ollama 연결 상태 및 다운로드된 모델 목록 조회"""
+        try:
+            req = urllib.request.Request(f"{self.ollama_base_url}/api/tags", headers={"User-Agent": "RAG-Chatbot"})
+            with urllib.request.urlopen(req, timeout=1.5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                models = [m.get("name") for m in data.get("models", []) if m.get("name")]
+                return {
+                    "running": True,
+                    "models": models,
+                    "active_model": models[0] if models else None
+                }
+        except Exception:
+            return {
+                "running": False,
+                "models": [],
+                "active_model": None
+            }
+
+    def _call_ollama_api(self, query: str, results: List[Dict[str, Any]], model_name: str) -> Optional[str]:
+        """로컬 Ollama LLM을 호출하여 문서 기반 답변 생성"""
+        try:
+            context_blocks = []
+            for r in results:
+                context_blocks.append(f"--- [문서: {r['filename']} / 청크 #{r['chunk_id']}] ---\n{r['content']}")
+            context_str = "\n\n".join(context_blocks)
+
+            prompt = (
+                f"너는 바탕화면 문서 기반 전문 지식 챗봇 에이전트야.\n"
+                f"오직 아래 제공된 [참고 문서 내용]에만 근거하여 사용자 질문에 명확하고 친절한 한국어로 답변해줘.\n"
+                f"문서에 없는 내용은 절대 추측하거나 지어내지 말고, 각 핵심 사실마다 반드시 출처 [출처: 파일명, 청크 #]를 달아줘.\n\n"
+                f"[참고 문서 내용]:\n{context_str}\n\n"
+                f"[사용자 질문]: {query}\n\n"
+                f"[답변]:"
+            )
+
+            payload = {
+                "model": model_name,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.2
+                }
+            }
+            req = urllib.request.Request(
+                f"{self.ollama_base_url}/api/generate",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=90.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data.get("response", "").strip()
+        except Exception as e:
+            print(f"[Generator] Ollama 생성 호출 실패: {e}")
+            return None
 
     def synthesize_answer(self, query: str, search_output: Dict[str, Any]) -> Dict[str, Any]:
         """
         검색 결과와 질문을 받아 최종 요약 답변 생성
+        우선순위:
+        1. 로컬 Ollama 모델 (설치되어 실행 중인 경우)
+        2. Gemini / OpenAI API (키가 등록된 경우)
+        3. 로컬 문맥 요약기 (외부 도구 없이 100% 무결점 작동)
         """
         results = search_output.get("results", [])
 
@@ -44,7 +107,21 @@ class GeneratorAgent:
                 "engine_used": "hallucination_guard"
             }
 
-        # 2. LLM API 키가 존재하는 경우 -> 생성형 API 호출 시도
+        # 2. 로컬 Ollama 모델이 실행 중이고 모델이 있는 경우 -> Ollama 로컬 LLM 우선 사용!
+        ollama_info = self.get_ollama_status()
+        if ollama_info["running"] and ollama_info["active_model"]:
+            model_name = ollama_info["active_model"]
+            ollama_ans = self._call_ollama_api(query, results, model_name)
+            if ollama_ans:
+                return {
+                    "agent": self.name,
+                    "status": "success",
+                    "answer": ollama_ans,
+                    "sources": [f"{r['filename']} (청크 #{r['chunk_id']})" for r in results],
+                    "engine_used": f"Ollama Local LLM ({model_name})"
+                }
+
+        # 3. LLM API 키가 존재하는 경우 -> 생성형 API 호출 시도
         if self.api_key:
             try:
                 llm_answer = self._call_gemini_api(query, results)
@@ -59,7 +136,7 @@ class GeneratorAgent:
             except Exception as e:
                 print(f"[Generator] Gemini API 호출 실패(로컬 요약기로 전환): {e}")
 
-        # 3. 기본 로컬 문맥 요약 엔진 (API 키 없는 초보자 환경에서도 100% 무결점 작동)
+        # 4. 기본 로컬 문맥 요약 엔진 (API 키 없는 초보자 환경에서도 100% 무결점 작동)
         local_answer = self._generate_local_extractive_summary(query, results)
         return {
             "agent": self.name,

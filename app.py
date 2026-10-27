@@ -70,6 +70,10 @@ HTML_PAGE = """<!DOCTYPE html>
         <code id="docs-path" class="bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-900 font-mono text-[11px]">로딩 중...</code>
       </div>
       <div class="flex items-center gap-3 text-slate-600">
+        <div id="ollama-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+          🦙 Ollama 확인 중...
+        </div>
+        <div class="h-3 w-px bg-slate-300"></div>
         <div>색인된 문서: <strong id="doc-count" class="text-blue-700 font-bold">0</strong>개</div>
         <div class="h-3 w-px bg-slate-300"></div>
         <div>총 지식 조각: <strong id="chunk-count" class="text-emerald-700 font-bold">0</strong>개</div>
@@ -139,6 +143,21 @@ HTML_PAGE = """<!DOCTYPE html>
         document.getElementById('docs-path').textContent = data.docs_dir;
         document.getElementById('doc-count').textContent = data.file_count;
         document.getElementById('chunk-count').textContent = data.total_chunks;
+        
+        // Ollama 상태 뱃지 갱신
+        const ollamaEl = document.getElementById('ollama-badge');
+        if (data.ollama && data.ollama.running) {
+          if (data.ollama.active_model) {
+            ollamaEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300';
+            ollamaEl.innerHTML = `🦙 Ollama: <strong>${data.ollama.active_model}</strong> 사용 중`;
+          } else {
+            ollamaEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-300';
+            ollamaEl.innerHTML = `🦙 Ollama: 실행 중 (모델 없음)`;
+          }
+        } else {
+          ollamaEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200';
+          ollamaEl.innerHTML = `🦙 Ollama: 미실행 (로컬 엔진 작동)`;
+        }
         
         // 추천 질문 칩 갱신
         const container = document.getElementById('chip-container');
@@ -329,7 +348,8 @@ class RAGHTTPRequestHandler(BaseHTTPRequestHandler):
                 "docs_dir": str(pipeline_instance.loader.docs_dir),
                 "file_count": len(pipeline_instance.indexed_files),
                 "files": pipeline_instance.indexed_files,
-                "total_chunks": pipeline_instance.total_chunks
+                "total_chunks": pipeline_instance.total_chunks,
+                "ollama": pipeline_instance.generator.get_ollama_status()
             }
             self.wfile.write(json.dumps(status_data, ensure_ascii=False).encode("utf-8"))
         else:
