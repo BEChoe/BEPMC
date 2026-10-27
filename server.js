@@ -4,6 +4,7 @@ const session = require('express-session');
 const path = require('path');
 const dbService = require('./data/dbService');
 const { isSupabaseConfigured } = require('./data/supabaseClient');
+const publicApiService = require('./services/publicApiService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -780,6 +781,65 @@ app.get('/api/admin/summary', requireAdmin, async (req, res) => {
     res.json(summary);
   } catch (err) {
     res.status(500).json({ success: false, message: '통계 조회 실패' });
+  }
+});
+
+// ---------------------------------------------------------------------
+// 7. Public Data API (고용노동부, 한국산업안전보건공단, 소방청)
+// ---------------------------------------------------------------------
+
+// 전체 공공 안전 데이터 종합 현황 (위젯 연동)
+app.get('/api/public-data/summary', async (req, res) => {
+  try {
+    const summary = await publicApiService.getPublicDataSummary();
+    res.json(summary);
+  } catch (err) {
+    console.error('Public data summary error:', err);
+    res.status(500).json({ success: false, message: '공공데이터 요약 조회 실패' });
+  }
+});
+
+// 고용노동부 중대재해 속보
+app.get('/api/public-data/moel', async (req, res) => {
+  try {
+    const data = await publicApiService.fetchMoelDisasters();
+    res.json(data);
+  } catch (err) {
+    console.error('MOEL API error:', err);
+    res.status(500).json({ success: false, message: '고용노동부 데이터 조회 실패' });
+  }
+});
+
+// 한국산업안전보건공단 안전기술지침
+app.get('/api/public-data/kosha', async (req, res) => {
+  try {
+    const data = await publicApiService.fetchKoshaGuides();
+    res.json(data);
+  } catch (err) {
+    console.error('KOSHA API error:', err);
+    res.status(500).json({ success: false, message: '한국산업안전보건공단 데이터 조회 실패' });
+  }
+});
+
+// 소방청 실시간 화재발생 및 경보
+app.get('/api/public-data/nfa', async (req, res) => {
+  try {
+    const data = await publicApiService.fetchNfaFireStats();
+    res.json(data);
+  } catch (err) {
+    console.error('NFA API error:', err);
+    res.status(500).json({ success: false, message: '소방청 데이터 조회 실패' });
+  }
+});
+
+// 3대 공공기관 API 연결 상태 및 키 설정 확인
+app.get('/api/public-data/status', (req, res) => {
+  try {
+    const status = publicApiService.getApiConnectionStatus();
+    res.json(status);
+  } catch (err) {
+    console.error('Public data status error:', err);
+    res.status(500).json({ success: false, message: '공공데이터 상태 조회 실패' });
   }
 });
 
