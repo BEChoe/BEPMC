@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BEPMC (Project Management Consultancy) | 안전 포털</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 커스텀 테마 스타일 (청색/녹색/노란색) -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen">
+
+  <!-- 글로벌 상단 알림 띠배너 -->
+  <div id="global-alert-banner"></div>
+
+  <!-- 공통 헤더 -->
+  <div id="global-header"></div>
+
+  <!-- 메인 히어로 섹션 (믿음직하고 편안한 딥 블루 테마) -->
+  <section class="bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] text-white relative overflow-hidden border-b-4 border-blue-500 shadow-inner">
+    <!-- 배경 그래픽 효과 -->
+    <div class="absolute top-0 right-0 w-96 h-96 opacity-10 safety-stripe rounded-bl-full pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="lg:col-span-8 space-y-4">
+          <div class="inline-flex items-center gap-2 bg-blue-950/80 border border-blue-400 text-blue-200 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            BEPMC 사업관리 &amp; 안전 컨설팅 실시간 운영 중
+          </div>
+          <h1 id="hero-main-slogan" class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
+            안전과 프로젝트 성공을 이끄는 신뢰의 파트너
+          </h1>
+          <p id="hero-sub-slogan" class="text-base sm:text-lg text-blue-100 font-medium leading-relaxed">
+            BEPMC(Project Management Consultancy) - 작업 전 10초 안전점검, 나와 가족과 동료를 지키는 가장 확실한 약속
+          </p>
+          <div class="pt-2 flex flex-wrap gap-3">
+            <a href="/boards.html?type=general" class="btn-safety-yellow px-5 py-2.5 rounded-lg text-sm shadow-md flex items-center gap-2">
+              <svg class="w-4 h-4 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              안전 공익자료실 바로가기
+            </a>
+            <a href="/qna.html" class="btn-safety-green px-5 py-2.5 rounded-lg text-sm shadow-md flex items-center gap-2">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+              BEPMC 관리자에게 Q&amp;A 문의
+            </a>
+          </div>
+        </div>
+
+        <!-- 긴급 비상 핫라인 박스 (신뢰감 있는 청색/옐로우 포인트 테두리) -->
+        <div class="lg:col-span-4 bg-slate-900/90 border-2 border-blue-400 p-6 rounded-xl shadow-2xl backdrop-blur">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="inline-block p-2 rounded-lg bg-amber-400 text-slate-900 font-bold">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </span>
+            <div>
+              <h3 class="text-sm font-bold text-amber-300">긴급 비상대응 핫라인</h3>
+              <p class="text-[11px] text-slate-300">위험상황 발생 시 지체없이 신고</p>
+            </div>
+          </div>
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between items-center py-1.5 border-b border-slate-700">
+              <span class="text-slate-300">화재·구조·구급</span>
+              <span class="font-black text-amber-400 text-sm">xxx-xxxx-xxxx</span>
+            </div>
+            <div class="flex justify-between items-center py-1.5 border-b border-slate-700">
+              <span class="text-slate-300">산업안전보건 신고</span>
+              <span class="font-black text-amber-400 text-sm">xxx-xxxx-xxxx</span>
+            </div>
+            <div class="flex justify-between items-center py-1.5">
+              <span class="text-slate-300">BEPMC 비상상황실</span>
+              <span class="font-black text-emerald-400 text-sm">xxx-xxxx-xxxx</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 첫페이지 안전 관련 공익 정보 섹션 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+
+    <!-- 1. 중대재해 예방 3대 기본 안전수칙 카드 (녹색/노란색/청색 조화) -->
+    <section>
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-3 h-3 rounded bg-blue-700"></span>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              산업현장 필수 공익 수칙 : 3대 핵심 안전조치
+            </h2>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-600 mt-1">BEPMC 컨설팅 기준 및 안전보건공단 지침에 따른 필수 안전조치입니다.</p>
+        </div>
+        <span class="hidden sm:inline-block text-xs font-bold bg-blue-50 text-blue-800 px-3 py-1 rounded-full border border-blue-200">
+          BEPMC Safety Standard
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- 1) 추락 방지 -->
+        <div class="card-safety-green p-6 border border-slate-200">
+          <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-lg mb-4">
+            01
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            추락사고 예방 조치
+            <span class="badge-green text-[10px] px-2 py-0.5 rounded">필수</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-4">
+            고소 작업 시 안전난간 및 작업발판 설치, 개구부 덮개 고정, 안전대 착용 및 안전고리 상시 체결 철저.
+          </p>
+          <ul class="text-xs text-slate-700 space-y-1.5 bg-emerald-50/70 p-3 rounded-md border border-emerald-100">
+            <li class="flex items-center gap-1.5">
+              <span class="text-emerald-600 font-bold">✔</span> 안전난간 지주 및 난간대 규격 점검
+            </li>
+            <li class="flex items-center gap-1.5">
+              <span class="text-emerald-600 font-bold">✔</span> 2m 이상 고소작업 안전고리 2점 걸기
+            </li>
+          </ul>
+        </div>
+
+        <!-- 2) 끼임 방지 -->
+        <div class="card-safety-yellow p-6 border border-slate-200">
+          <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-black text-lg mb-4">
+            02
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            끼임사고 예방 조치
+            <span class="badge-yellow text-[10px] px-2 py-0.5 rounded">주의</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-4">
+            컨베이어·롤러 등 회전체 방호덮개 설치, 기계 정비·청소 시 가동 중지 및 LOTO(잠금장치 및 표지부착) 원칙.
+          </p>
+          <ul class="text-xs text-slate-700 space-y-1.5 bg-amber-50/70 p-3 rounded-md border border-amber-100">
+            <li class="flex items-center gap-1.5">
+              <span class="text-amber-600 font-bold">✔</span> 방호장치(비상정지스위치) 정상작동 확인
+            </li>
+            <li class="flex items-center gap-1.5">
+              <span class="text-amber-600 font-bold">✔</span> 작업 중 '점검 중 조작금지' 표지판 부착
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3) 보호구 착용 (믿음직한 블루 카드) -->
+        <div class="card-bepmc-blue p-6 border border-slate-200">
+          <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-black text-lg mb-4">
+            03
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            개인보호구 100% 착용
+            <span class="badge-blue text-[10px] px-2 py-0.5 rounded">의무</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-4">
+            작업장 진입 시 안전모 턱끈 조임, 안전화, 보안경 착용 의무화. 미착용 시 즉시 퇴장 조치 원칙 적용.
+          </p>
+          <ul class="text-xs text-slate-700 space-y-1.5 bg-blue-50/70 p-3 rounded-md border border-blue-100">
+            <li class="flex items-center gap-1.5">
+              <span class="text-blue-700 font-bold">✔</span> 안전모 충격흡수재 및 턱끈 체결
+            </li>
+            <li class="flex items-center gap-1.5">
+              <span class="text-blue-700 font-bold">✔</span> 안전화 밑창 마모 및 토캡 보호 성능 점검
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 생활 및 비상안전 가이드 (4단계 대피요령) -->
+    <section class="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="inline-block w-3 h-3 rounded bg-blue-600"></span>
+        <h2 class="text-xl font-bold text-slate-900">비상 상황 발생 시 골든타임 4단계 행동요령</h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-emerald-600">
+          <span class="text-xs font-bold text-emerald-700 uppercase">STEP 1</span>
+          <h4 class="font-bold text-slate-900 text-sm mt-1">상황 전파 및 경보</h4>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            큰 소리로 "불이야" 또는 비상벨 작동으로 전 구역에 상황을 즉각 알립니다.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-amber-500">
+          <span class="text-xs font-bold text-amber-700 uppercase">STEP 2</span>
+          <h4 class="font-bold text-slate-900 text-sm mt-1">신속 대피 (낮은 자세)</h4>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            젖은 수건 등으로 코와 입을 막고, 유도등을 따라 비상계단으로 낮은 자세 대피.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-blue-700">
+          <span class="text-xs font-bold text-blue-700 uppercase">STEP 3</span>
+          <h4 class="font-bold text-slate-900 text-sm mt-1">긴급 비상 신고</h4>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            안전한 장소로 피신 후 긴급전화(xxx-xxxx-xxxx)에 건물명, 층수, 갇힌 사람 유무를 명확히 신고.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-emerald-600">
+          <span class="text-xs font-bold text-emerald-700 uppercase">STEP 4</span>
+          <h4 class="font-bold text-slate-900 text-sm mt-1">인원 점검 및 응급조치</h4>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            지정 대피소에 집결하여 동료 인원을 점검하고, 부상자 발견 시 응급처치 실시.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- [신규 섹션] 생활 안전 지킴이 (Life Safety Keeper) -->
+    <section class="bg-gradient-to-br from-white via-blue-50/30 to-slate-50 rounded-xl border border-blue-200/80 p-6 sm:p-8 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 pb-4 border-b border-slate-200">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 text-white font-black text-sm shadow-sm">
+              🛡
+            </span>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              생활 안전 지킴이 <span class="text-sm font-bold text-blue-700 ml-1.5">(Life Safety Keeper)</span>
+            </h2>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-600 mt-1">
+            가정과 일상 속 작은 실천이 큰 사고를 막습니다. BEPMC가 제안하는 4대 생활안전 핵심 수칙입니다.
+          </p>
+        </div>
+        <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-blue-100 text-blue-900 px-3 py-1.5 rounded-full border border-blue-200 w-fit">
+          <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+          BEPMC 일상안전 캠페인
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- 1. 전기·가스 지킴이 -->
+        <div class="bg-white p-5 rounded-lg border border-slate-200 hover:border-blue-400 hover:shadow-md transition group">
+          <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg mb-3 group-hover:scale-105 transition-transform">
+            ⚡
+          </div>
+          <div class="flex items-center justify-between mb-1.5">
+            <h3 class="font-bold text-slate-900 text-sm">전기·가스 안전</h3>
+            <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">화재 예방</span>
+          </div>
+          <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+            문어발식 멀티탭 사용을 금지하고, 미사용 플러그를 뽑아 과열과 누전을 예방합니다.
+          </p>
+          <ul class="text-[11px] text-slate-700 space-y-1 bg-amber-50/50 p-2.5 rounded border border-amber-100/60">
+            <li>• 누전차단기 월 1회 시험버튼 점검</li>
+            <li>• 가스 중간밸브 상시 잠금 생활화</li>
+            <li>• 비눗물로 가스 배관 누출 정기 검사</li>
+          </ul>
+        </div>
+
+        <!-- 2. 교통·보행 지킴이 -->
+        <div class="bg-white p-5 rounded-lg border border-slate-200 hover:border-blue-400 hover:shadow-md transition group">
+          <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg mb-3 group-hover:scale-105 transition-transform">
+            🚶
+          </div>
+          <div class="flex items-center justify-between mb-1.5">
+            <h3 class="font-bold text-slate-900 text-sm">교통·보행 안전</h3>
+            <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">사고 예방</span>
+          </div>
+          <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+            횡단보도 보행 시 스마트폰 사용을 멈추고 좌우를 살피며 방어 보행을 준수합니다.
+          </p>
+          <ul class="text-[11px] text-slate-700 space-y-1 bg-blue-50/50 p-2.5 rounded border border-blue-100/60">
+            <li>• 야간 보행 시 밝은 색 옷 착용하기</li>
+            <li>• 전 좌석 안전띠 착용 의무 준수</li>
+            <li>• 골목길·이면도로 20km/h 서행 운전</li>
+          </ul>
+        </div>
+
+        <!-- 3. 승강기·낙상 지킴이 -->
+        <div class="bg-white p-5 rounded-lg border border-slate-200 hover:border-blue-400 hover:shadow-md transition group">
+          <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg mb-3 group-hover:scale-105 transition-transform">
+            🛗
+          </div>
+          <div class="flex items-center justify-between mb-1.5">
+            <h3 class="font-bold text-slate-900 text-sm">승강기·낙상 안전</h3>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">실내 안전</span>
+          </div>
+          <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+            엘리베이터 문에 기대지 않으며, 욕실·계단 미끄럼 방지 매트로 낙상을 예방합니다.
+          </p>
+          <ul class="text-[11px] text-slate-700 space-y-1 bg-emerald-50/50 p-2.5 rounded border border-emerald-100/60">
+            <li>• 정전·고장 갇힘 시 비상통화버튼 호출</li>
+            <li>• 억지로 문을 열거나 탈출 시도 금지</li>
+            <li>• 욕실 바닥 물기 제거 및 미끄럼 방지</li>
+          </ul>
+        </div>
+
+        <!-- 4. 응급처치·CPR 지킴이 -->
+        <div class="bg-white p-5 rounded-lg border border-slate-200 hover:border-blue-400 hover:shadow-md transition group">
+          <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-lg mb-3 group-hover:scale-105 transition-transform">
+            ❤️
+          </div>
+          <div class="flex items-center justify-between mb-1.5">
+            <h3 class="font-bold text-slate-900 text-sm">심폐소생술(CPR)</h3>
+            <span class="text-[10px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded">생명 구조</span>
+          </div>
+          <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+            심정지 환자 발생 시 골든타임 4분 내 긴급신고(xxx-xxxx-xxxx)와 즉각적인 가슴 압박을 실시합니다.
+          </p>
+          <ul class="text-[11px] text-slate-700 space-y-1 bg-rose-50/50 p-2.5 rounded border border-rose-100/60">
+            <li>• 의식 확인 후 특정인 지목 긴급신고(xxx-xxxx-xxxx)·AED 요청</li>
+            <li>• 깍지 낀 손으로 분당 100~120회 압박</li>
+            <li>• 가슴 중앙 5cm 깊이로 중단 없이 시행</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 하단 안전 실천 표어 띠 -->
+      <div class="mt-6 p-3.5 bg-blue-900 text-white rounded-lg flex flex-col sm:flex-row items-center justify-between text-xs gap-2">
+        <div class="flex items-center gap-2">
+          <span class="inline-block px-2 py-0.5 rounded bg-amber-400 text-slate-900 font-bold text-[10px]">실천 약속</span>
+          <span class="font-medium">"나의 작은 안전 점검 습관이 우리 가족의 안전과 행복을 지킵니다."</span>
+        </div>
+        <span class="text-blue-200 text-[11px]">BEPMC(Project Management Consultancy) 생활안전추진단</span>
+      </div>
+    </section>
+
+    <!-- [신규 쇼핑몰 연계 섹션] BEPMC 안전몰 추천 공식 안전용품 쇼케이스 -->
+    <section class="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🛒</span>
+            <h2 class="text-xl font-bold text-slate-900">
+              BEPMC 공식 인증 생활 &amp; 현장 안전용품몰
+            </h2>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">
+            가정과 일상에서 필요한 <b>생활 안전용품</b>과 산업 현장용 <b>전문 보호구</b>를 안심하고 구매하세요.
+          </p>
+        </div>
+        <a href="/shop.html" class="btn-safety-yellow px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm w-fit">
+          <span>전체 용품 보러가기</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+
+      <!-- 추천 상품 4선 갤러리 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 1. 미니 소화기 -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-3xl">🧯</span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">생활필수</span>
+            </div>
+            <h3 class="font-bold text-xs text-slate-900 mb-1">가정용 미니 강화액 소화기</h3>
+            <p class="text-[11px] text-slate-500 line-clamp-2">주방 K급 식용유 화재 및 일반 화재를 초기에 즉시 진압하는 가정용 필수품.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+            <span class="font-black text-sm text-slate-900">xxx,xxx</span>
+            <a href="/shop.html" class="text-xs font-bold text-blue-700 hover:underline">구매하기 &rarr;</a>
+          </div>
+        </div>
+
+        <!-- 2. 화재대피 습식 방연마스크 -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-3xl">😷</span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">대피골든타임</span>
+            </div>
+            <h3 class="font-bold text-xs text-slate-900 mb-1">골든타임 습식 방연마스크 (3회분)</h3>
+            <p class="text-[11px] text-slate-500 line-clamp-2">유독가스를 차단하고 15분 이상 안전 호흡을 유지해주는 원터치 대피 마스크.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+            <span class="font-black text-sm text-slate-900">xxx,xxx</span>
+            <a href="/shop.html" class="text-xs font-bold text-blue-700 hover:underline">구매하기 &rarr;</a>
+          </div>
+        </div>
+
+        <!-- 3. 차량 탈출 해머 -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-3xl">🔨</span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">차량필수</span>
+            </div>
+            <h3 class="font-bold text-xs text-slate-900 mb-1">차량 탈출 텅스텐 해머 (커터 겸용)</h3>
+            <p class="text-[11px] text-slate-500 line-clamp-2">수압 속에서도 차량 창문을 깨고 안전벨트를 자르는 비상 탈출용 생명도구.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+            <span class="font-black text-sm text-slate-900">xxx,xxx</span>
+            <a href="/shop.html" class="text-xs font-bold text-blue-700 hover:underline">구매하기 &rarr;</a>
+          </div>
+        </div>
+
+        <!-- 4. KCs 통풍 안전모 -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-3xl">⛑️</span>
+              <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">현장전문</span>
+            </div>
+            <h3 class="font-bold text-xs text-slate-900 mb-1">KCs 인증 초경량 ABS 통풍 안전모</h3>
+            <p class="text-[11px] text-slate-500 line-clamp-2">물체 낙하 충격 흡수와 감전 방지, 통풍 벤트가 적용된 프리미엄 현장 안전모.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+            <span class="font-black text-sm text-slate-900">xxx,xxx</span>
+            <a href="/shop.html" class="text-xs font-bold text-blue-700 hover:underline">구매하기 &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 최신 공익 자료 및 회원 활동 미리보기 2열 그리드 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- 일반 안전자료실 미리보기 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+              <h3 class="font-bold text-slate-900 text-base">일반 안전자료실</h3>
+              <span class="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold">비회원 열람 가능</span>
+            </div>
+            <a href="/boards.html?type=general" class="text-xs text-blue-700 font-semibold hover:underline">더보기 &rarr;</a>
+          </div>
+          <div id="home-general-posts" class="divide-y divide-slate-100 mt-2">
+            <div class="py-4 text-center text-xs text-slate-400">자료를 불러오는 중...</div>
+          </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 bg-emerald-50/70 p-3 rounded-lg text-xs text-emerald-900 flex items-center justify-between">
+          <span>모든 방문자는 공익 안전지침과 법정 매뉴얼을 무료로 열람할 수 있습니다.</span>
+          <a href="/boards.html?type=general" class="font-bold text-emerald-700 underline">자료실 이동</a>
+        </div>
+      </div>
+
+      <!-- 회원 전용 게시판 미리보기 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <h3 class="font-bold text-slate-900 text-base">회원 전용 게시판</h3>
+              <span class="text-[11px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">회원/관리자 전용</span>
+            </div>
+            <a href="/boards.html?type=member" class="text-xs text-blue-700 font-semibold hover:underline">입장하기 &rarr;</a>
+          </div>
+          <div id="home-member-posts" class="divide-y divide-slate-100 mt-2">
+            <div class="py-4 text-center text-xs text-slate-400">자료를 불러오는 중...</div>
+          </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 bg-amber-50/70 p-3 rounded-lg text-xs text-amber-900 flex items-center justify-between">
+          <span>현장 안전 제안 및 토론/답변은 관리자 승인을 받은 회원만 참여 가능합니다.</span>
+          <a href="/register.html" class="font-bold text-amber-800 underline">가입 신청</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4. 이용 모드별 권한 안내 (비회원 / 회원 2개 모드로 깔끔하게 정돈) -->
+    <section class="bg-[#0f172a] text-white rounded-xl p-6 sm:p-8 shadow-md">
+      <div class="mb-5">
+        <h3 class="text-lg font-bold text-blue-300 flex items-center gap-2">
+          <span>🛡</span> BEPMC 안전포털 이용 서비스 안내
+        </h3>
+        <p class="text-xs text-slate-400 mt-1">방문자 및 승인된 정회원을 위한 맞춤형 안전 정보와 협업 공간을 제공합니다.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+        <div class="bg-slate-800/80 p-5 rounded-lg border border-slate-700">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-slate-200 text-sm">1. 일반 방문자 (비회원)</span>
+            <span class="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded font-medium">Guest</span>
+          </div>
+          <ul class="space-y-2 text-slate-300">
+            <li class="flex items-center gap-2">
+              <span class="text-blue-400 font-bold">✔</span> 첫페이지 공익 안전정보 및 3대 핵심 안전수칙 열람
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-blue-400 font-bold">✔</span> 일반 안전자료실 공익 매뉴얼 및 가이드북 무료 열람
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-blue-400 font-bold">✔</span> BEPMC 전문 안전관리자에게 1:1 Q&amp;A 문의 접수
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-blue-400 font-bold">✔</span> 회원가입 신청 (자격 검토 후 관리자 승인)
+            </li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-800/80 p-5 rounded-lg border border-emerald-600/70">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-emerald-400 text-sm">2. 정회원 (승인 완료 회원)</span>
+            <span class="badge-green text-[10px] px-2 py-0.5 rounded">Member</span>
+          </div>
+          <ul class="space-y-2 text-slate-300">
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✔</span> <b>회원 전용 게시판</b> 현장 안전 개선안 및 안건 글쓰기
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✔</span> 현장 위험성평가 및 아차사고 사례 토론 / 답변(댓글) 작성
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✔</span> 작성한 1:1 Q&amp;A 질의사항에 대한 관리자 답변 실시간 확인
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✔</span> 현장 맞춤형 전문 사업관리 &amp; 안전 컨설팅 자료 활용
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 공통 푸터 -->
+  <div id="global-footer"></div>
+
+  <!-- 홈페이지 구축 중 안내 모달 팝업 -->
+  <div id="construction-popup-modal" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border-2 border-blue-600 max-w-lg w-full overflow-hidden transform transition-all">
+      <!-- 팝업 헤더 -->
+      <div class="bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] p-5 text-white flex items-center justify-between border-b-2 border-amber-400">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">🚧</span>
+          <div>
+            <span class="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded uppercase tracking-wider">BEPMC Notice</span>
+            <h3 class="text-base font-black text-white mt-0.5">안내 말씀 (Notice)</h3>
+          </div>
+        </div>
+        <button onclick="closeConstructionPopup()" class="text-slate-300 hover:text-white text-xl p-1">✕</button>
+      </div>
+
+      <!-- 팝업 본문 -->
+      <div class="p-6 space-y-4">
+        <!-- 한글 안내문 -->
+        <div class="bg-blue-50/80 border border-blue-200 p-4 rounded-xl space-y-2">
+          <h4 class="text-sm font-black text-blue-950 flex items-center gap-2">
+            <span class="text-amber-500 font-bold">●</span> 홈페이지 구축중... 방문해주셔서 감사합니다.
+          </h4>
+          <p class="text-xs text-slate-700 leading-relaxed font-medium">
+            활성화되지 않은 메뉴는 현재 업데이트 작업중입니다.<br>
+            완료후 다시 찾아뵙겠습니다.
+          </p>
+        </div>
+
+        <!-- 영문 안내문 (English Notice) -->
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-2 text-xs">
+          <h4 class="font-bold text-slate-900 flex items-center gap-1.5">
+            <span class="text-blue-600">ℹ</span> Under Construction... Thank you for visiting BEPMC.
+          </h4>
+          <p class="text-[11px] text-slate-600 leading-relaxed">
+            Menus that are currently inactive are undergoing update work.<br>
+            We look forward to seeing you again once the update is completed.
+          </p>
+        </div>
+
+        <div class="text-[11px] text-slate-400 text-center pt-1">
+          BEPMC (Project Management Consultancy) 사업관리·안전추진단
+        </div>
+      </div>
+
+      <!-- 팝업 푸터 (오늘 하루 보지 않기 & 닫기 버튼) -->
+      <div class="bg-slate-100 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between">
+        <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
+          <input type="checkbox" id="popup-hide-today" class="rounded text-blue-600 focus:ring-blue-500">
+          <span>오늘 하루 보지 않기</span>
+        </label>
+        <button onclick="closeConstructionPopup()" class="btn-safety-black px-5 py-2 rounded-lg text-xs font-bold shadow-sm">
+          확인 및 닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 공통 스크립트 -->
+  <script src="/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initLayout('home');
+
+      // 방문 안내 팝업 검사 및 표출
+      checkConstructionPopup();
+
+      // 메인 슬로건 및 서브 슬로건 동적 반영
+      if (currentSettings) {
+        if (currentSettings.mainSlogan) {
+          document.getElementById('hero-main-slogan').textContent = currentSettings.mainSlogan;
+        }
+        if (currentSettings.subSlogan) {
+          document.getElementById('hero-sub-slogan').textContent = currentSettings.subSlogan;
+        }
+      }
+
+      // 일반 게시판 미리보기 로드
+      loadRecentPosts('general', 'home-general-posts');
+
+      // 회원 전용 게시판 미리보기 로드
+      loadRecentPosts('member', 'home-member-posts');
+    });
+
+    async function loadRecentPosts(type, elementId) {
+      const container = document.getElementById(elementId);
+      try {
+        const res = await fetch(`/api/posts?boardType=${type}`);
+        const data = await res.json();
+
+        if (!data.success) {
+          if (data.requireLogin) {
+            container.innerHTML = `
+              <div class="py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                <svg class="w-8 h-8 text-amber-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <p class="text-xs font-bold text-slate-700">회원 전용 게시판입니다</p>
+                <p class="text-[11px] text-slate-500 mt-1">승인된 회원 또는 관리자로 로그인 후 확인하실 수 있습니다.</p>
+                <div class="mt-3 flex justify-center gap-2">
+                  <a href="/login.html" class="text-xs btn-safety-black px-3.5 py-1.5 rounded font-medium">로그인</a>
+                  <a href="/register.html" class="text-xs bg-emerald-600 text-white px-3.5 py-1.5 rounded font-medium hover:bg-emerald-500">가입신청</a>
+                </div>
+              </div>
+            `;
+            return;
+          }
+          container.innerHTML = `<div class="py-4 text-center text-xs text-red-500">${data.message}</div>`;
+          return;
+        }
+
+        const posts = data.posts.slice(0, 4);
+        if (posts.length === 0) {
+          container.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">등록된 게시물이 없습니다.</div>`;
+          return;
+        }
+
+        container.innerHTML = posts.map(p => `
+          <div class="py-3 flex items-center justify-between hover:bg-slate-50 px-2 rounded transition">
+            <div class="flex items-center gap-2 truncate">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${type === 'general' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${escapeHtml(p.category || '공통')}
+              </span>
+              <a href="/post-detail.html?id=${p.id}" class="text-xs font-medium text-slate-800 hover:text-blue-700 truncate">
+                ${escapeHtml(p.title)}
+              </a>
+              ${p.commentCount > 0 ? `<span class="text-[10px] text-blue-600 font-bold">[${p.commentCount}]</span>` : ''}
+            </div>
+            <span class="text-[11px] text-slate-400 whitespace-nowrap ml-2">${p.createdAt.split(' ')[0]}</span>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        container.innerHTML = `<div class="py-4 text-center text-xs text-red-500">목록을 불러오지 못했습니다.</div>`;
+      }
+    }
+
+    // 홈페이지 구축 중 안내 팝업 모달 제어
+    function checkConstructionPopup() {
+      const hideExpire = localStorage.getItem('bepmc_popup_hide_until');
+      if (hideExpire && new Date().getTime() < Number(hideExpire)) {
+        return; // 오늘 하루 보지 않기 유지 중
+      }
+      const modal = document.getElementById('construction-popup-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeConstructionPopup() {
+      const chk = document.getElementById('popup-hide-today');
+      if (chk && chk.checked) {
+        // 24시간 동안 표시 안 함
+        const expireTime = new Date().getTime() + (24 * 60 * 60 * 1000);
+        localStorage.setItem('bepmc_popup_hide_until', expireTime);
+      }
+      const modal = document.getElementById('construction-popup-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

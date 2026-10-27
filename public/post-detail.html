@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>게시글 상세 | BEPMC (Project Management Consultancy)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen">
+
+  <div id="global-alert-banner"></div>
+  <div id="global-header"></div>
+
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
+    
+    <div class="mb-4">
+      <a href="javascript:history.back()" class="text-xs text-slate-500 hover:text-slate-900 inline-flex items-center gap-1">
+        &larr; 목록으로 돌아가기
+      </a>
+    </div>
+
+    <!-- 게시글 상세 카드 -->
+    <div id="post-card" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6">
+      <div class="p-8 text-center text-xs text-slate-400">게시글을 불러오는 중...</div>
+    </div>
+
+    <!-- 답변 및 댓글 섹션 -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+          <span>💬</span> 답변 및 의견 <span id="comment-count-badge" class="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">0</span>
+        </h3>
+        <span class="text-[11px] text-slate-400">회원 및 관리자만 답변/댓글 작성이 가능합니다.</span>
+      </div>
+
+      <!-- 댓글 목록 -->
+      <div id="comments-list" class="space-y-3 mb-6">
+        <!-- 동적 로드 -->
+      </div>
+
+      <!-- 댓글/답변 작성 폼 -->
+      <div id="comment-form-container" class="border-t border-slate-100 pt-4">
+        <!-- 동적 렌더링 -->
+      </div>
+    </div>
+
+  </main>
+
+  <div id="global-footer"></div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    let currentPostId = null;
+    let postData = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      currentPostId = urlParams.get('id');
+
+      if (!currentPostId) {
+        alert('잘못된 접근입니다.');
+        location.href = '/boards.html';
+        return;
+      }
+
+      await initLayout();
+      await loadPostDetail();
+    });
+
+    async function loadPostDetail() {
+      const card = document.getElementById('post-card');
+      try {
+        const res = await fetch(`/api/posts/${currentPostId}`);
+        const data = await res.json();
+
+        if (!data.success) {
+          if (data.requireLogin) {
+            card.innerHTML = `
+              <div class="p-12 text-center">
+                <p class="text-sm font-bold text-slate-800">회원 전용 게시글입니다</p>
+                <p class="text-xs text-slate-500 mt-1">로그인 후 열람하실 수 있습니다.</p>
+                <div class="mt-4 flex justify-center gap-2">
+                  <a href="/login.html" class="btn-safety-black px-4 py-2 rounded text-xs">로그인</a>
+                  <a href="/register.html" class="btn-safety-green px-4 py-2 rounded text-xs">회원가입 신청</a>
+                </div>
+              </div>
+            `;
+            return;
+          }
+          card.innerHTML = `<div class="p-12 text-center text-xs text-red-500">${data.message}</div>`;
+          return;
+        }
+
+        postData = data.post;
+        renderPost(postData);
+        renderComments(postData.comments || []);
+        renderCommentInput();
+
+      } catch (err) {
+        card.innerHTML = `<div class="p-12 text-center text-xs text-red-500">데이터를 불러오는 중 오류가 발생했습니다.</div>`;
+      }
+    }
+
+    function renderPost(post) {
+      const card = document.getElementById('post-card');
+      const isMember = post.boardType === 'member';
+      const badgeStyle = isMember ? 'badge-yellow' : 'badge-green';
+      const boardLabel = isMember ? '회원 전용 게시판' : '일반 안전자료실';
+
+      const isAdmin = currentAuth.mode === 'admin';
+      const isAuthor = currentAuth.isLoggedIn && currentAuth.user && currentAuth.user.id === post.authorId;
+      const canManage = isAdmin || isAuthor;
+
+      let manageButtons = '';
+      if (canManage) {
+        manageButtons = `
+          <div class="flex items-center gap-2">
+            ${isAdmin && !isAuthor ? `<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">[관리자 권한 수정/삭제]</span>` : ''}
+            <a href="/post-write.html?id=${post.id}&boardType=${post.boardType}" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded font-medium transition">
+              수정
+            </a>
+            <button onclick="deletePost()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded font-medium transition">
+              삭제
+            </button>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="p-6 sm:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="${badgeStyle} text-xs px-2.5 py-0.5 rounded font-bold">${boardLabel}</span>
+              <span class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-semibold">${escapeHtml(post.category)}</span>
+            </div>
+            ${manageButtons}
+          </div>
+
+          <h1 class="text-xl sm:text-2xl font-black text-slate-900 mt-4 mb-3 tracking-tight">
+            ${escapeHtml(post.title)}
+          </h1>
+
+          <div class="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs text-slate-500 pb-6 border-b border-slate-100">
+            <span class="flex items-center gap-1 font-semibold text-slate-700">
+              <span>작성자:</span> ${escapeHtml(post.authorName)} ${post.authorRole === 'admin' ? '<span class="text-[10px] text-red-600 font-bold ml-1">(관리자)</span>' : ''}
+            </span>
+            <span>작성일: ${post.createdAt}</span>
+            <span>조회수: ${post.views || 1}</span>
+          </div>
+
+          <div class="py-8 text-sm text-slate-800 leading-relaxed whitespace-pre-line min-h-[200px]">
+            ${escapeHtml(post.content)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderComments(comments) {
+      const container = document.getElementById('comments-list');
+      const badge = document.getElementById('comment-count-badge');
+      badge.textContent = comments.length;
+
+      if (comments.length === 0) {
+        container.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">아직 등록된 답변이나 댓글이 없습니다. 첫 번째 답변을 작성해보세요.</div>`;
+        return;
+      }
+
+      const isAdmin = currentAuth.mode === 'admin';
+      const myId = currentAuth.user ? currentAuth.user.id : null;
+
+      container.innerHTML = comments.map(c => {
+        const canDelete = isAdmin || (myId && myId === c.authorId);
+        return `
+          <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900">${escapeHtml(c.authorName)}</span>
+                ${c.authorRole === 'admin' ? '<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-bold">관리자</span>' : '<span class="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-semibold">회원</span>'}
+                <span class="text-[11px] text-slate-400">${c.createdAt}</span>
+              </div>
+              ${canDelete ? `
+                <button onclick="deleteComment(${c.id})" class="text-[11px] text-red-500 hover:text-red-700 hover:underline">
+                  삭제
+                </button>
+              ` : ''}
+            </div>
+            <p class="text-slate-700 leading-relaxed whitespace-pre-line">${escapeHtml(c.content)}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCommentInput() {
+      const container = document.getElementById('comment-form-container');
+
+      if (!currentAuth.isLoggedIn) {
+        container.innerHTML = `
+          <div class="p-4 bg-slate-50 rounded-lg text-center text-xs text-slate-500 border border-dashed border-slate-200">
+            답변 및 의견을 작성하시려면 <a href="/login.html" class="text-blue-700 font-bold underline">로그인</a>이 필요합니다.
+          </div>
+        `;
+        return;
+      }
+
+      if (currentAuth.user.status !== 'approved') {
+        container.innerHTML = `
+          <div class="p-4 bg-amber-50 rounded-lg text-center text-xs text-amber-800 border border-amber-200">
+            관리자 승인 완료 후 답변 및 의견을 등록하실 수 있습니다.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <form onsubmit="submitComment(event)" class="space-y-3">
+          <label class="block text-xs font-bold text-slate-700">답변 / 의견 작성 (${currentAuth.user.name})</label>
+          <textarea id="comment-content" rows="3" required placeholder="안전 개선 사항, 추가 답변, 현장 적용 의견을 자유롭게 작성해주세요." class="w-full text-xs p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"></textarea>
+          <div class="flex justify-end">
+            <button type="submit" class="btn-safety-green px-4 py-2 rounded text-xs font-bold shadow-sm">
+              답변/댓글 등록
+            </button>
+          </div>
+        </form>
+      `;
+    }
+
+    async function submitComment(e) {
+      e.preventDefault();
+      const content = document.getElementById('comment-content').value.trim();
+      if (!content) return;
+
+      try {
+        const res = await fetch(`/api/posts/${currentPostId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content })
+        });
+        const result = await res.json();
+        if (result.success) {
+          await loadPostDetail();
+        } else {
+          alert(result.message || '댓글 등록에 실패했습니다.');
+        }
+      } catch (err) {
+        alert('오류가 발생했습니다: ' + err.message);
+      }
+    }
+
+    async function deleteComment(commentId) {
+      if (!confirm('이 댓글을 삭제하시겠습니까?')) return;
+      try {
+        const res = await fetch(`/api/posts/${currentPostId}/comments/${commentId}`, {
+          method: 'DELETE'
+        });
+        const result = await res.json();
+        if (result.success) {
+          await loadPostDetail();
+        } else {
+          alert(result.message || '댓글 삭제에 실패했습니다.');
+        }
+      } catch (err) {
+        alert('오류가 발생했습니다.');
+      }
+    }
+
+    async function deletePost() {
+      if (!confirm('정말 이 게시글을 삭제하시겠습니까? 삭제된 글은 복구할 수 없습니다.')) return;
+      try {
+        const res = await fetch(`/api/posts/${currentPostId}`, {
+          method: 'DELETE'
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert('게시글이 삭제되었습니다.');
+          location.href = `/boards.html?type=${postData.boardType}`;
+        } else {
+          alert(result.message || '게시글 삭제에 실패했습니다.');
+        }
+      } catch (err) {
+        alert('오류가 발생했습니다: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

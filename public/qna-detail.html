@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q&A 상세 | BEPMC (Project Management Consultancy)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen">
+
+  <div id="global-alert-banner"></div>
+  <div id="global-header"></div>
+
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
+    
+    <div class="mb-4">
+      <a href="/qna.html" class="text-xs text-slate-500 hover:text-slate-900 inline-flex items-center gap-1">
+        &larr; Q&A 목록으로 돌아가기
+      </a>
+    </div>
+
+    <!-- 문의 상세 박스 -->
+    <div id="qna-detail-card" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6">
+      <div class="p-8 text-center text-xs text-slate-400">문의 내용을 불러오는 중...</div>
+    </div>
+
+    <!-- 관리자 답변 영역 -->
+    <div id="answer-section" class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <!-- 동적 로드 -->
+    </div>
+
+  </main>
+
+  <div id="global-footer"></div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    let qnaId = null;
+    let qnaData = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      qnaId = urlParams.get('id');
+
+      if (!qnaId) {
+        alert('잘못된 접근입니다.');
+        location.href = '/qna.html';
+        return;
+      }
+
+      await initLayout('qna');
+      await loadQna();
+    });
+
+    async function loadQna() {
+      const card = document.getElementById('qna-detail-card');
+      try {
+        const res = await fetch(`/api/qna/${qnaId}`);
+        const data = await res.json();
+
+        if (!data.success) {
+          card.innerHTML = `
+            <div class="p-12 text-center">
+              <p class="text-sm font-bold text-red-600 mb-1">비공개 문의입니다</p>
+              <p class="text-xs text-slate-500">${data.message || '작성자와 관리자만 확인할 수 있습니다.'}</p>
+            </div>
+          `;
+          document.getElementById('answer-section').classList.add('hidden');
+          return;
+        }
+
+        qnaData = data.qna;
+        renderQna(qnaData);
+        renderAnswer(qnaData);
+
+      } catch (err) {
+        card.innerHTML = `<div class="p-8 text-center text-xs text-red-500">데이터를 불러오지 못했습니다.</div>`;
+      }
+    }
+
+    function renderQna(q) {
+      const card = document.getElementById('qna-detail-card');
+      const isAdmin = currentAuth.mode === 'admin';
+      const isAuthor = currentAuth.user && currentAuth.user.id === q.authorId;
+      const canDelete = isAdmin || isAuthor;
+
+      const statusBadge = q.status === 'answered'
+        ? `<span class="badge-green text-xs px-2.5 py-0.5 rounded font-bold">답변완료</span>`
+        : `<span class="badge-yellow text-xs px-2.5 py-0.5 rounded font-bold">답변대기</span>`;
+
+      card.innerHTML = `
+        <div class="p-6 sm:p-8">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              ${statusBadge}
+              ${q.isSecret ? '<span class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">🔒 비밀글</span>' : '<span class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">전체공개</span>'}
+            </div>
+            ${canDelete ? `
+              <button onclick="deleteQna()" class="text-xs text-red-600 hover:text-red-800 bg-red-50 px-2.5 py-1 rounded">
+                삭제
+              </button>
+            ` : ''}
+          </div>
+
+          <h1 class="text-xl font-bold text-slate-900 mt-4 mb-2">
+            ${escapeHtml(q.title)}
+          </h1>
+
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 pb-4 border-b border-slate-100">
+            <span>문의자: <b>${escapeHtml(q.authorName)}</b></span>
+            ${isAdmin ? `<span class="text-blue-700">이메일: <b>${escapeHtml(q.email || '미입력')}</b></span>` : ''}
+            <span>접수일시: ${q.createdAt}</span>
+          </div>
+
+          <div class="py-6 text-sm text-slate-800 leading-relaxed whitespace-pre-line min-h-[120px]">
+            ${escapeHtml(q.content)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAnswer(q) {
+      const section = document.getElementById('answer-section');
+      const isAdmin = currentAuth.mode === 'admin';
+
+      if (q.status === 'answered' && q.answer) {
+        section.innerHTML = `
+          <div class="border-l-4 border-emerald-600 pl-4 py-1">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded">
+                ✔ BEPMC 관리자 공식 답변 (${escapeHtml(q.answeredBy || '관리자')})
+              </span>
+              <span class="text-[11px] text-slate-400">답변일시: ${q.answeredAt}</span>
+            </div>
+            <div class="text-xs text-slate-800 leading-relaxed whitespace-pre-line bg-emerald-50/50 p-4 rounded-lg mt-3">
+              ${escapeHtml(q.answer)}
+            </div>
+          </div>
+
+          ${isAdmin ? `
+            <div class="mt-6 pt-4 border-t border-slate-100">
+              <details class="cursor-pointer">
+                <summary class="text-xs text-slate-500 font-semibold hover:text-slate-800">
+                  ✏ 관리자 답변 수정하기
+                </summary>
+                <form onsubmit="submitAnswer(event)" class="mt-3 space-y-3">
+                  <textarea id="admin-answer-input" rows="4" required class="w-full text-xs p-3 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500">${escapeHtml(q.answer)}</textarea>
+                  <button type="submit" class="btn-safety-green px-4 py-2 rounded text-xs font-bold">
+                    답변 수정 저장
+                  </button>
+                </form>
+              </details>
+            </div>
+          ` : ''}
+        `;
+      } else {
+        if (isAdmin) {
+          section.innerHTML = `
+            <div class="border-l-4 border-blue-500 pl-4">
+              <h3 class="text-sm font-bold text-slate-900 mb-1">
+                👑 BEPMC 관리자 답변 작성
+              </h3>
+              <p class="text-xs text-slate-500 mb-4">문의자에게 전달할 안전 공식 답변을 작성해주세요.</p>
+
+              <form onsubmit="submitAnswer(event)" class="space-y-3">
+                <textarea id="admin-answer-input" rows="4" required placeholder="문의사항에 대한 조치 결과, 관련 법령 안내 또는 현장 지원 절차를 안내합니다." class="w-full text-xs p-3 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500"></textarea>
+                <div class="flex justify-end">
+                  <button type="submit" class="btn-safety-green px-5 py-2.5 rounded text-xs font-bold shadow-sm">
+                    관리자 답변 등록
+                  </button>
+                </div>
+              </form>
+            </div>
+          `;
+        } else {
+          section.innerHTML = `
+            <div class="py-6 text-center text-xs text-amber-800 bg-amber-50 rounded-lg border border-amber-200">
+              ⏳ BEPMC 관리자가 문의 내용을 확인 중입니다. 빠른 시일 내에 답변이 등록됩니다.
+            </div>
+          `;
+        }
+      }
+    }
+
+    async function submitAnswer(e) {
+      e.preventDefault();
+      const answer = document.getElementById('admin-answer-input').value.trim();
+      if (!answer) return;
+
+      try {
+        const res = await fetch(`/api/qna/${qnaId}/answer`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answer })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert('관리자 답변이 등록되었습니다.');
+          await loadQna();
+        } else {
+          alert(result.message || '답변 등록에 실패했습니다.');
+        }
+      } catch (err) {
+        alert('오류가 발생했습니다: ' + err.message);
+      }
+    }
+
+    async function deleteQna() {
+      if (!confirm('이 Q&A를 삭제하시겠습니까?')) return;
+      try {
+        const res = await fetch(`/api/qna/${qnaId}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          alert('삭제되었습니다.');
+          location.href = '/qna.html';
+        } else {
+          alert(result.message || '삭제에 실패했습니다.');
+        }
+      } catch (err) {
+        alert('오류가 발생했습니다.');
+      }
+    }
+  </script>
+</body>
+</html>

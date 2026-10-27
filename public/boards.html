@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>안전 게시판 | BEPMC (Project Management Consultancy)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen">
+
+  <div id="global-alert-banner"></div>
+  <div id="global-header"></div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+    <!-- 상단 타이틀 영역 -->
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span id="board-color-indicator" class="w-3.5 h-3.5 rounded bg-emerald-600"></span>
+          <h1 id="board-title" class="text-2xl font-black text-slate-900 tracking-tight">일반 안전자료실</h1>
+        </div>
+        <p id="board-description" class="text-xs text-slate-600 mt-1">
+          산업안전 지침, 재해예방 수칙, 법정 매뉴얼 등 누구나 열람 가능한 공익 자료실입니다.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2" id="board-action-buttons">
+        <!-- 글쓰기 버튼 동적 렌더링 -->
+      </div>
+    </div>
+
+    <!-- 탭 메뉴 (일반자료실 vs 회원전용게시판) -->
+    <div class="flex border-b border-slate-200 mb-6 bg-white rounded-t-lg shadow-sm">
+      <button onclick="switchBoardTab('general')" id="tab-general" class="flex-1 py-3.5 px-6 text-sm font-bold border-b-2 text-center transition flex items-center justify-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        일반 안전자료실
+        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold">전체열람</span>
+      </button>
+      <button onclick="switchBoardTab('member')" id="tab-member" class="flex-1 py-3.5 px-6 text-sm font-bold border-b-2 text-center transition flex items-center justify-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        회원 전용 게시판
+        <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">회원전용</span>
+      </button>
+    </div>
+
+    <!-- 검색 및 필터 바 -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-slate-700">분류:</span>
+        <select id="category-filter" onchange="loadPosts()" class="text-xs border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          <option value="">전체 분류</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <input type="text" id="search-input" placeholder="제목 또는 내용 검색" onkeypress="if(event.key==='Enter') loadPosts()" class="text-xs border border-slate-300 rounded px-3 py-1.5 w-full sm:w-60 focus:outline-none focus:ring-1 focus:ring-blue-500">
+        <button onclick="loadPosts()" class="btn-safety-black px-3.5 py-1.5 rounded text-xs">
+          검색
+        </button>
+      </div>
+    </div>
+
+    <!-- 게시글 테이블 / 리스트 -->
+    <div id="posts-container" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <!-- 동적 로드 -->
+    </div>
+  </main>
+
+  <div id="global-footer"></div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    let currentBoardType = 'general';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      currentBoardType = urlParams.get('type') === 'member' ? 'member' : 'general';
+
+      await initLayout(currentBoardType);
+      updateTabUI();
+      await loadPosts();
+    });
+
+    function switchBoardTab(type) {
+      if (currentBoardType === type) return;
+      currentBoardType = type;
+      window.history.pushState({}, '', `/boards.html?type=${type}`);
+      updateTabUI();
+      loadPosts();
+    }
+
+    function updateTabUI() {
+      const tabGeneral = document.getElementById('tab-general');
+      const tabMember = document.getElementById('tab-member');
+      const boardTitle = document.getElementById('board-title');
+      const boardDesc = document.getElementById('board-description');
+      const boardIndicator = document.getElementById('board-color-indicator');
+      const catFilter = document.getElementById('category-filter');
+
+      if (currentBoardType === 'general') {
+        tabGeneral.className = 'flex-1 py-3.5 px-6 text-sm font-bold border-b-2 border-emerald-600 text-emerald-700 bg-emerald-50/50 text-center flex items-center justify-center gap-2';
+        tabMember.className = 'flex-1 py-3.5 px-6 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 text-center flex items-center justify-center gap-2';
+        boardTitle.textContent = '일반 안전자료실';
+        boardDesc.textContent = '산업안전보건 수칙, 화재·비상 대응 매뉴얼 등 누구나 열람할 수 있는 공익 안전 자료입니다.';
+        boardIndicator.className = 'w-3.5 h-3.5 rounded bg-emerald-600';
+        catFilter.innerHTML = `
+          <option value="">전체 분류</option>
+          <option value="기본수칙">기본수칙</option>
+          <option value="비상대응">비상대응</option>
+          <option value="안전보건">안전보건</option>
+          <option value="안전공지">안전공지</option>
+        `;
+      } else {
+        tabMember.className = 'flex-1 py-3.5 px-6 text-sm font-bold border-b-2 border-amber-500 text-amber-800 bg-amber-50/50 text-center flex items-center justify-center gap-2';
+        tabGeneral.className = 'flex-1 py-3.5 px-6 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 text-center flex items-center justify-center gap-2';
+        boardTitle.textContent = '회원 전용 게시판';
+        boardDesc.textContent = '현장 안전 개선 제안, 아차사고 토론, 실무 질의응답 및 답변이 이루어지는 회원 전용 공간입니다.';
+        boardIndicator.className = 'w-3.5 h-3.5 rounded bg-amber-500';
+        catFilter.innerHTML = `
+          <option value="">전체 분류</option>
+          <option value="현장제안">현장제안</option>
+          <option value="안전토론">안전토론</option>
+          <option value="위험개선">위험개선</option>
+          <option value="우수사례">우수사례</option>
+        `;
+      }
+
+      // 글쓰기 버튼 렌더링
+      const actionArea = document.getElementById('board-action-buttons');
+      if (currentBoardType === 'general') {
+        if (currentAuth.mode === 'admin') {
+          actionArea.innerHTML = `
+            <a href="/post-write.html?boardType=general" class="btn-safety-green px-4 py-2 rounded-md text-xs font-bold shadow-sm flex items-center gap-1.5">
+              <span>+</span> 공익자료 등록 (관리자)
+            </a>
+          `;
+        } else {
+          actionArea.innerHTML = `
+            <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded border border-slate-200">
+              ※ 일반자료실 등록 권한은 관리자 전용입니다
+            </span>
+          `;
+        }
+      } else {
+        // 회원 전용 게시판
+        if (currentAuth.isLoggedIn && currentAuth.user && currentAuth.user.status === 'approved') {
+          actionArea.innerHTML = `
+            <a href="/post-write.html?boardType=member" class="btn-safety-yellow px-4 py-2 rounded-md text-xs font-bold shadow-sm flex items-center gap-1.5">
+              <span>✍</span> 새 글 쓰기 (회원)
+            </a>
+          `;
+        } else {
+          actionArea.innerHTML = `
+            <button onclick="alert('회원 전용 게시판은 승인된 회원 로그인 후 글쓰기/답변이 가능합니다.')" class="bg-slate-200 text-slate-500 px-4 py-2 rounded-md text-xs font-semibold cursor-not-allowed">
+              🔒 글쓰기 (회원 전용)
+            </button>
+          `;
+        }
+      }
+    }
+
+    async function loadPosts() {
+      const container = document.getElementById('posts-container');
+      const category = document.getElementById('category-filter').value;
+      const search = document.getElementById('search-input').value;
+
+      container.innerHTML = `<div class="p-12 text-center text-xs text-slate-400">데이터를 불러오는 중입니다...</div>`;
+
+      try {
+        let url = `/api/posts?boardType=${currentBoardType}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.success) {
+          if (data.requireLogin) {
+            container.innerHTML = `
+              <div class="p-12 text-center bg-slate-50">
+                <div class="inline-flex p-3 rounded-full bg-amber-100 text-amber-600 mb-3">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h3 class="text-base font-bold text-slate-900">회원 전용 게시판 접근 제한</h3>
+                <p class="text-xs text-slate-600 mt-1 max-w-md mx-auto">
+                  회원 전용 게시판은 BEPMC 관리자의 승인을 받은 회원 및 관리자만 열람하고 글을 작성할 수 있습니다.
+                </p>
+                <div class="mt-5 flex justify-center gap-3">
+                  <a href="/login.html" class="btn-safety-black px-4 py-2 rounded text-xs">회원 로그인</a>
+                  <a href="/register.html" class="btn-safety-green px-4 py-2 rounded text-xs">회원가입 신청</a>
+                </div>
+              </div>
+            `;
+            return;
+          }
+          container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">${data.message}</div>`;
+          return;
+        }
+
+        const posts = data.posts;
+        if (posts.length === 0) {
+          container.innerHTML = `<div class="p-12 text-center text-xs text-slate-400">등록된 게시물이 없습니다.</div>`;
+          return;
+        }
+
+        let tableHtml = `
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-center w-16">번호</th>
+                <th scope="col" class="px-4 py-3 text-center w-24">분류</th>
+                <th scope="col" class="px-4 py-3">제목</th>
+                <th scope="col" class="px-4 py-3 text-center w-28">작성자</th>
+                <th scope="col" class="px-4 py-3 text-center w-28">작성일</th>
+                <th scope="col" class="px-4 py-3 text-center w-16">조회</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+        `;
+
+        posts.forEach(p => {
+          const isMemberBoard = p.boardType === 'member';
+          const catClass = isMemberBoard ? 'badge-yellow' : 'badge-green';
+
+          tableHtml += `
+            <tr class="hover:bg-slate-50 transition cursor-pointer" onclick="location.href='/post-detail.html?id=${p.id}'">
+              <td class="px-4 py-3.5 text-center text-slate-400 font-mono">${p.id}</td>
+              <td class="px-4 py-3.5 text-center">
+                <span class="${catClass} text-[10px] px-2 py-0.5 rounded">${escapeHtml(p.category)}</span>
+              </td>
+              <td class="px-4 py-3.5">
+                <div class="flex items-center gap-2">
+                  <a href="/post-detail.html?id=${p.id}" class="text-xs font-semibold text-slate-900 hover:text-blue-700">
+                    ${escapeHtml(p.title)}
+                  </a>
+                  ${p.commentCount > 0 ? `<span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">[답변/댓글 ${p.commentCount}]</span>` : ''}
+                </div>
+              </td>
+              <td class="px-4 py-3.5 text-center text-slate-700 font-medium">
+                ${escapeHtml(p.authorName)}
+                ${p.authorRole === 'admin' ? '<span class="text-[10px] text-red-600 font-bold ml-1">(관리자)</span>' : ''}
+              </td>
+              <td class="px-4 py-3.5 text-center text-slate-400 text-[11px]">${p.createdAt.split(' ')[0]}</td>
+              <td class="px-4 py-3.5 text-center text-slate-400">${p.views || 0}</td>
+            </tr>
+          `;
+        });
+
+        tableHtml += `</tbody></table>`;
+        container.innerHTML = tableHtml;
+
+      } catch (err) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">목록을 불러오는 중 오류가 발생했습니다.</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

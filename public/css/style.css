@@ -1,0 +1,146 @@
+/* BEPMC (Project Management Consultancy) 컬러 시스템 */
+:root {
+  /* 믿음직하고 편안한 청색 (Trust Blue / Corporate Navy) */
+  --bepmc-blue: #1e40af;          /* 신뢰와 전문성을 주는 클래식 블루 (#1e40af, #1e3a8a) */
+  --bepmc-blue-dark: #0f172a;     /* 깊은 네이비 블루 헤더 & 푸터 바탕 (#0f172a, #172554) */
+  --bepmc-blue-navy: #172554;
+  --bepmc-blue-light: #eff6ff;    /* 부드러운 배경 라이트 블루 */
+  --bepmc-blue-hover: #1d4ed8;
+
+  /* 안전 및 환경 조화 색상 */
+  --safety-green: #059669;        /* 안전 / 통행 / 정상 (#059669) */
+  --safety-green-dark: #047857;
+  --safety-green-light: #ecfdf5;
+  --safety-yellow: #f59e0b;       /* 주의 / 경고 / 강조 (#f59e0b) */
+  --safety-yellow-hover: #d97706;
+  --safety-yellow-light: #fffbeb;
+
+  --bepmc-gray-bg: #f8fafc;       /* 편안한 슬레이트 그레이 배경 */
+  --bepmc-border: #e2e8f0;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  background-color: var(--bepmc-gray-bg);
+  color: #1e293b;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 안전 사선 패턴 (Hazard Stripes: 노란색 + 믿음직한 네이비 블루 조합) */
+.safety-stripe {
+  background: repeating-linear-gradient(
+    45deg,
+    #f59e0b,
+    #f59e0b 12px,
+    #0f172a 12px,
+    #0f172a 24px
+  );
+}
+
+.safety-stripe-thin {
+  background: repeating-linear-gradient(
+    45deg,
+    #f59e0b,
+    #f59e0b 6px,
+    #172554 6px,
+    #172554 12px
+  );
+}
+
+/* 녹색 안전 강조 카드 */
+.card-safety-green {
+  border-top: 4px solid var(--safety-green);
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 노란색 주의 카드 */
+.card-safety-yellow {
+  border-top: 4px solid var(--safety-yellow);
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 믿음직한 청색 헤더/강조 카드 */
+.card-safety-black, .card-bepmc-blue {
+  border-top: 4px solid var(--bepmc-blue);
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 전역 버튼 */
+.btn-safety-green {
+  background-color: var(--safety-green);
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-safety-green:hover {
+  background-color: var(--safety-green-dark);
+}
+
+.btn-safety-yellow {
+  background-color: var(--safety-yellow);
+  color: #0f172a;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.btn-safety-yellow:hover {
+  background-color: var(--safety-yellow-hover);
+}
+
+.btn-safety-black, .btn-bepmc-blue {
+  background-color: var(--bepmc-blue);
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-safety-black:hover, .btn-bepmc-blue:hover {
+  background-color: var(--bepmc-blue-hover);
+}
+
+/* 뱃지 */
+.badge-green {
+  background-color: #d1fae5;
+  color: #065f46;
+  font-weight: 600;
+}
+.badge-yellow {
+  background-color: #fef3c7;
+  color: #92400e;
+  font-weight: 700;
+}
+.badge-black, .badge-blue {
+  background-color: #1e3a8a;
+  color: #f8fafc;
+  font-weight: 600;
+}
+.badge-red {
+  background-color: #fee2e2;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+/* 네비게이션 활성 링크 */
+.nav-link-active {
+  color: #60a5fa !important;
+  border-bottom: 2px solid #60a5fa;
+}
+
+/* 푸터 관리자 모드 버튼 호버 효과 */
+.admin-footer-btn {
+  border: 1px dashed #475569;
+  transition: all 0.2s;
+}
+.admin-footer-btn:hover {
+  border-color: #60a5fa;
+  color: #93c5fd;
+  background-color: rgba(30, 58, 138, 0.4);
+}

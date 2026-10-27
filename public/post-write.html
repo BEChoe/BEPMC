@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>게시글 작성/수정 | BEPMC (Project Management Consultancy)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen">
+
+  <div id="global-alert-banner"></div>
+  <div id="global-header"></div>
+
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
+    
+    <div class="mb-6">
+      <h1 id="page-title" class="text-2xl font-black text-slate-900 tracking-tight">게시글 작성</h1>
+      <p class="text-xs text-slate-600 mt-1">현장 안전을 지키기 위한 정보 및 제안을 공유해주세요.</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 sm:p-8">
+      <form id="post-form" onsubmit="handleSubmit(event)" class="space-y-5">
+        
+        <!-- 게시판 및 분류 선택 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">게시판 선택</label>
+            <select id="board-type" onchange="handleBoardChange()" class="w-full text-xs p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500">
+              <option value="member">회원 전용 게시판 (현장제안/토론)</option>
+              <option value="general">일반 안전자료실 (공익 매뉴얼 - 관리자 전용)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">분류(카테고리)</label>
+            <select id="category" class="w-full text-xs p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500">
+              <!-- 동적 채움 -->
+            </select>
+          </div>
+        </div>
+
+        <!-- 제목 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">게시글 제목</label>
+          <input type="text" id="title" required placeholder="안전 제안 및 정보의 명확한 제목을 입력하세요." class="w-full text-xs p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500">
+        </div>
+
+        <!-- 내용 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">본문 내용</label>
+          <textarea id="content" rows="12" required placeholder="안전 작업 수칙, 현장 위험 요인 및 개선안, 질의사항 등을 상세히 기술해주세요." class="w-full text-xs p-3 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500"></textarea>
+        </div>
+
+        <!-- 버튼 -->
+        <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+          <button type="button" onclick="history.back()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded font-medium">
+            취소
+          </button>
+          <button type="submit" id="submit-btn" class="btn-safety-green px-6 py-2.5 rounded text-xs font-bold shadow-sm">
+            등록하기
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <div id="global-footer"></div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    let editPostId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      editPostId = urlParams.get('id');
+      const defaultBoardType = urlParams.get('boardType') || 'member';
+
+      await initLayout();
+
+      if (!currentAuth.isLoggedIn) {
+        alert('로그인이 필요한 서비스입니다.');
+        location.href = '/login.html';
+        return;
+      }
+
+      if (currentAuth.user.status !== 'approved') {
+        alert('관리자의 가입 승인이 완료되지 않은 계정입니다.');
+        location.href = '/index.html';
+        return;
+      }
+
+      // 게시판 선택 설정
+      const boardSelect = document.getElementById('board-type');
+      boardSelect.value = defaultBoardType;
+
+      // 관리자가 아니면 일반자료실 옵션 비활성화
+      if (currentAuth.mode !== 'admin') {
+        const genOption = boardSelect.querySelector('option[value="general"]');
+        if (genOption) genOption.disabled = true;
+      }
+
+      handleBoardChange();
+
+      // 수정 모드인 경우 데이터 로드
+      if (editPostId) {
+        document.getElementById('page-title').textContent = '게시글 수정';
+        document.getElementById('submit-btn').textContent = '수정 완료';
+        loadEditData(editPostId);
+      }
+    });
+
+    function handleBoardChange() {
+      const boardType = document.getElementById('board-type').value;
+      const catSelect = document.getElementById('category');
+
+      if (boardType === 'general') {
+        catSelect.innerHTML = `
+          <option value="기본수칙">기본수칙</option>
+          <option value="비상대응">비상대응</option>
+          <option value="안전보건">안전보건</option>
+          <option value="안전공지">안전공지</option>
+        `;
+      } else {
+        catSelect.innerHTML = `
+          <option value="현장제안">현장제안</option>
+          <option value="안전토론">안전토론</option>
+          <option value="위험개선">위험개선</option>
+          <option value="우수사례">우수사례</option>
+        `;
+      }
+    }
+
+    async function loadEditData(id) {
+      try {
+        const res = await fetch(`/api/posts/${id}`);
+        const data = await res.json();
+        if (data.success && data.post) {
+          const p = data.post;
+          document.getElementById('board-type').value = p.boardType;
+          handleBoardChange();
+          document.getElementById('category').value = p.category;
+          document.getElementById('title').value = p.title;
+          document.getElementById('content').value = p.content;
+        }
+      } catch (e) {
+        alert('수정할 데이터를 불러오지 못했습니다.');
+      }
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const boardType = document.getElementById('board-type').value;
+      const category = document.getElementById('category').value;
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+
+      const payload = { boardType, category, title, content };
+
+      try {
+        let res;
+        if (editPostId) {
+          res = await fetch(`/api/posts/${editPostId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch('/api/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        const result = await res.json();
+        if (result.success) {
+          alert(result.message);
+          const targetId = editPostId || (result.post ? result.post.id : '');
+          if (targetId) {
+            location.href = `/post-detail.html?id=${targetId}`;
+          } else {
+            location.href = `/boards.html?type=${boardType}`;
+          }
+        } else {
+          alert(result.message || '저장에 실패했습니다.');
+        }
+      } catch (err) {
+        alert('오류가 발생했습니다: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

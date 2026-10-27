@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BEPMC 안전몰 | 생활 및 현장 안전용품 공식 쇼핑몰</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen">
+
+  <div id="global-alert-banner"></div>
+  <div id="global-header"></div>
+
+  <!-- 안전몰 히어로 헤더 -->
+  <section class="bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] text-white py-10 border-b-4 border-amber-400">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-amber-400 text-slate-950 px-2.5 py-1 rounded-full mb-2">
+            <span>🛡</span> BEPMC 공식 인증 안전장비
+          </span>
+          <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            BEPMC 안전몰 (Safety Shop)
+          </h1>
+          <p class="text-xs sm:text-sm text-blue-200 mt-1">
+            가정과 일상을 지키는 <b>생활 안전용품</b>부터 건설·제조 현장의 <b>전문 보호구</b>까지 엄선된 안전용품을 만나보세요.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="openCartModal()" class="btn-safety-yellow px-4 py-2.5 rounded-lg text-xs font-bold shadow-lg flex items-center gap-2">
+            <span>🛒</span> 장바구니 보기 (<span id="cart-btn-qty">0</span>)
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 메인 상품 컨텐츠 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+
+    <!-- 대상 구분 탭 (생활안전 vs 산업현장) -->
+    <div class="flex border-b border-slate-200 mb-6 bg-white rounded-t-lg shadow-sm overflow-x-auto">
+      <button onclick="setTargetFilter('all')" id="tab-all" class="flex-1 py-3.5 px-5 text-sm font-bold border-b-2 text-center transition flex items-center justify-center gap-1.5 whitespace-nowrap">
+        <span>📦</span> 전체 용품
+      </button>
+      <button onclick="setTargetFilter('life')" id="tab-life" class="flex-1 py-3.5 px-5 text-sm font-bold border-b-2 text-center transition flex items-center justify-center gap-1.5 whitespace-nowrap">
+        <span>🏠</span> 생활 안전용품 <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">일반인·가정·차량</span>
+      </button>
+      <button onclick="setTargetFilter('industry')" id="tab-industry" class="flex-1 py-3.5 px-5 text-sm font-bold border-b-2 text-center transition flex items-center justify-center gap-1.5 whitespace-nowrap">
+        <span>🏗️</span> 현장 안전용품 <span class="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">전문가·산업현장</span>
+      </button>
+    </div>
+
+    <!-- 검색 및 필터 바 -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-slate-700">분류:</span>
+        <select id="category-filter" onchange="loadProducts()" class="text-xs border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          <option value="">전체 카테고리</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <input type="text" id="search-input" placeholder="안전용품명 또는 기능 검색" onkeypress="if(event.key==='Enter') loadProducts()" class="text-xs border border-slate-300 rounded px-3 py-1.5 w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-blue-500">
+        <button onclick="loadProducts()" class="btn-safety-black px-4 py-1.5 rounded text-xs font-semibold">
+          검색
+        </button>
+      </div>
+    </div>
+
+    <!-- 상품 그리드 -->
+    <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- 동적 로드 -->
+    </div>
+
+  </main>
+
+  <!-- 장바구니 슬라이드오버 모달 -->
+  <div id="cart-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex justify-end">
+    <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col justify-between overflow-hidden">
+      <!-- 모달 헤더 -->
+      <div class="p-5 bg-[#0f172a] text-white flex items-center justify-between border-b border-blue-900">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🛒</span>
+          <h3 class="font-bold text-base">선택한 안전용품 장바구니</h3>
+        </div>
+        <button onclick="closeCartModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <!-- 모달 바디 (아이템 목록) -->
+      <div id="cart-items-container" class="flex-1 p-5 overflow-y-auto space-y-3 divide-y divide-slate-100">
+        <!-- 동적 로드 -->
+      </div>
+
+      <!-- 모달 푸터 (총액 & 주문 버튼) -->
+      <div class="p-5 bg-slate-50 border-t border-slate-200 space-y-3">
+        <div class="flex justify-between items-center text-sm font-bold text-slate-900">
+          <span>총 결제 예정 금액:</span>
+          <span id="cart-total-price" class="text-xl text-blue-700 font-black">0원</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="clearAllCart()" class="py-2.5 px-3 rounded text-xs font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+            장바구니 비우기
+          </button>
+          <a href="/checkout.html" class="btn-safety-yellow py-2.5 px-4 rounded text-xs font-bold text-center shadow-sm flex items-center justify-center gap-1">
+            <span>주문서 작성 &rarr;</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="global-footer"></div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    let currentTarget = 'all'; // 'all' | 'life' | 'industry'
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initLayout('shop');
+      updateTabStyle();
+      await loadProducts();
+      updateCartSummary();
+    });
+
+    function setTargetFilter(target) {
+      currentTarget = target;
+      updateTabStyle();
+      loadProducts();
+    }
+
+    function updateTabStyle() {
+      const tabs = ['all', 'life', 'industry'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === currentTarget) {
+          btn.className = 'flex-1 py-3.5 px-5 text-sm font-bold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 text-center flex items-center justify-center gap-1.5 whitespace-nowrap';
+        } else {
+          btn.className = 'flex-1 py-3.5 px-5 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 text-center flex items-center justify-center gap-1.5 whitespace-nowrap';
+        }
+      });
+
+      // 카테고리 옵션 채우기
+      const catSelect = document.getElementById('category-filter');
+      if (currentTarget === 'life') {
+        catSelect.innerHTML = `
+          <option value="">전체 생활안전 카테고리</option>
+          <option value="가정소방">가정소방 (소화기)</option>
+          <option value="화재대피">화재대피 (방연마스크)</option>
+          <option value="교통안전">교통안전 (차량탈출/망치)</option>
+          <option value="응급처치">응급처치 (구급함)</option>
+          <option value="실내안전">실내안전 (미끄럼방지)</option>
+          <option value="보행안전">보행안전 (반사키링)</option>
+        `;
+      } else if (currentTarget === 'industry') {
+        catSelect.innerHTML = `
+          <option value="">전체 현장안전 카테고리</option>
+          <option value="개인보호구">개인보호구 (안전모/화)</option>
+          <option value="추락방지">추락방지 (안전대/죔줄)</option>
+          <option value="호흡보호">호흡보호 (방진마스크)</option>
+          <option value="가스측정">가스측정 (복합가스기)</option>
+        `;
+      } else {
+        catSelect.innerHTML = `
+          <option value="">전체 카테고리</option>
+          <option value="가정소방">가정소방</option>
+          <option value="화재대피">화재대피</option>
+          <option value="교통안전">교통안전</option>
+          <option value="응급처치">응급처치</option>
+          <option value="실내안전">실내안전</option>
+          <option value="보행안전">보행안전</option>
+          <option value="개인보호구">개인보호구</option>
+          <option value="추락방지">추락방지</option>
+          <option value="호흡보호">호흡보호</option>
+          <option value="가스측정">가스측정</option>
+        `;
+      }
+    }
+
+    async function loadProducts() {
+      const container = document.getElementById('products-grid');
+      const category = document.getElementById('category-filter').value;
+      const search = document.getElementById('search-input').value.trim();
+
+      container.innerHTML = `<div class="col-span-full py-16 text-center text-xs text-slate-400">안전용품 목록을 불러오는 중...</div>`;
+
+      try {
+        let url = `/api/products?targetType=${currentTarget}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const list = data.products || [];
+
+        if (list.length === 0) {
+          container.innerHTML = `<div class="col-span-full py-16 text-center text-xs text-slate-400">조건에 맞는 안전용품이 없습니다.</div>`;
+          return;
+        }
+
+        container.innerHTML = list.map(p => {
+          const isLife = p.targetType === 'life';
+          const targetBadge = isLife
+            ? `<span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">생활안전용품</span>`
+            : `<span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">현장전문용품</span>`;
+
+          return `
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <!-- 상품 상단 아이콘 및 배지 -->
+              <div class="p-5 bg-gradient-to-br from-slate-50 to-blue-50/40 border-b border-slate-100 flex items-center justify-between">
+                <div class="text-4xl group-hover:scale-110 transition-transform">
+                  ${p.icon || '🛡️'}
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  ${targetBadge}
+                  <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded">${escapeHtml(p.badge || p.category)}</span>
+                </div>
+              </div>
+
+              <!-- 상품 상세 본문 -->
+              <div class="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <span class="text-[11px] font-semibold text-blue-600 block mb-1">${escapeHtml(p.category)}</span>
+                  <h3 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2 mb-2 group-hover:text-blue-700 transition">
+                    ${escapeHtml(p.name)}
+                  </h3>
+                  <p class="text-xs text-slate-500 leading-relaxed line-clamp-2 mb-3">
+                    ${escapeHtml(p.description || '')}
+                  </p>
+                  <div class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 flex items-center gap-1.5">
+                    <span class="text-emerald-600 font-bold">✔</span>
+                    <span class="truncate">${escapeHtml(p.certification || '공식 안전인증')}</span>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-slate-500">재고: <b class="text-slate-700">${p.stock}개</b></span>
+                    <span class="text-lg font-black text-slate-900">xxx,xxx</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button onclick='handleAddToCart(${JSON.stringify(p)})' class="py-2 px-2.5 rounded text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 transition flex items-center justify-center gap-1">
+                      <span>🛒</span> 담기
+                    </button>
+                    <button onclick='handleDirectBuy(${JSON.stringify(p)})' class="btn-safety-yellow py-2 px-2.5 rounded text-xs font-bold text-slate-950 shadow-sm flex items-center justify-center">
+                      바로 구매
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        container.innerHTML = `<div class="col-span-full py-12 text-center text-xs text-red-500">상품 목록을 불러오지 못했습니다.</div>`;
+      }
+    }
+
+    function handleAddToCart(product) {
+      addToCart(product, 1);
+      updateCartSummary();
+    }
+
+    function handleDirectBuy(product) {
+      addToCart(product, 1);
+      updateCartSummary();
+      location.href = '/checkout.html';
+    }
+
+    function openCartModal() {
+      document.getElementById('cart-modal').classList.remove('hidden');
+      renderCartItems();
+    }
+
+    function closeCartModal() {
+      document.getElementById('cart-modal').classList.add('hidden');
+    }
+
+    function renderCartItems() {
+      const container = document.getElementById('cart-items-container');
+      const cart = getCart();
+
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div class="py-16 text-center text-xs text-slate-400">
+            <span class="text-3xl block mb-2">🛒</span>
+            장바구니가 비어 있습니다.
+          </div>
+        `;
+        document.getElementById('cart-total-price').textContent = 'xxx,xxx';
+        return;
+      }
+
+      let totalPrice = 0;
+      container.innerHTML = cart.map(item => {
+        const itemTotal = item.price * item.quantity;
+        totalPrice += itemTotal;
+        return `
+          <div class="pt-3 pb-2 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5 truncate">
+              <span class="text-2xl">${item.icon || '🛡️'}</span>
+              <div class="truncate">
+                <span class="font-bold text-slate-900 block truncate">${escapeHtml(item.name)}</span>
+                <span class="text-slate-500 text-[11px]">xxx,xxx × ${item.quantity}개</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-black text-blue-700 whitespace-nowrap">xxx,xxx</span>
+              <button onclick="removeCartItem(${item.id})" class="text-red-500 hover:text-red-700 p-1">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('cart-total-price').textContent = 'xxx,xxx';
+    }
+
+    function removeCartItem(id) {
+      let cart = getCart();
+      cart = cart.filter(item => item.id !== id);
+      saveCart(cart);
+      renderCartItems();
+      updateCartSummary();
+    }
+
+    function clearAllCart() {
+      if (!confirm('장바구니를 모두 비우시겠습니까?')) return;
+      clearCart();
+      renderCartItems();
+      updateCartSummary();
+    }
+
+    function updateCartSummary() {
+      const cart = getCart();
+      const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const btnQty = document.getElementById('cart-btn-qty');
+      if (btnQty) btnQty.textContent = `${count}개`;
+      updateCartBadge();
+    }
+  </script>
+</body>
+</html>
