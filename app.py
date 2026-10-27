@@ -107,7 +107,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
         <!-- 추천 질문 칩 -->
         <div id="sample-questions" class="pt-2 border-t border-slate-100">
-          <span class="text-[11px] font-semibold text-slate-500 mb-2 block">💡 추천 질문 예시 (클릭 시 자동 입력):</span>
+          <span class="text-[11px] font-semibold text-slate-500 mb-2 block">💡 추천 질문 예시 (클릭 시 즉시 질문 발송):</span>
           <div class="flex flex-wrap gap-1.5" id="chip-container">
             <!-- 자바스크립트로 동적 로드 -->
           </div>
@@ -175,16 +175,15 @@ HTML_PAGE = """<!DOCTYPE html>
           "스타트업 실패의 주된 원인 1위는 뭐야?",
           "제품-시장 적합성(PMF)이란?",
           "현금 흐름 관리와 런웨이가 왜 중요한가요?",
-          "현장 안전관리 3대 핵심 수칙 알려줘"
+          "스타트업 성공을 결정짓는 핵심 요인 5가지"
         ];
         samples.forEach(text => {
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'text-[11px] bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 px-2.5 py-1 rounded-lg transition';
-          btn.textContent = text;
+          btn.className = 'text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95';
+          btn.innerHTML = `💬 <span>${escapeHtml(text)}</span>`;
           btn.onclick = () => {
-            document.getElementById('user-input').value = text;
-            document.getElementById('user-input').focus();
+            sendSampleQuestion(text);
           };
           container.appendChild(btn);
         });
@@ -291,8 +290,20 @@ HTML_PAGE = """<!DOCTYPE html>
       container.scrollTop = container.scrollHeight;
     }
 
+    function sendSampleQuestion(text) {
+      const input = document.getElementById('user-input');
+      input.value = text;
+      const form = document.getElementById('chat-form');
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+      } else {
+        const fakeEvent = { preventDefault: () => {} };
+        handleSend(fakeEvent);
+      }
+    }
+
     async function handleSend(e) {
-      e.preventDefault();
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
       const input = document.getElementById('user-input');
       const query = input.value.trim();
       if (!query) return;
@@ -306,8 +317,8 @@ HTML_PAGE = """<!DOCTYPE html>
       // 임시 로딩 말풍선
       const loadingDiv = document.createElement('div');
       loadingDiv.id = 'temp-loading';
-      loadingDiv.className = 'chat-bubble-bot p-3 rounded-2xl flex items-center gap-2 text-xs text-slate-500';
-      loadingDiv.innerHTML = '<span class="animate-spin text-base">⏳</span> 두 서브 에이전트(검색·요약)가 문서를 분석 중입니다...';
+      loadingDiv.className = 'chat-bubble-bot p-4 rounded-2xl flex items-center gap-3 text-xs text-slate-700 bg-white border border-blue-200 shadow-sm';
+      loadingDiv.innerHTML = '<span class="animate-spin text-lg">⏳</span> <span><strong>Ollama (gemma4:e2b)</strong> 및 검색 에이전트가 바탕화면 문서를 분석하여 답변을 작성하고 있습니다...</span>';
       document.getElementById('chat-messages').appendChild(loadingDiv);
 
       try {
