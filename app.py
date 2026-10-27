@@ -369,6 +369,8 @@ class RAGHTTPRequestHandler(BaseHTTPRequestHandler):
                 self._set_headers(200)
                 self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 self._set_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
 
@@ -378,6 +380,8 @@ class RAGHTTPRequestHandler(BaseHTTPRequestHandler):
                 self._set_headers(200)
                 self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 self._set_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
         else:

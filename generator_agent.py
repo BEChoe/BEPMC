@@ -68,7 +68,9 @@ class GeneratorAgent:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.2
+                    "temperature": 0.2,
+                    "top_p": 0.9,
+                    "num_predict": 350
                 }
             }
             req = urllib.request.Request(
