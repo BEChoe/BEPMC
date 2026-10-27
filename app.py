@@ -370,7 +370,7 @@ def run_server(port=PORT):
     print("⏳ 바탕화면 docs 폴더 문서를 로드하고 인덱스를 생성하는 중...")
     pipeline_instance = RAGPipeline()
     
-    server_address = ("127.0.0.1", port)
+    server_address = ("0.0.0.0", port)
     httpd = HTTPServer(server_address, RAGHTTPRequestHandler)
     url = f"http://localhost:{port}"
     print(f"\n" + "=" * 60)
