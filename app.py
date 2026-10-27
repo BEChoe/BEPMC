@@ -70,8 +70,11 @@ HTML_PAGE = """<!DOCTYPE html>
         <code id="docs-path" class="bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-900 font-mono text-[11px]">로딩 중...</code>
       </div>
       <div class="flex items-center gap-3 text-slate-600">
-        <div id="ollama-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-          🦙 Ollama 확인 중...
+        <div id="ollama-container" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300">
+          <span>🦙 Ollama 모델:</span>
+          <select id="ollama-select" onchange="changeModel(this.value)" class="bg-white border border-emerald-300 text-emerald-900 rounded px-2 py-0.5 text-[11px] font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+            <option value="gemma4:e2b">gemma4:e2b (선택됨)</option>
+          </select>
         </div>
         <div class="h-3 w-px bg-slate-300"></div>
         <div>색인된 문서: <strong id="doc-count" class="text-blue-700 font-bold">0</strong>개</div>
@@ -144,19 +147,25 @@ HTML_PAGE = """<!DOCTYPE html>
         document.getElementById('doc-count').textContent = data.file_count;
         document.getElementById('chunk-count').textContent = data.total_chunks;
         
-        // Ollama 상태 뱃지 갱신
-        const ollamaEl = document.getElementById('ollama-badge');
+        // Ollama 모델 선택기 갱신
+        const selectEl = document.getElementById('ollama-select');
+        const containerEl = document.getElementById('ollama-container');
         if (data.ollama && data.ollama.running) {
-          if (data.ollama.active_model) {
-            ollamaEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300';
-            ollamaEl.innerHTML = `🦙 Ollama: <strong>${data.ollama.active_model}</strong> 사용 중`;
+          containerEl.style.display = 'flex';
+          selectEl.innerHTML = '';
+          if (data.ollama.models && data.ollama.models.length > 0) {
+            data.ollama.models.forEach(m => {
+              const opt = document.createElement('option');
+              opt.value = m;
+              opt.textContent = m + (m === data.ollama.active_model ? ' (선택됨)' : '');
+              if (m === data.ollama.active_model) opt.selected = true;
+              selectEl.appendChild(opt);
+            });
           } else {
-            ollamaEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-300';
-            ollamaEl.innerHTML = `🦙 Ollama: 실행 중 (모델 없음)`;
+            selectEl.innerHTML = '<option value="">모델 없음</option>';
           }
         } else {
-          ollamaEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200';
-          ollamaEl.innerHTML = `🦙 Ollama: 미실행 (로컬 엔진 작동)`;
+          containerEl.innerHTML = '<span class="text-slate-500">🦙 Ollama: 미실행 (로컬 엔진 작동)</span>';
         }
         
         // 추천 질문 칩 갱신
@@ -198,6 +207,22 @@ HTML_PAGE = """<!DOCTYPE html>
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> 문서 다시 읽기';
+      }
+    }
+
+    async function changeModel(modelName) {
+      if (!modelName) return;
+      try {
+        const res = await fetch('/api/model', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: modelName })
+        });
+        const data = await res.json();
+        alert(`✅ 답변 생성 LLM이 [${data.active_model}] 모델로 변경되었습니다!`);
+        await loadStatus();
+      } catch (e) {
+        alert('모델 변경 중 오류가 발생했습니다.');
       }
     }
 
@@ -366,6 +391,19 @@ class RAGHTTPRequestHandler(BaseHTTPRequestHandler):
                 data = json.loads(body.decode("utf-8"))
                 query = data.get("query", "")
                 result = pipeline_instance.ask(query)
+                self._set_headers(200)
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                self._set_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+
+        elif parsed.path == "/api/model":
+            try:
+                data = json.loads(body.decode("utf-8"))
+                model_name = data.get("model", "")
+                result = pipeline_instance.set_model(model_name)
                 self._set_headers(200)
                 self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
             except Exception as e:

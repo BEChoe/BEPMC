@@ -26,6 +26,11 @@ class GeneratorAgent:
         self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.openai_key = os.getenv("OPENAI_API_KEY")
         self.ollama_base_url = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        self.preferred_model = os.getenv("OLLAMA_MODEL", "gemma4:e2b")
+
+    def set_preferred_model(self, model_name: str):
+        """활성 Ollama 모델 수동 변경"""
+        self.preferred_model = model_name
 
     def get_ollama_status(self) -> Dict[str, Any]:
         """로컬 Ollama 연결 상태 및 다운로드된 모델 목록 조회"""
@@ -34,16 +39,29 @@ class GeneratorAgent:
             with urllib.request.urlopen(req, timeout=1.5) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 models = [m.get("name") for m in data.get("models", []) if m.get("name")]
+                
+                # 우선 지정된 모델(gemma4:e2b 등)이 있으면 우선 활성화
+                active = None
+                if self.preferred_model and self.preferred_model in models:
+                    active = self.preferred_model
+                elif any(self.preferred_model in m for m in models):
+                    # 태그 생략 매칭 (gemma4 -> gemma4:e2b)
+                    active = next(m for m in models if self.preferred_model in m)
+                elif models:
+                    active = models[0]
+
                 return {
                     "running": True,
                     "models": models,
-                    "active_model": models[0] if models else None
+                    "active_model": active,
+                    "preferred_model": self.preferred_model
                 }
         except Exception:
             return {
                 "running": False,
                 "models": [],
-                "active_model": None
+                "active_model": None,
+                "preferred_model": self.preferred_model
             }
 
     def _call_ollama_api(self, query: str, results: List[Dict[str, Any]], model_name: str) -> Optional[str]:

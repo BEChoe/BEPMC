@@ -32,6 +32,11 @@ class RAGPipeline:
         # 최초 문서 로드 및 인덱싱 실행
         self.refresh_knowledge_base()
 
+    def set_model(self, model_name: str) -> Dict[str, Any]:
+        """답변 생성 에이전트의 LLM 모델 변경"""
+        self.generator.set_preferred_model(model_name)
+        return self.generator.get_ollama_status()
+
     def refresh_knowledge_base(self) -> Dict[str, Any]:
         """바탕화면 docs 폴더를 다시 스캔하여 인덱스를 최신 상태로 갱신"""
         start_time = time.time()
