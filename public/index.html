@@ -80,135 +80,7 @@
   <!-- 첫페이지 안전 관련 공익 정보 섹션 -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
 
-    <!-- 1. 중대재해 예방 3대 기본 안전수칙 카드 (녹색/노란색/청색 조화) -->
-    <section>
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="inline-block w-3 h-3 rounded bg-blue-700"></span>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              산업현장 필수 공익 수칙 : 3대 핵심 안전조치
-            </h2>
-          </div>
-          <p class="text-xs sm:text-sm text-slate-600 mt-1">BEPMC 컨설팅 기준 및 안전보건공단 지침에 따른 필수 안전조치입니다.</p>
-        </div>
-        <span class="hidden sm:inline-block text-xs font-bold bg-blue-50 text-blue-800 px-3 py-1 rounded-full border border-blue-200">
-          BEPMC Safety Standard
-        </span>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- 1) 추락 방지 -->
-        <div class="card-safety-green p-6 border border-slate-200">
-          <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-lg mb-4">
-            01
-          </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
-            추락사고 예방 조치
-            <span class="badge-green text-[10px] px-2 py-0.5 rounded">필수</span>
-          </h3>
-          <p class="text-xs text-slate-600 leading-relaxed mb-4">
-            고소 작업 시 안전난간 및 작업발판 설치, 개구부 덮개 고정, 안전대 착용 및 안전고리 상시 체결 철저.
-          </p>
-          <ul class="text-xs text-slate-700 space-y-1.5 bg-emerald-50/70 p-3 rounded-md border border-emerald-100">
-            <li class="flex items-center gap-1.5">
-              <span class="text-emerald-600 font-bold">✔</span> 안전난간 지주 및 난간대 규격 점검
-            </li>
-            <li class="flex items-center gap-1.5">
-              <span class="text-emerald-600 font-bold">✔</span> 2m 이상 고소작업 안전고리 2점 걸기
-            </li>
-          </ul>
-        </div>
-
-        <!-- 2) 끼임 방지 -->
-        <div class="card-safety-yellow p-6 border border-slate-200">
-          <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-black text-lg mb-4">
-            02
-          </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
-            끼임사고 예방 조치
-            <span class="badge-yellow text-[10px] px-2 py-0.5 rounded">주의</span>
-          </h3>
-          <p class="text-xs text-slate-600 leading-relaxed mb-4">
-            컨베이어·롤러 등 회전체 방호덮개 설치, 기계 정비·청소 시 가동 중지 및 LOTO(잠금장치 및 표지부착) 원칙.
-          </p>
-          <ul class="text-xs text-slate-700 space-y-1.5 bg-amber-50/70 p-3 rounded-md border border-amber-100">
-            <li class="flex items-center gap-1.5">
-              <span class="text-amber-600 font-bold">✔</span> 방호장치(비상정지스위치) 정상작동 확인
-            </li>
-            <li class="flex items-center gap-1.5">
-              <span class="text-amber-600 font-bold">✔</span> 작업 중 '점검 중 조작금지' 표지판 부착
-            </li>
-          </ul>
-        </div>
-
-        <!-- 3) 보호구 착용 (믿음직한 블루 카드) -->
-        <div class="card-bepmc-blue p-6 border border-slate-200">
-          <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-black text-lg mb-4">
-            03
-          </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
-            개인보호구 100% 착용
-            <span class="badge-blue text-[10px] px-2 py-0.5 rounded">의무</span>
-          </h3>
-          <p class="text-xs text-slate-600 leading-relaxed mb-4">
-            작업장 진입 시 안전모 턱끈 조임, 안전화, 보안경 착용 의무화. 미착용 시 즉시 퇴장 조치 원칙 적용.
-          </p>
-          <ul class="text-xs text-slate-700 space-y-1.5 bg-blue-50/70 p-3 rounded-md border border-blue-100">
-            <li class="flex items-center gap-1.5">
-              <span class="text-blue-700 font-bold">✔</span> 안전모 충격흡수재 및 턱끈 체결
-            </li>
-            <li class="flex items-center gap-1.5">
-              <span class="text-blue-700 font-bold">✔</span> 안전화 밑창 마모 및 토캡 보호 성능 점검
-            </li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- 2. 생활 및 비상안전 가이드 (4단계 대피요령) -->
-    <section class="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-      <div class="flex items-center gap-2 mb-4">
-        <span class="inline-block w-3 h-3 rounded bg-blue-600"></span>
-        <h2 class="text-xl font-bold text-slate-900">비상 상황 발생 시 골든타임 4단계 행동요령</h2>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-emerald-600">
-          <span class="text-xs font-bold text-emerald-700 uppercase">STEP 1</span>
-          <h4 class="font-bold text-slate-900 text-sm mt-1">상황 전파 및 경보</h4>
-          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-            큰 소리로 "불이야" 또는 비상벨 작동으로 전 구역에 상황을 즉각 알립니다.
-          </p>
-        </div>
-
-        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-amber-500">
-          <span class="text-xs font-bold text-amber-700 uppercase">STEP 2</span>
-          <h4 class="font-bold text-slate-900 text-sm mt-1">신속 대피 (낮은 자세)</h4>
-          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-            젖은 수건 등으로 코와 입을 막고, 유도등을 따라 비상계단으로 낮은 자세 대피.
-          </p>
-        </div>
-
-        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-blue-700">
-          <span class="text-xs font-bold text-blue-700 uppercase">STEP 3</span>
-          <h4 class="font-bold text-slate-900 text-sm mt-1">긴급 비상 신고</h4>
-          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-            안전한 장소로 피신 후 긴급전화(xxx-xxxx-xxxx)에 건물명, 층수, 갇힌 사람 유무를 명확히 신고.
-          </p>
-        </div>
-
-        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-emerald-600">
-          <span class="text-xs font-bold text-emerald-700 uppercase">STEP 4</span>
-          <h4 class="font-bold text-slate-900 text-sm mt-1">인원 점검 및 응급조치</h4>
-          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-            지정 대피소에 집결하여 동료 인원을 점검하고, 부상자 발견 시 응급처치 실시.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- [신규 섹션] 고용노동부 10개년 산재 빅데이터 기반: 늦가을 환절기 다발사고 TOP 3 특별 안전경보 (검은색/노란색 안전 마킹 테두리) -->
+    <!-- [본문 최상단 배치] 고용노동부 10개년 산재 빅데이터 기반: 늦가을 환절기 다발사고 TOP 3 특별 안전경보 (검은색/노란색 안전 마킹 테두리) -->
     <section class="rounded-2xl shadow-lg bg-white overflow-hidden border-4 border-amber-400 relative">
       <!-- 상단 검은색/노란색 사선 안전 마킹 (Safety Hazard Stripe) 리본 -->
       <div class="h-3.5 w-full" style="background: repeating-linear-gradient(45deg, #facc15 0, #facc15 14px, #0f172a 14px, #0f172a 28px);"></div>
@@ -371,6 +243,134 @@
 
       <!-- 하단 검은색/노란색 사선 안전 마킹 (Safety Hazard Stripe) 리본 -->
       <div class="h-3.5 w-full" style="background: repeating-linear-gradient(45deg, #facc15 0, #facc15 14px, #0f172a 14px, #0f172a 28px);"></div>
+    </section>
+
+    <!-- 1. 중대재해 예방 3대 기본 안전수칙 카드 (녹색/노란색/청색 조화) -->
+    <section>
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-3 h-3 rounded bg-blue-700"></span>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              산업현장 필수 공익 수칙 : 3대 핵심 안전조치
+            </h2>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-600 mt-1">BEPMC 컨설팅 기준 및 안전보건공단 지침에 따른 필수 안전조치입니다.</p>
+        </div>
+        <span class="hidden sm:inline-block text-xs font-bold bg-blue-50 text-blue-800 px-3 py-1 rounded-full border border-blue-200">
+          BEPMC Safety Standard
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- 1) 추락 방지 -->
+        <div class="card-safety-green p-6 border border-slate-200">
+          <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-lg mb-4">
+            01
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            추락사고 예방 조치
+            <span class="badge-green text-[10px] px-2 py-0.5 rounded">필수</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-4">
+            고소 작업 시 안전난간 및 작업발판 설치, 개구부 덮개 고정, 안전대 착용 및 안전고리 상시 체결 철저.
+          </p>
+          <ul class="text-xs text-slate-700 space-y-1.5 bg-emerald-50/70 p-3 rounded-md border border-emerald-100">
+            <li class="flex items-center gap-1.5">
+              <span class="text-emerald-600 font-bold">✔</span> 안전난간 지주 및 난간대 규격 점검
+            </li>
+            <li class="flex items-center gap-1.5">
+              <span class="text-emerald-600 font-bold">✔</span> 2m 이상 고소작업 안전고리 2점 걸기
+            </li>
+          </ul>
+        </div>
+
+        <!-- 2) 끼임 방지 -->
+        <div class="card-safety-yellow p-6 border border-slate-200">
+          <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-black text-lg mb-4">
+            02
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            끼임사고 예방 조치
+            <span class="badge-yellow text-[10px] px-2 py-0.5 rounded">주의</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-4">
+            컨베이어·롤러 등 회전체 방호덮개 설치, 기계 정비·청소 시 가동 중지 및 LOTO(잠금장치 및 표지부착) 원칙.
+          </p>
+          <ul class="text-xs text-slate-700 space-y-1.5 bg-amber-50/70 p-3 rounded-md border border-amber-100">
+            <li class="flex items-center gap-1.5">
+              <span class="text-amber-600 font-bold">✔</span> 방호장치(비상정지스위치) 정상작동 확인
+            </li>
+            <li class="flex items-center gap-1.5">
+              <span class="text-amber-600 font-bold">✔</span> 작업 중 '점검 중 조작금지' 표지판 부착
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3) 보호구 착용 (믿음직한 블루 카드) -->
+        <div class="card-bepmc-blue p-6 border border-slate-200">
+          <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-black text-lg mb-4">
+            03
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+            개인보호구 100% 착용
+            <span class="badge-blue text-[10px] px-2 py-0.5 rounded">의무</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-4">
+            작업장 진입 시 안전모 턱끈 조임, 안전화, 보안경 착용 의무화. 미착용 시 즉시 퇴장 조치 원칙 적용.
+          </p>
+          <ul class="text-xs text-slate-700 space-y-1.5 bg-blue-50/70 p-3 rounded-md border border-blue-100">
+            <li class="flex items-center gap-1.5">
+              <span class="text-blue-700 font-bold">✔</span> 안전모 충격흡수재 및 턱끈 체결
+            </li>
+            <li class="flex items-center gap-1.5">
+              <span class="text-blue-700 font-bold">✔</span> 안전화 밑창 마모 및 토캡 보호 성능 점검
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 생활 및 비상안전 가이드 (4단계 대피요령) -->
+    <section class="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="inline-block w-3 h-3 rounded bg-blue-600"></span>
+        <h2 class="text-xl font-bold text-slate-900">비상 상황 발생 시 골든타임 4단계 행동요령</h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-emerald-600">
+          <span class="text-xs font-bold text-emerald-700 uppercase">STEP 1</span>
+          <h4 class="font-bold text-slate-900 text-sm mt-1">상황 전파 및 경보</h4>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            큰 소리로 "불이야" 또는 비상벨 작동으로 전 구역에 상황을 즉각 알립니다.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-amber-500">
+          <span class="text-xs font-bold text-amber-700 uppercase">STEP 2</span>
+          <h4 class="font-bold text-slate-900 text-sm mt-1">신속 대피 (낮은 자세)</h4>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            젖은 수건 등으로 코와 입을 막고, 유도등을 따라 비상계단으로 낮은 자세 대피.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-blue-700">
+          <span class="text-xs font-bold text-blue-700 uppercase">STEP 3</span>
+          <h4 class="font-bold text-slate-900 text-sm mt-1">긴급 비상 신고</h4>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            안전한 장소로 피신 후 긴급전화(xxx-xxxx-xxxx)에 건물명, 층수, 갇힌 사람 유무를 명확히 신고.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-lg bg-slate-50 border-l-4 border-emerald-600">
+          <span class="text-xs font-bold text-emerald-700 uppercase">STEP 4</span>
+          <h4 class="font-bold text-slate-900 text-sm mt-1">인원 점검 및 응급조치</h4>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            지정 대피소에 집결하여 동료 인원을 점검하고, 부상자 발견 시 응급처치 실시.
+          </p>
+        </div>
+      </div>
     </section>
 
     <!-- [신규 섹션] 실시간 정부 공공 안전데이터 현황판 (고용노동부 · 산업안전보건공단 · 소방청) -->
