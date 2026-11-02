@@ -5,6 +5,7 @@
  */
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const { enrichWithPEEngineeringKnowledge } = require('./safetyKnowledgeBaseService');
 
 // API 키 가져오기 (GEMINI_API_KEY 또는 GOOGLE_API_KEY)
 function getApiKey() {
@@ -121,11 +122,12 @@ async function analyzeHazardPhoto({ imageBase64, mimeType = 'image/jpeg', siteNa
         const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (jsonText) {
           const parsed = JSON.parse(jsonText);
+          const enriched = enrichWithPEEngineeringKnowledge(parsed);
           return {
             success: true,
-            source: "Gemini 2.5 Flash Multimodal Vision API",
+            source: "Gemini 2.5 Flash Multimodal Vision API + BEPMC PE Engineering Engine",
             analyzedAt: new Date().toISOString(),
-            data: parsed
+            data: enriched
           };
         }
       } else {
@@ -217,12 +219,14 @@ function getIntelligentFallbackAnalysis({ siteName, memo = '' }) {
     selected = fallbackPresets[2];
   }
 
+  const enriched = enrichWithPEEngineeringKnowledge(selected);
+
   return {
     success: true,
-    source: "BEPMC KOSHA-Compliant Intelligent Safety Engine (Simulation)",
+    source: "BEPMC KOSHA-Compliant Intelligent Safety Engine (PE Augmented Simulation)",
     analyzedAt: new Date().toISOString(),
     siteName,
-    data: selected
+    data: enriched
   };
 }
 

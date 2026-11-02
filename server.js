@@ -7,6 +7,7 @@ const { isSupabaseConfigured } = require('./data/supabaseClient');
 const publicApiService = require('./services/publicApiService');
 const aiSafetyService = require('./services/aiSafetyInspectionService');
 const technicalGuidanceService = require('./services/technicalGuidanceReportService');
+const safetyKnowledgeBase = require('./services/safetyKnowledgeBaseService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -923,6 +924,126 @@ app.get('/api/technical-guidance/reports/:id/k2b', (req, res) => {
     console.error('K2B export error:', err);
     res.status(500).json({ success: false, message: err.message || 'K2B 데이터 추출 실패' });
   }
+});
+
+// Phase 1: 건설안전기술사(PE) RAG 지식베이스 검색
+app.get('/api/technical-guidance/knowledge-base/search', (req, res) => {
+  try {
+    const { q, category } = req.query;
+    const results = safetyKnowledgeBase.searchSafetyKnowledge(q, category);
+    res.json({ success: true, count: results.length, data: results });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '지식베이스 검색 오류' });
+  }
+});
+
+// Phase 1: 독자 AI 학습용 골든 데이터셋(Golden Dataset) 저장
+app.post('/api/technical-guidance/golden-dataset', (req, res) => {
+  try {
+    const { imageMeta, hazardData, siteName, inspectorName } = req.body;
+    if (!hazardData) {
+      return res.status(400).json({ success: false, message: '저장할 위험 분석 데이터가 없습니다.' });
+    }
+    const result = safetyKnowledgeBase.appendGoldenDataset({
+      imageMeta,
+      hazardData,
+      siteName,
+      inspectorName
+    });
+    res.json({ success: true, message: '골든 데이터셋에 정형화 학습 데이터가 영구 아카이빙되었습니다.', stats: safetyKnowledgeBase.getGoldenDatasetStats() });
+  } catch (err) {
+    console.error('Save golden dataset error:', err);
+    res.status(500).json({ success: false, message: '골든 데이터셋 저장 실패' });
+  }
+});
+
+// Phase 1: 독자 학습용 골든 데이터셋 누적 통계
+app.get('/api/technical-guidance/golden-dataset/stats', (req, res) => {
+  try {
+    const stats = safetyKnowledgeBase.getGoldenDatasetStats();
+    res.json({ success: true, stats });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '골든 데이터셋 통계 조회 실패' });
+  }
+});
+
+// Phase 1: 실시간 에지 CCTV 지능형 감시 이벤트 피드 (NVIDIA Jetson / Edge AI 시뮬레이션)
+app.get('/api/technical-guidance/edge-cctv/events', (req, res) => {
+  const { channel = 'CAM-01' } = req.query;
+  const now = new Date();
+  
+  const cameraStreams = {
+    'CAM-01': {
+      cameraName: 'CAM-01: 3층 슬래브 단부 및 개구부',
+      siteName: '판교 복합비즈니스센터 신축공사',
+      fps: 29.8,
+      latencyMs: 38,
+      modelEngine: 'YOLOv11-Pose + DeepStream 7.0 (INT8 TensorRT)',
+      currentEvents: [
+        {
+          id: 'EVT-' + Date.now() + '-1',
+          time: now.toLocaleTimeString('ko-KR'),
+          type: '단부 접근 위험',
+          severity: 'DANGER',
+          workerId: '작업자 #104',
+          description: '슬래브 단부 1.2m 이내 접근 감지 및 안전대 걸이 미체결 (Pose 추정)',
+          bbox: { x: 38, y: 42, w: 18, h: 46 },
+          actionTaken: '현장 스피커 실시간 경보 방송 "위험구역에서 물러나십시오" 송출 완료'
+        },
+        {
+          id: 'EVT-' + Date.now() + '-2',
+          time: now.toLocaleTimeString('ko-KR'),
+          type: '보호구 감지',
+          severity: 'NORMAL',
+          workerId: '작업자 #102',
+          description: '안전모 및 안전화 정상 착용 확인 (신뢰도 98.4%)',
+          bbox: { x: 70, y: 55, w: 14, h: 38 },
+          actionTaken: '통과 승인'
+        }
+      ]
+    },
+    'CAM-02': {
+      cameraName: 'CAM-02: 1층 양중 및 굴착 장비 구역',
+      siteName: '판교 복합비즈니스센터 신축공사',
+      fps: 30.0,
+      latencyMs: 32,
+      modelEngine: 'YOLOv11x + ByteTrack (Geofence Engine)',
+      currentEvents: [
+        {
+          id: 'EVT-' + Date.now() + '-3',
+          time: now.toLocaleTimeString('ko-KR'),
+          type: '가상 펜스 침범',
+          severity: 'WARNING',
+          workerId: '작업자 #087',
+          description: '굴착기(06W) 선회 반경 5m 가상 세이프티 존(Virtual Geofence) 침범',
+          bbox: { x: 45, y: 35, w: 22, h: 50 },
+          actionTaken: '장비 운전석 내부 비상 부저 작동 및 유도원 무전 통보'
+        }
+      ]
+    },
+    'CAM-03': {
+      cameraName: 'CAM-03: 외부 시스템 비계 및 승강로',
+      siteName: '판교 복합비즈니스센터 신축공사',
+      fps: 29.5,
+      latencyMs: 41,
+      modelEngine: 'RT-DETR + PPE Classifier',
+      currentEvents: [
+        {
+          id: 'EVT-' + Date.now() + '-4',
+          time: now.toLocaleTimeString('ko-KR'),
+          type: '안전모 턱끈 풀림',
+          severity: 'CAUTION',
+          workerId: '작업자 #063',
+          description: '비계 승강로 이용 중 안전모 턱끈 미체결 상태 감지',
+          bbox: { x: 52, y: 28, w: 12, h: 32 },
+          actionTaken: '안전게이트 통과 경광등 점멸'
+        }
+      ]
+    }
+  };
+
+  const streamData = cameraStreams[channel] || cameraStreams['CAM-01'];
+  res.json({ success: true, timestamp: now.toISOString(), stream: streamData });
 });
 
 app.listen(PORT, () => {

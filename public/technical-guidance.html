@@ -112,6 +112,103 @@
         </div>
       </div>
 
+      <!-- [Phase 1] 실시간 현장 에지(Edge) 지능형 CCTV 감시 관제 센터 (NVIDIA Jetson / DeepStream) -->
+      <div class="bg-slate-900 text-white rounded-2xl border border-slate-700 shadow-xl overflow-hidden p-6 space-y-5">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider animate-pulse">
+                LIVE 30 FPS
+              </span>
+              <span class="text-xs font-bold text-amber-400">
+                Phase 1 : 현장 에지(Edge) 지능형 영상 AI 관제
+              </span>
+            </div>
+            <h2 class="text-lg font-black text-white mt-1 flex items-center gap-2">
+              <span>📹 현장 실시간 CCTV 동작·상태 감시 시스템</span>
+              <span class="text-xs font-normal text-slate-400">(NVIDIA DeepStream 7.0 / INT8 TensorRT Engine)</span>
+            </h2>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- 카메라 채널 셀렉터 -->
+            <button id="btn-cam-1" onclick="switchEdgeCctvChannel('CAM-01')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-blue-600 text-white border border-blue-400 transition">
+              CAM-01: 슬래브 단부 (추락)
+            </button>
+            <button id="btn-cam-2" onclick="switchEdgeCctvChannel('CAM-02')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">
+              CAM-02: 중장비 반경 (협착)
+            </button>
+            <button id="btn-cam-3" onclick="switchEdgeCctvChannel('CAM-03')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">
+              CAM-03: 시스템 비계 (보호구)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- 좌측: 비디오 뷰 & 캔버스 바운딩박스 오버레이 -->
+          <div class="lg:col-span-8 bg-black rounded-xl overflow-hidden border border-slate-800 relative flex flex-col justify-between" style="min-height: 380px;">
+            <!-- 스트림 캔버스 -->
+            <canvas id="cctv-stream-canvas" width="640" height="360" class="w-full h-auto object-cover bg-slate-950"></canvas>
+            
+            <!-- 상단 OSD 오버레이 정보 -->
+            <div class="absolute top-3 left-3 right-3 flex items-center justify-between text-xs pointer-events-none">
+              <div class="flex items-center gap-2 bg-black/70 backdrop-blur px-2.5 py-1 rounded border border-slate-700 font-mono text-[11px] text-emerald-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="osd-cam-title">CAM-01 : 3층 슬래브 단부 및 개구부</span>
+              </div>
+              <div class="flex items-center gap-2 font-mono text-[11px]">
+                <span class="bg-black/70 backdrop-blur px-2 py-1 rounded border border-slate-700 text-amber-300 font-bold" id="osd-fps">FPS: 29.8</span>
+                <span class="bg-black/70 backdrop-blur px-2 py-1 rounded border border-slate-700 text-blue-300 font-bold" id="osd-latency">Latency: 38ms</span>
+              </div>
+            </div>
+
+            <!-- 하단 상태 바 -->
+            <div class="bg-slate-950/90 border-t border-slate-800 p-3 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+              <div class="flex items-center gap-2 text-slate-400 text-[11px]">
+                <span class="text-blue-400 font-bold">에지 엔진:</span>
+                <span id="osd-engine-name">YOLOv11-Pose + DeepStream 7.0</span>
+              </div>
+              <div id="osd-alarm-badge" class="flex items-center gap-1.5 bg-rose-900/80 text-rose-200 border border-rose-600 px-2.5 py-0.5 rounded text-[11px] font-bold">
+                <span>🚨</span>
+                <span id="osd-alarm-text">단부 1.2m 이내 접근 감지 (즉시 경보 송출)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 우측: 실시간 에지 AI 이벤트 로그 & 골든 데이터셋 통계 -->
+          <div class="lg:col-span-4 flex flex-col justify-between space-y-4">
+            <!-- 실시간 이벤트 로그 리스트 -->
+            <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 flex-1 flex flex-col">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-800 mb-2">
+                <span class="text-xs font-black text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                  실시간 0.1초 이벤트 스트림
+                </span>
+                <span class="text-[10px] text-slate-500">자동 갱신 중</span>
+              </div>
+              <div id="cctv-event-log-container" class="space-y-2 overflow-y-auto max-h-[220px] text-xs pr-1">
+                <!-- 동적 로그 아이템 -->
+              </div>
+            </div>
+
+            <!-- 골든 데이터셋 누적 현황 카드 -->
+            <div class="bg-blue-950/40 rounded-xl p-4 border border-blue-800/60 space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold text-blue-200">
+                <span class="flex items-center gap-1">
+                  <span>🧠</span> 독자 VLM/LLM 골든 데이터셋
+                </span>
+                <span id="golden-dataset-count-badge" class="text-amber-400 font-black">1 / 5,000건</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="golden-dataset-progress" class="bg-gradient-to-r from-blue-500 to-amber-400 h-2 rounded-full" style="width: 2%;"></div>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-tight">
+                현장 지도요원 승인 데이터가 독자 AI 파인튜닝용 정형화 학습셋(JSONL)으로 자동 축적됩니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 현장별 월 2회 기술지도 이행 현황 테이블 -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -333,14 +430,41 @@
                     타설 즉시 개구부 덮개 일체형 매립 설치 공법 적용 및 일일 TBM 체크리스트 필수 지정
                   </p>
                 </div>
+              <!-- [Phase 1] 건설안전기술사(PE) 공학적 정밀 진단 & KOSHA GUIDE 매칭 박스 -->
+              <div id="pe-analysis-box" class="bg-gradient-to-r from-blue-950 via-slate-900 to-blue-950 text-white p-4 rounded-xl border border-blue-600/80 space-y-2.5 shadow-md">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded uppercase">PE Expert Analysis</span>
+                    <span class="text-xs font-bold text-blue-200">건설안전기술사 공학적 진단 &amp; KOSHA GUIDE</span>
+                  </div>
+                  <span id="result-kosha-ref" class="text-[10px] text-blue-300 font-mono font-bold bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700">KOSHA GUIDE C-08-2022</span>
+                </div>
+                <div class="p-2.5 bg-blue-900/40 rounded-lg border border-blue-700/50 text-[11px] text-slate-200 leading-relaxed space-y-1">
+                  <div class="font-bold text-amber-300 flex items-center gap-1">
+                    <span>📐</span> 공학적 계산 기준 및 역학적 취약도:
+                  </div>
+                  <p id="result-pe-engineering-spec" class="text-slate-300">
+                    집중하중 1.0 kN(100kgf) 이상에 영구변형 없는 구조 강성 확보 및 테두리 앵글 고정턱 시공
+                  </p>
+                </div>
+                <div class="text-[11px] text-slate-300 leading-relaxed">
+                  <span class="font-bold text-emerald-400">💡 기술사 전문의견:</span>
+                  <span id="result-pe-opinion">바닥 개구부는 근로자의 단순 실족뿐만 아니라 집중하중이 작용하므로 안전 대책이 필수적입니다.</span>
+                </div>
+                <div class="text-[11px] text-blue-200 bg-slate-950/60 p-2.5 rounded border border-blue-900/60 flex items-start gap-1.5">
+                  <span class="text-amber-400 font-bold shrink-0">🏗️ 권장 대안공법:</span>
+                  <span id="result-alternative-method" class="text-slate-300">슬래브 타설 전 개구부 철근 배근 관통 매립 공법...</span>
+                </div>
               </div>
 
             </div>
           </div>
 
-          <!-- 하단 버튼: 결과보고서에 추가 -->
-          <div id="ai-result-actions" class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 hidden">
-            <span class="text-xs text-slate-500">분석 결과를 금회 결과보고서에 즉시 반영할 수 있습니다.</span>
+          <!-- 하단 버튼: 결과보고서에 추가 & 골든 데이터셋 아카이빙 -->
+          <div id="ai-result-actions" class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 hidden">
+            <button onclick="archiveCurrentAnalysisToGoldenDataset()" class="px-3.5 py-2.5 rounded-lg text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 transition flex items-center gap-1.5 shadow-sm">
+              <span>🧠</span> <span>독자 AI 학습용 골든 데이터셋(JSONL) 아카이빙</span>
+            </button>
             <button onclick="addCurrentAnalysisToReport()" class="btn-safety-black px-4 py-2.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
               <span>➕ 금회 보고서 지적사항에 추가</span>
             </button>
@@ -503,6 +627,8 @@
       loadSitesStatus();
       loadRecentHazardsFeed();
       initSignatureCanvas();
+      initEdgeCctvSimulator();
+      loadGoldenDatasetStats();
     });
 
     // 탭 전환
@@ -717,6 +843,16 @@
 
       document.getElementById('result-immediate-action').textContent = data.immediate_action;
       document.getElementById('result-fundamental-action').textContent = data.fundamental_countermeasure;
+
+      // Phase 1: 건설안전기술사(PE) 공학적 진단 채우기
+      if (data.pe_analysis) {
+        document.getElementById('result-kosha-ref').textContent = data.pe_analysis.kosha_guide_ref || 'KOSHA GUIDE 준용';
+        const std = data.pe_analysis.engineering_standards || {};
+        const specSummary = Object.values(std).join(' | ');
+        document.getElementById('result-pe-engineering-spec').textContent = specSummary || '공학적 허용기준 및 계산식 적용';
+        document.getElementById('result-pe-opinion').textContent = data.pe_analysis.pe_professional_opinion || '현장 안전관리 기술사 진단 의견';
+        document.getElementById('result-alternative-method').textContent = data.pe_analysis.alternative_construction_method || '대안 안전공법 적용 권장';
+      }
     }
 
     // 분석 결과를 결과보고서 지적사항에 추가
@@ -881,6 +1017,202 @@
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ========================================================
+    // Phase 1: 독자 AI 학습용 골든 데이터셋 및 에지 CCTV 관제 스크립트
+    // ========================================================
+    async function archiveCurrentAnalysisToGoldenDataset() {
+      if (!currentAnalysisResult) return;
+      const siteSelect = document.getElementById('input-site-select');
+      const siteName = siteSelect.options[siteSelect.selectedIndex].text;
+
+      try {
+        const res = await fetch('/api/technical-guidance/golden-dataset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hazardData: currentAnalysisResult,
+            siteName: siteName,
+            inspectorName: '하진우 지도원 (건설안전기술사)'
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert(`🧠 독자 AI 학습용 골든 데이터셋에 저장되었습니다!\n\n• 저장 위치: data/golden_dataset.jsonl\n• 현재 누적 데이터: ${result.stats.count}건 / 5,000건 (${result.stats.progressRate})\n• 향후 VLM/LLM 파인튜닝 시 공학적 골든 라벨셋으로 즉시 활용됩니다.`);
+          loadGoldenDatasetStats();
+        }
+      } catch (err) {
+        alert('골든 데이터셋 저장 중 오류가 발생했습니다.');
+      }
+    }
+
+    async function loadGoldenDatasetStats() {
+      try {
+        const res = await fetch('/api/technical-guidance/golden-dataset/stats');
+        const json = await res.json();
+        if (json.success && json.stats) {
+          const badge = document.getElementById('golden-dataset-count-badge');
+          if (badge) {
+            badge.textContent = `${json.stats.count} / 5,000건 (${json.stats.progressRate})`;
+          }
+          const prog = document.getElementById('golden-dataset-progress');
+          if (prog) {
+            const pct = Math.min(100, Math.max(2, (json.stats.count / 5000) * 100));
+            prog.style.width = `${pct}%`;
+          }
+        }
+      } catch (e) {}
+    }
+
+    let currentEdgeCamChannel = 'CAM-01';
+    let cctvAnimFrame = null;
+
+    function switchEdgeCctvChannel(ch) {
+      currentEdgeCamChannel = ch;
+      ['CAM-01', 'CAM-02', 'CAM-03'].forEach((c, idx) => {
+        const btn = document.getElementById(`btn-cam-${idx + 1}`);
+        if (!btn) return;
+        if (c === ch) {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-blue-600 text-white border border-blue-400 transition";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition";
+        }
+      });
+      fetchEdgeCctvEvents();
+    }
+
+    async function fetchEdgeCctvEvents() {
+      try {
+        const res = await fetch(`/api/technical-guidance/edge-cctv/events?channel=${currentEdgeCamChannel}`);
+        const data = await res.json();
+        if (data.success && data.stream) {
+          updateCctvOsd(data.stream);
+        }
+      } catch (e) {}
+    }
+
+    function updateCctvOsd(stream) {
+      const osdTitle = document.getElementById('osd-cam-title');
+      if (osdTitle) osdTitle.textContent = stream.cameraName;
+      const osdFps = document.getElementById('osd-fps');
+      if (osdFps) osdFps.textContent = `FPS: ${stream.fps}`;
+      const osdLatency = document.getElementById('osd-latency');
+      if (osdLatency) osdLatency.textContent = `Latency: ${stream.latencyMs}ms`;
+      const osdEngine = document.getElementById('osd-engine-name');
+      if (osdEngine) osdEngine.textContent = stream.modelEngine;
+
+      const dangerEvent = (stream.currentEvents || []).find(e => e.severity === 'DANGER' || e.severity === 'WARNING');
+      const osdAlarmText = document.getElementById('osd-alarm-text');
+      if (osdAlarmText) {
+        if (dangerEvent) {
+          osdAlarmText.textContent = dangerEvent.description;
+        } else {
+          osdAlarmText.textContent = "정상 관제 중 (위험 요인 없음)";
+        }
+      }
+
+      const logContainer = document.getElementById('cctv-event-log-container');
+      if (logContainer && stream.currentEvents) {
+        logContainer.innerHTML = stream.currentEvents.map(evt => `
+          <div class="p-2.5 rounded-lg border ${evt.severity === 'DANGER' ? 'bg-rose-950/60 border-rose-600 text-rose-200' : (evt.severity === 'WARNING' ? 'bg-amber-950/60 border-amber-600 text-amber-200' : 'bg-slate-900 border-slate-700 text-slate-300')} text-[11px] space-y-1">
+            <div class="flex items-center justify-between font-mono">
+              <span class="font-bold flex items-center gap-1">
+                <span>${evt.severity === 'DANGER' ? '🚨' : (evt.severity === 'WARNING' ? '⚠️' : '✅')}</span>
+                [${evt.severity}] ${evt.type}
+              </span>
+              <span class="text-slate-400 text-[10px]">${evt.time}</span>
+            </div>
+            <div class="font-sans text-xs">${escapeHtml(evt.description)}</div>
+            <div class="text-[10px] text-slate-400 font-mono">조치: ${escapeHtml(evt.actionTaken)}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function initEdgeCctvSimulator() {
+      const canvas = document.getElementById('cctv-stream-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let tick = 0;
+
+      function renderFrame() {
+        tick++;
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 그리드 패턴
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+
+        // 가상 세이프티 펜스 (Virtual Geofence)
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.strokeRect(200, 90, 340, 200);
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+        ctx.fillRect(200, 90, 340, 200);
+
+        ctx.fillStyle = '#f87171';
+        ctx.font = '10px monospace';
+        ctx.fillText('⚠ VIRTUAL GEOFENCE: RESTRICTED DANGER ZONE', 210, 110);
+
+        // 동적 감지 객체 BBox (근로자 1 - 위험 구역 침범 및 단부 접근)
+        const osc = Math.sin(tick * 0.04) * 25;
+        const bx = 280 + osc;
+        const by = 130;
+
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(bx, by, 70, 130);
+
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(bx, by - 20, 150, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText('[DANGER] Worker #104 (94.2%)', bx + 4, by - 6);
+
+        // 스켈레톤 (Pose Estimation) 라인
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(bx + 35, by + 25, 12, 0, Math.PI * 2); // 머리
+        ctx.moveTo(bx + 35, by + 37); ctx.lineTo(bx + 35, by + 85); // 몸통
+        ctx.moveTo(bx + 15, by + 55); ctx.lineTo(bx + 55, by + 55); // 양팔
+        ctx.moveTo(bx + 35, by + 85); ctx.lineTo(bx + 20, by + 125); // 왼다리
+        ctx.moveTo(bx + 35, by + 85); ctx.lineTo(bx + 50, by + 125); // 오른다리
+        ctx.stroke();
+
+        // 근로자 2 - 안전구역 정상 통행
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(60, 160, 50, 110);
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(60, 142, 105, 18);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText('[OK] Worker #102', 64, 155);
+
+        // 실시간 카메라 시간 표시
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px monospace';
+        const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        ctx.fillText(`${dateStr} | BEPMC EDGE-AI NODE #04`, 15, canvas.height - 15);
+
+        cctvAnimFrame = requestAnimationFrame(renderFrame);
+      }
+
+      renderFrame();
+      fetchEdgeCctvEvents();
+      setInterval(fetchEdgeCctvEvents, 5000);
     }
   </script>
 </body>
