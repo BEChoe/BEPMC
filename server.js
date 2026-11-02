@@ -5,12 +5,14 @@ const path = require('path');
 const dbService = require('./data/dbService');
 const { isSupabaseConfigured } = require('./data/supabaseClient');
 const publicApiService = require('./services/publicApiService');
+const aiSafetyService = require('./services/aiSafetyInspectionService');
+const technicalGuidanceService = require('./services/technicalGuidanceReportService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 app.use(
   session({
@@ -840,6 +842,86 @@ app.get('/api/public-data/status', (req, res) => {
   } catch (err) {
     console.error('Public data status error:', err);
     res.status(500).json({ success: false, message: '공공데이터 상태 조회 실패' });
+  }
+});
+
+// ---------------------------------------------------------------------
+// 8. 건설재해예방 기술지도 및 AI 관제 시스템 API
+// ---------------------------------------------------------------------
+
+// 대상 사업장 및 월 2회 방문 현황 조회
+app.get('/api/technical-guidance/sites', (req, res) => {
+  try {
+    const sites = technicalGuidanceService.getSitesList();
+    res.json({ success: true, sites });
+  } catch (err) {
+    console.error('Sites list error:', err);
+    res.status(500).json({ success: false, message: '현장 목록 조회 실패' });
+  }
+});
+
+// 스마트폰 사진 Gemini 멀티모달 위험 요인 & 산안법 조항 정밀 분석
+app.post('/api/technical-guidance/analyze-hazard', async (req, res) => {
+  try {
+    const { imageBase64, mimeType, siteName, memo } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ success: false, message: '분석할 사진 이미지가 누락되었습니다.' });
+    }
+
+    const analysis = await aiSafetyService.analyzeHazardPhoto({
+      imageBase64,
+      mimeType: mimeType || 'image/jpeg',
+      siteName: siteName || '현장',
+      memo: memo || ''
+    });
+
+    res.json(analysis);
+  } catch (err) {
+    console.error('Analyze hazard error:', err);
+    res.status(500).json({ success: false, message: 'AI 위험 사진 분석 중 오류가 발생했습니다.' });
+  }
+});
+
+// 법정 '건설재해예방 기술지도 결과보고서' 생성 및 전자서명
+app.post('/api/technical-guidance/reports', async (req, res) => {
+  try {
+    const { siteId, roundName, visitDate, hazards, overallOpinion, managerSignature } = req.body;
+    const report = await technicalGuidanceService.generateGuidanceReport({
+      siteId,
+      roundName,
+      visitDate,
+      hazards,
+      overallOpinion,
+      managerSignature
+    });
+    res.json({ success: true, report });
+  } catch (err) {
+    console.error('Generate report error:', err);
+    res.status(500).json({ success: false, message: '기술지도 결과보고서 생성 실패' });
+  }
+});
+
+// 기술지도 결과보고서 상세 조회
+app.get('/api/technical-guidance/reports/:id', (req, res) => {
+  try {
+    const report = technicalGuidanceService.getReportById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ success: false, message: '해당 보고서를 찾을 수 없습니다.' });
+    }
+    res.json({ success: true, report });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '보고서 조회 실패' });
+  }
+});
+
+// 안전보건공단 K2B(건설업 안전보건 종합전산망) 등록용 JSON 데이터 추출
+app.get('/api/technical-guidance/reports/:id/k2b', (req, res) => {
+  try {
+    const k2bPayload = technicalGuidanceService.exportK2BFormat(req.params.id);
+    res.json({ success: true, k2bPayload });
+  } catch (err) {
+    console.error('K2B export error:', err);
+    res.status(500).json({ success: false, message: err.message || 'K2B 데이터 추출 실패' });
   }
 });
 

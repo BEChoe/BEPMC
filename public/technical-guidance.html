@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>건설재해예방 기술지도 AI 관제 & 법정 결과보고서 - BEPMC</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800;900&display=swap');
+    body { font-family: 'Pretendard', sans-serif; }
+    .hazard-stripe-bar {
+      background: repeating-linear-gradient(45deg, #facc15 0, #facc15 12px, #0f172a 12px, #0f172a 24px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+
+  <!-- 공통 헤더 & 내비게이션 -->
+  <div id="global-header"></div>
+
+  <!-- 상단 타이틀 배너 -->
+  <section class="bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] text-white py-8 border-b-4 border-amber-400 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="inline-flex items-center gap-1.5 bg-amber-400 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded uppercase tracking-wider">
+              Gemini Multimodal AI
+            </span>
+            <span class="text-xs font-semibold text-blue-200">
+              산업안전보건법 제73조 법정 기술지도 전문 시스템
+            </span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <span>건설재해예방 기술지도 AI 관제 &amp; 법정 결과보고서</span>
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
+            스마트폰 현장 위험 사진을 <b>Gemini 네이티브 멀티모달</b>로 분석하여 산안법 조항 매칭부터 <b>K2B 법정 결과보고서(HWPX)</b> 발행까지 원스톱 자동화합니다.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-3 py-1.5 rounded-xl text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            월 2회 법정 주기 모니터링 가동 중
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3개 탭 네비게이션 -->
+  <div class="bg-white border-b border-slate-200 sticky top-16 z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2 overflow-x-auto py-2.5">
+        <button id="tab-btn-dashboard" onclick="switchMainTab('dashboard')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black bg-blue-700 text-white shadow-sm transition">
+          <span>📊 AI 관제 대시보드</span>
+        </button>
+        <button id="tab-btn-camera" onclick="switchMainTab('camera')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <span>📱 스마트폰 사진 AI 분석</span>
+        </button>
+        <button id="tab-btn-report" onclick="switchMainTab('report')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <span>📄 법정 결과보고서(HWPX/K2B) 생성</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-1 w-full">
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: AI 관제 대시보드 -->
+    <!-- ======================================================== -->
+    <div id="tab-section-dashboard" class="space-y-6">
+      
+      <!-- 상단 핵심 KPI 지표 4선 -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-bold mb-2">
+            <span>관리 건설현장</span>
+            <span class="text-blue-600 text-base">🏗️</span>
+          </div>
+          <div class="text-2xl font-black text-slate-900">3 <span class="text-xs font-normal text-slate-500">개소</span></div>
+          <p class="text-[11px] text-slate-400 mt-1">1억~120억 법정 의무 현장</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-bold mb-2">
+            <span>월 2회 법정지도 준수율</span>
+            <span class="text-emerald-600 text-base">🛡️</span>
+          </div>
+          <div class="text-2xl font-black text-emerald-600">100%</div>
+          <p class="text-[11px] text-emerald-700 mt-1">고용노동부 지침 적정 이행</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-bold mb-2">
+            <span>AI 위험요인 탐지 누적</span>
+            <span class="text-rose-600 text-base">⚠️</span>
+          </div>
+          <div class="text-2xl font-black text-rose-600">12 <span class="text-xs font-normal text-slate-500">건</span></div>
+          <p class="text-[11px] text-slate-400 mt-1">추락 7건 · 끼임 3건 · 감전 2건</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-bold mb-2">
+            <span>K2B 전산망 등록율</span>
+            <span class="text-blue-600 text-base">🌐</span>
+          </div>
+          <div class="text-2xl font-black text-blue-700">100%</div>
+          <p class="text-[11px] text-slate-400 mt-1">7일 이내 법정 기한 준수</p>
+        </div>
+      </div>
+
+      <!-- 현장별 월 2회 기술지도 이행 현황 테이블 -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 class="text-base font-black text-slate-900 flex items-center gap-2">
+              <span>📋 현장별 월 2회 의무 기술지도 및 K2B 이행 현황판</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">산업안전보건법 제73조에 따른 정기 지도 이력과 회차별 법정 보고서 교부 상태입니다.</p>
+          </div>
+          <button onclick="switchMainTab('camera')" class="btn-safety-yellow px-3.5 py-2 rounded-lg text-xs font-black shadow-sm flex items-center gap-1.5 w-fit">
+            <span>📸 현장 사진 AI 진단하기</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-3.5">공사현장명</th>
+                <th class="p-3.5">시공사 / 발주자</th>
+                <th class="p-3.5">공사규모 / 공정률</th>
+                <th class="p-3.5">담당 지도요원</th>
+                <th class="p-3.5">10월 1회차</th>
+                <th class="p-3.5">10월 2회차</th>
+                <th class="p-3.5">11월 1회차 (금회)</th>
+                <th class="p-3.5 text-center">보고서 관리</th>
+              </tr>
+            </thead>
+            <tbody id="sites-table-body" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="8" class="p-6 text-center text-slate-400 text-xs">현장 목록을 불러오는 중...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 실시간 AI 감지 위험요인 갤러리 피드 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🚨</span>
+            <h3 class="text-base font-black text-slate-900">최근 AI 위험성평가 분석 피드 (Gemini Multimodal)</h3>
+          </div>
+          <span class="text-xs font-semibold text-slate-500">실시간 현장 스마트폰 업로드 연동</span>
+        </div>
+
+        <div id="recent-hazards-feed" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- 피드 카드 동적 주입 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: 스마트폰 사진 AI 분석기 -->
+    <!-- ======================================================== -->
+    <div id="tab-section-camera" class="space-y-6 hidden">
+      
+      <!-- 안내 배너 -->
+      <div class="rounded-xl bg-white border-2 border-amber-400 shadow-md overflow-hidden">
+        <div class="h-2 w-full hazard-stripe-bar"></div>
+        <div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="inline-flex items-center gap-1.5 text-xs font-black bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded border border-amber-300">
+              ⚡ SMART FIELD CAPTURE
+            </span>
+            <h2 class="text-lg font-black text-slate-900 mt-1">현장 스마트폰 사진 촬영 및 즉각 산안법 매칭</h2>
+            <p class="text-xs text-slate-600 mt-0.5">
+              지도요원이 현장에서 위험 부위를 촬영하면 <b>Gemini 2.5 Flash</b>가 1초 만에 안전규칙 조항과 표준 대책을 정형화된 JSON으로 추출합니다.
+            </p>
+          </div>
+          <div class="text-xs text-slate-500 font-medium bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            📍 자동 메타데이터: GPS 위치 태깅 &amp; 타임스탬프 각인
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- 좌측: 사진 업로드 및 현장 정보 입력 폼 -->
+        <div class="lg:col-span-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
+            <span>1️⃣</span> 현장 사진 촬영 / 파일 선택
+          </h3>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">대상 공사현장 선택</label>
+            <select id="input-site-select" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:outline-none bg-slate-50">
+              <option value="1">판교 복합비즈니스센터 신축공사 (한양종합건설)</option>
+              <option value="2">화성 스마트물류센터 2단계 증축공사 (대성건설산업)</option>
+              <option value="3">인천 송도 바이오 R&D센터 건립공사 (동일토건)</option>
+            </select>
+          </div>
+
+          <!-- 사진 업로드 드롭존 & 카메라 촬영 -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">현장 위험 사진</label>
+            <div id="dropzone" onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-50/50 hover:bg-blue-50/30 flex flex-col items-center justify-center min-h-[180px]">
+              <div id="preview-container" class="hidden w-full">
+                <img id="image-preview" src="" alt="현장 사진 미리보기" class="max-h-56 mx-auto rounded-lg shadow-sm object-cover border border-slate-200">
+                <span class="text-[11px] text-blue-600 font-bold block mt-2">클릭하여 다른 사진으로 변경</span>
+              </div>
+              <div id="upload-placeholder">
+                <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl mx-auto mb-2">
+                  📸
+                </div>
+                <p class="text-xs font-bold text-slate-800">스마트폰 촬영 또는 사진 업로드</p>
+                <p class="text-[11px] text-slate-400 mt-1">JPG, PNG, HEIC 지원 (최대 20MB)</p>
+              </div>
+            </div>
+            <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+          </div>
+
+          <!-- 샘플 사진 원클릭 테스트 버튼 -->
+          <div class="pt-2">
+            <span class="text-[11px] font-bold text-slate-500 block mb-1.5">테스트용 현장 위험 상황 빠른 선택:</span>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" onclick="loadSamplePhoto('opening')" class="p-2 rounded border border-slate-200 hover:border-rose-400 bg-slate-50 text-[11px] font-bold text-slate-700 hover:text-rose-700 text-center transition">
+                🚧 바닥 개구부
+              </button>
+              <button type="button" onclick="loadSamplePhoto('scaffold')" class="p-2 rounded border border-slate-200 hover:border-amber-400 bg-slate-50 text-[11px] font-bold text-slate-700 hover:text-amber-800 text-center transition">
+                🪜 외부 비계
+              </button>
+              <button type="button" onclick="loadSamplePhoto('electric')" class="p-2 rounded border border-slate-200 hover:border-blue-400 bg-slate-50 text-[11px] font-bold text-slate-700 hover:text-blue-800 text-center transition">
+                ⚡ 가설 분전함
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">지도요원 음성/텍스트 메모 (선택사항)</label>
+            <input type="text" id="input-memo" placeholder="예: 지하 1층 개구부 덮개 밀림 및 안전난간 미설치" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+          </div>
+
+          <button id="btn-run-analysis" onclick="executeAiAnalysis()" class="w-full btn-safety-yellow py-3 rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-2">
+            <span>⚡ Gemini 멀티모달 위험 진단 실행</span>
+          </button>
+        </div>
+
+        <!-- 우측: Gemini 분석 결과 JSON & 법조항 매칭 카드 -->
+        <div class="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                <span>2️⃣</span> AI 위험성평가 및 산안법 조항 매칭 결과
+              </h3>
+              <span id="ai-model-badge" class="text-[10px] bg-blue-100 text-blue-900 font-bold px-2 py-0.5 rounded">
+                Gemini 2.5 Flash Structured JSON
+              </span>
+            </div>
+
+            <!-- 결과 대기 상태 / 로딩 플레이스홀더 -->
+            <div id="ai-result-placeholder" class="py-16 text-center text-slate-400 text-xs">
+              <div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-3xl mx-auto mb-3">
+                ⚖️
+              </div>
+              <p class="font-bold text-slate-700 text-sm">현장 사진을 업로드하고 진단을 실행하세요</p>
+              <p class="text-[11px] text-slate-400 mt-1">「산업안전보건기준에 관한 규칙」 조항과 개선 대책이 정형화되어 자동 생성됩니다.</p>
+            </div>
+
+            <!-- 실제 분석 결과 카드 (초기 숨김) -->
+            <div id="ai-result-content" class="space-y-4 hidden">
+              
+              <!-- 헤더 배지 & 위험도 -->
+              <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="flex items-center gap-2">
+                  <span id="result-category-badge" class="bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                    추락 (떨어짐)
+                  </span>
+                  <span id="result-risk-badge" class="bg-rose-100 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded border border-rose-300">
+                    상 (즉시작업중지)
+                  </span>
+                </div>
+                <span id="result-k2b-code" class="text-[10px] text-slate-500 font-medium">K2B 연계코드: A-01-04</span>
+              </div>
+
+              <!-- 위험요인 제목 및 위치 -->
+              <div>
+                <h4 id="result-hazard-title" class="text-base font-black text-slate-900 leading-snug">
+                  바닥 개구부 덮개 미설치 및 고정 불량
+                </h4>
+                <p id="result-location" class="text-xs text-slate-500 mt-0.5">
+                  위치: 지상 3층 바닥 슬래브 배관 관통 슬리브 구역
+                </p>
+              </div>
+
+              <!-- 법령 조항 박스 (중요) -->
+              <div class="bg-amber-50/80 border-2 border-amber-300 p-4 rounded-xl space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-amber-800 font-black text-xs">⚖️ 위반 법령 조항:</span>
+                  <span id="result-law-article" class="text-xs font-black text-slate-900 bg-amber-200 px-2 py-0.5 rounded">
+                    산업안전보건기준에 관한 규칙 제43조 (개구부 등의 방호 조치)
+                  </span>
+                </div>
+                <p id="result-law-content" class="text-[11px] text-slate-700 leading-relaxed font-medium">
+                  사업주는 작업발판 및 통로의 끝이나 개구부로서 근로자가 추락할 위험이 있는 장소에는 안전난간, 울 및 덮개 등을 설치하여야 하며...
+                </p>
+              </div>
+
+              <!-- 식별된 구체적 결함 목록 -->
+              <div>
+                <span class="text-xs font-bold text-slate-800 block mb-1">🔍 식별된 현장 결함 및 불안전 상태</span>
+                <ul id="result-defect-list" class="text-xs text-slate-600 space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <!-- 동적 리스트 -->
+                </ul>
+              </div>
+
+              <!-- 개선 대책 (당일조치 vs 근본대책) -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div class="p-3 bg-rose-50/60 border border-rose-200 rounded-lg">
+                  <span class="text-[11px] font-black text-rose-900 block mb-1">🚨 즉시 시정 조치사항 (당일)</span>
+                  <p id="result-immediate-action" class="text-xs text-slate-700 leading-relaxed">
+                    개구부 상부에 하중 100kg 이상 견디는 강제 덮개 즉시 설치 및 경고 표지 부착
+                  </p>
+                </div>
+                <div class="p-3 bg-blue-50/60 border border-blue-200 rounded-lg">
+                  <span class="text-[11px] font-black text-blue-900 block mb-1">🛡️ 재발 방지 근본대책 (기술적)</span>
+                  <p id="result-fundamental-action" class="text-xs text-slate-700 leading-relaxed">
+                    타설 즉시 개구부 덮개 일체형 매립 설치 공법 적용 및 일일 TBM 체크리스트 필수 지정
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 하단 버튼: 결과보고서에 추가 -->
+          <div id="ai-result-actions" class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 hidden">
+            <span class="text-xs text-slate-500">분석 결과를 금회 결과보고서에 즉시 반영할 수 있습니다.</span>
+            <button onclick="addCurrentAnalysisToReport()" class="btn-safety-black px-4 py-2.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
+              <span>➕ 금회 보고서 지적사항에 추가</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: 법정 결과보고서(HWPX/K2B) 생성 및 교부 -->
+    <!-- ======================================================== -->
+    <div id="tab-section-report" class="space-y-6 hidden">
+      
+      <div class="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-5 border-b border-slate-200 gap-3">
+          <div>
+            <span class="inline-flex items-center gap-1.5 text-xs font-black bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded border border-blue-200">
+              산업안전보건법 시행규칙 [별지 제103호]
+            </span>
+            <h2 class="text-xl font-black text-slate-900 mt-1">건설재해예방 기술지도 결과보고서 발행 &amp; K2B 전산망 등록</h2>
+            <p class="text-xs text-slate-500 mt-0.5">발주자·현장소장 법정 교부용 공인 한글(HWPX) 문서와 안전보건공단 전산망 등록 데이터를 동시 생성합니다.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="generateOfficialReport()" class="btn-safety-yellow px-4 py-2.5 rounded-xl text-xs font-black shadow-md flex items-center gap-1.5">
+              <span>📄 법정 보고서 원클릭 발행</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 보고서 서식 미리보기 양식 (공식 별지 규격) -->
+        <div class="mt-6 border-2 border-slate-300 rounded-xl p-6 bg-slate-50/50 space-y-6 text-xs text-slate-800">
+          
+          <div class="text-center pb-4 border-b-2 border-slate-900">
+            <h3 class="text-lg font-black tracking-wide text-slate-900">건설재해예방 기술지도 결과보고서</h3>
+            <span class="text-[11px] text-slate-500">「산업안전보건법 시행규칙」 별지 제103호 서식</span>
+          </div>
+
+          <!-- 1. 사업장 개요 -->
+          <div class="bg-white p-4 rounded-lg border border-slate-200 space-y-3">
+            <h4 class="font-black text-slate-900 text-xs flex items-center gap-1.5">
+              <span class="text-blue-700">■</span> 1. 공사 및 사업장 개요
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-700">
+              <div><b>공사명:</b> <span id="report-preview-site">판교 복합비즈니스센터 신축공사</span></div>
+              <div><b>시공사:</b> (주)한양종합건설</div>
+              <div><b>발주자:</b> 판교PFV(주)</div>
+              <div><b>공사금액:</b> 85억 원 (공정률 42.5%)</div>
+              <div><b>현장소장:</b> 김현장 소장 (xxx-xxxx-xxxx)</div>
+              <div><b>지도일자:</b> 2026년 11월 02일</div>
+              <div><b>지도차수:</b> <span class="text-blue-700 font-bold">2026년 11월 1회차 (월 2회 의무)</span></div>
+              <div><b>지도기관:</b> (주)BEPMC 엔지니어링</div>
+            </div>
+          </div>
+
+          <!-- 2. 금회 기술지도 지적사항 목록 -->
+          <div class="bg-white p-4 rounded-lg border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="font-black text-slate-900 text-xs flex items-center gap-1.5">
+                <span class="text-rose-600">■</span> 2. 금회 주요 기술지도 및 시정지시 사항 (AI 멀티모달 분석)
+              </h4>
+              <span id="report-items-count" class="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">지적사항 1건</span>
+            </div>
+            
+            <div id="report-items-table" class="space-y-3">
+              <!-- 지적사항 항목 카드 -->
+              <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-black text-slate-900 text-xs">1) 슬래브 바닥 개구부 추락 방호 덮개 미설치 및 고정 불량</span>
+                  <span class="text-[10px] bg-rose-600 text-white font-bold px-1.5 py-0.5 rounded">위험도 상</span>
+                </div>
+                <div class="text-[11px] text-amber-900 bg-amber-100/70 p-2 rounded">
+                  <b>관련법령:</b> 산업안전보건기준에 관한 규칙 제43조 (개구부 등의 방호 조치)
+                </div>
+                <div class="text-[11px] text-slate-700">
+                  <b>시정대책:</b> 개구부 상부에 하중 100kg 이상 지지용 덮개 즉시 설치 및 임의해체 금지 경고표지 부착
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 지도요원 종합의견 및 서명란 -->
+          <div class="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
+            <h4 class="font-black text-slate-900 text-xs flex items-center gap-1.5">
+              <span class="text-slate-800">■</span> 3. 종합 의견 및 확인 서명
+            </h4>
+            <textarea id="report-overall-opinion" rows="2" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none" placeholder="종합 지도 의견을 입력하세요.">동절기 진입 전 마감 공정 가속화에 따른 추락 및 가설전기 감전 위험이 매우 높음. 2m 이상 고소작업 시 안전대 2중 체결 및 개구부 전수 조치 후 작업 개시 요망.</textarea>
+
+            <!-- 서명 캔버스 영역 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                <span class="text-[11px] font-bold text-slate-600 block mb-1">기술지도 요원 (기술사)</span>
+                <div class="h-20 bg-white border border-slate-200 rounded flex items-center justify-center font-bold text-blue-700 text-sm">
+                  최안전 (건설안전기술사) [전자서명 완료]
+                </div>
+                <span class="text-[10px] text-slate-400 mt-1 block">인증번호: BEPMC-CERT-2024</span>
+              </div>
+
+              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[11px] font-bold text-slate-600">현장책임자 (현장소장 확인 서명)</span>
+                  <button type="button" onclick="clearSignatureCanvas()" class="text-[10px] text-slate-400 hover:text-rose-600 underline">서명 지우기</button>
+                </div>
+                <canvas id="signature-canvas" width="300" height="80" class="w-full h-20 bg-white border border-slate-300 rounded cursor-crosshair touch-none"></canvas>
+                <span class="text-[10px] text-slate-400 mt-1 block">모바일 터치 또는 마우스로 서명하세요</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 발행 후 결과 액션 카드 (초기 숨김) -->
+        <div id="issued-report-result" class="mt-6 p-5 rounded-xl bg-emerald-50 border-2 border-emerald-400 space-y-3 hidden">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">✅</span>
+              <h4 class="font-black text-emerald-950 text-sm">법정 기술지도 결과보고서 발행 및 K2B 연계 준비 완료!</h4>
+            </div>
+            <span id="issued-report-id" class="text-xs font-bold text-emerald-800 bg-emerald-200 px-2 py-0.5 rounded">
+              BEPMC-TG-110201
+            </span>
+          </div>
+          <p class="text-xs text-emerald-800 leading-relaxed">
+            산업안전보건법 규정에 따른 <b>공인 한글(HWPX) 문서가 생성</b>되었으며, <b>안전보건공단 K2B 전산망 등록 데이터</b>가 표준 포맷으로 준비되었습니다.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-3 pt-2">
+            <a id="btn-download-hwpx" href="/hello.hwpx" download="건설재해예방_기술지도결과보고서.hwpx" class="btn-safety-black px-4 py-2.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-2">
+              <span>📥 법정 HWPX(한글) 다운로드</span>
+            </a>
+            <button onclick="copyK2BData()" class="btn-safety-yellow px-4 py-2.5 rounded-lg text-xs font-black shadow-sm flex items-center gap-2">
+              <span>🌐 안전보건공단 K2B 연계 데이터 복사</span>
+            </button>
+            <button onclick="alert('발주자 및 현장 책임자 모바일 카카오 알림톡으로 전자교부 문서(PDF)가 전송되었습니다.')" class="px-4 py-2.5 rounded-lg text-xs font-bold border border-emerald-400 bg-white text-emerald-900 hover:bg-emerald-100 transition flex items-center gap-2">
+              <span>📱 모바일 전자교부 발송 (알림톡)</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- 공통 푸터 -->
+  <div id="global-footer"></div>
+
+  <!-- 공통 스크립트 -->
+  <script src="/js/common.js"></script>
+  <script>
+    let currentSelectedImageBase64 = null;
+    let currentAnalysisResult = null;
+    let reportGuidanceItems = [];
+    let currentCreatedReportId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initLayout('technical-guidance');
+      loadSitesStatus();
+      loadRecentHazardsFeed();
+      initSignatureCanvas();
+    });
+
+    // 탭 전환
+    function switchMainTab(tab) {
+      ['dashboard', 'camera', 'report'].forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const sec = document.getElementById(`tab-section-${t}`);
+        if (t === tab) {
+          btn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black bg-blue-700 text-white shadow-sm transition";
+          sec.classList.remove('hidden');
+        } else {
+          btn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition";
+          sec.classList.add('hidden');
+        }
+      });
+    }
+
+    // 1. 현장 목록 로드
+    async function loadSitesStatus() {
+      const tbody = document.getElementById('sites-table-body');
+      try {
+        const res = await fetch('/api/technical-guidance/sites');
+        const data = await res.json();
+        if (data.success && data.sites) {
+          tbody.innerHTML = data.sites.map(s => `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-3.5 font-bold text-slate-900">${escapeHtml(s.siteName)}</td>
+              <td class="p-3.5 text-slate-600">${escapeHtml(s.contractor)}<br><span class="text-[10px] text-slate-400">발주: ${escapeHtml(s.client)}</span></td>
+              <td class="p-3.5 font-medium">${escapeHtml(s.totalCost)}<br><span class="text-[10px] text-blue-600 font-bold">${escapeHtml(s.processRate)}</span></td>
+              <td class="p-3.5 text-slate-700">${escapeHtml(s.instructorName)}</td>
+              <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">K2B등록완료</span></td>
+              <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">K2B등록완료</span></td>
+              <td class="p-3.5"><span class="bg-amber-100 text-amber-900 font-black px-2 py-0.5 rounded text-[10px]">금회 작성중</span></td>
+              <td class="p-3.5 text-center">
+                <button onclick="switchMainTab('report')" class="text-xs font-bold text-blue-700 hover:underline">보고서작성 &rarr;</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-red-500">목록 로드 실패</td></tr>`;
+      }
+    }
+
+    // 최근 위험 피드 로드
+    function loadRecentHazardsFeed() {
+      const container = document.getElementById('recent-hazards-feed');
+      const sampleHazards = [
+        {
+          title: "슬래브 바닥 개구부 덮개 미설치 및 고정 불량",
+          category: "추락",
+          risk: "상 (즉시작업중지)",
+          law: "산안기준규칙 제43조 (개구부 방호)",
+          site: "판교 복합비즈니스센터 신축공사",
+          date: "2026-11-02 14:20",
+          action: "하중 100kg 이상 강제 덮개 즉시 설치 및 경고표지 부착"
+        },
+        {
+          title: "외부 강관비계 작업발판 단부 안전난간 미설치",
+          category: "추락",
+          risk: "상 (즉시작업중지)",
+          law: "산안기준규칙 제56조 (작업발판의 구조)",
+          site: "화성 스마트물류센터 2단계",
+          date: "2026-10-25 11:15",
+          action: "상부/중간 난간대 즉시 조립 및 5점식 안전대 체결"
+        },
+        {
+          title: "가설 분전반 접지 미실시 및 차단기 방수커버 파손",
+          category: "감전",
+          risk: "중 (당일개선조치)",
+          law: "산안기준규칙 제302조 (전기기계 접지)",
+          site: "인천 송도 바이오 R&D센터",
+          date: "2026-10-27 15:40",
+          action: "접지선 재결선 및 고속형 누전차단기 점검"
+        }
+      ];
+
+      container.innerHTML = sampleHazards.map(h => `
+        <div class="p-4 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition bg-slate-50/50 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">${h.category}</span>
+              <span class="text-[10px] text-slate-400">${h.date}</span>
+            </div>
+            <h4 class="font-bold text-xs text-slate-900 mb-1 leading-snug">${h.title}</h4>
+            <div class="text-[11px] text-slate-500 mb-2">현장: ${h.site}</div>
+            <div class="text-[11px] text-amber-900 bg-amber-100/70 p-2 rounded mb-2 font-medium">
+              ⚖️ ${h.law}
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 text-[11px] text-blue-800 font-medium">
+            🛡 대책: ${h.action}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 2. 스마트폰 사진 업로드 및 선택 처리
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentSelectedImageBase64 = e.target.result;
+        document.getElementById('image-preview').src = currentSelectedImageBase64;
+        document.getElementById('upload-placeholder').classList.add('hidden');
+        document.getElementById('preview-container').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 샘플 사진 빠른 선택
+    function loadSamplePhoto(type) {
+      let title = "";
+      if (type === 'opening') {
+        title = "슬래브 바닥 배관 관통 개구부 방호조치 미흡";
+        document.getElementById('input-memo').value = "바닥 개구부에 합판만 걸쳐져 있고 고정 안 됨";
+      } else if (type === 'scaffold') {
+        title = "외부 비계 상부 안전난간 미설치";
+        document.getElementById('input-memo').value = "비계 발판 단부 난간대 누락 및 틈새 과다";
+      } else {
+        title = "가설 분전함 접지선 단선";
+        document.getElementById('input-memo').value = "분전반 외함 접지 미실시 및 누전차단기 점검 불량";
+      }
+
+      // 가상 SVG 생성
+      const canvas = document.createElement('canvas');
+      canvas.width = 600;
+      canvas.height = 400;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = type === 'opening' ? '#475569' : (type === 'scaffold' ? '#334155' : '#1e293b');
+      ctx.fillRect(0, 0, 600, 400);
+      ctx.fillStyle = '#facc15';
+      ctx.font = 'bold 24px Pretendard, sans-serif';
+      ctx.fillText(`[현장 사진] ${title}`, 40, 200);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '14px Pretendard, sans-serif';
+      ctx.fillText(`GPS: 37.3948 N, 127.1119 E | ${new Date().toLocaleString()}`, 40, 240);
+
+      currentSelectedImageBase64 = canvas.toDataURL('image/jpeg');
+      document.getElementById('image-preview').src = currentSelectedImageBase64;
+      document.getElementById('upload-placeholder').classList.add('hidden');
+      document.getElementById('preview-container').classList.remove('hidden');
+    }
+
+    // Gemini AI 위험 진단 실행
+    async function executeAiAnalysis() {
+      if (!currentSelectedImageBase64) {
+        alert('먼저 현장 사진을 촬영하거나 업로드해주세요.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-run-analysis');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin">⏳</span> Gemini 2.5 Flash 멀티모달 분석 중...`;
+
+      const siteSelect = document.getElementById('input-site-select');
+      const siteName = siteSelect.options[siteSelect.selectedIndex].text;
+      const memo = document.getElementById('input-memo').value;
+
+      try {
+        const res = await fetch('/api/technical-guidance/analyze-hazard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: currentSelectedImageBase64,
+            mimeType: 'image/jpeg',
+            siteName,
+            memo
+          })
+        });
+
+        const json = await res.json();
+        if (!json.success || !json.data) {
+          alert(json.message || '분석에 실패했습니다.');
+          return;
+        }
+
+        currentAnalysisResult = json.data;
+        renderAiAnalysisResult(json.data, json.source);
+      } catch (err) {
+        alert('AI 서버 통신 오류가 발생했습니다.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>⚡ Gemini 멀티모달 위험 진단 실행</span>`;
+      }
+    }
+
+    // AI 결과 렌더링
+    function renderAiAnalysisResult(data, sourceName) {
+      document.getElementById('ai-result-placeholder').classList.add('hidden');
+      document.getElementById('ai-result-content').classList.remove('hidden');
+      document.getElementById('ai-result-actions').classList.remove('hidden');
+
+      if (sourceName) {
+        document.getElementById('ai-model-badge').textContent = sourceName;
+      }
+
+      document.getElementById('result-category-badge').textContent = data.hazard_category || '추락';
+      document.getElementById('result-risk-badge').textContent = data.risk_level || '상';
+      document.getElementById('result-k2b-code').textContent = data.k2b_cause_code ? `K2B 연계: ${data.k2b_cause_code}` : '';
+      document.getElementById('result-hazard-title').textContent = data.hazard_title;
+      document.getElementById('result-location').textContent = `위치: ${data.estimated_location}`;
+
+      const legal = data.legal_basis || {};
+      document.getElementById('result-law-article').textContent = `${legal.law_name || '산업안전보건기준에 관한 규칙'} ${legal.article_no || '제43조'} (${legal.article_title || '개구부 방호'})`;
+      document.getElementById('result-law-content').textContent = legal.article_content || '';
+
+      const defectUl = document.getElementById('result-defect-list');
+      defectUl.innerHTML = (data.defect_details || []).map(d => `<li>• ${escapeHtml(d)}</li>`).join('');
+
+      document.getElementById('result-immediate-action').textContent = data.immediate_action;
+      document.getElementById('result-fundamental-action').textContent = data.fundamental_countermeasure;
+    }
+
+    // 분석 결과를 결과보고서 지적사항에 추가
+    function addCurrentAnalysisToReport() {
+      if (!currentAnalysisResult) return;
+      reportGuidanceItems.push(currentAnalysisResult);
+
+      alert(`'${currentAnalysisResult.hazard_title}' 항목이 금회 기술지도 보고서에 추가되었습니다.`);
+      updateReportPreview();
+      switchMainTab('report');
+    }
+
+    function updateReportPreview() {
+      document.getElementById('report-items-count').textContent = `지적사항 ${reportGuidanceItems.length}건`;
+      const container = document.getElementById('report-items-table');
+
+      if (reportGuidanceItems.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400">등록된 지적사항이 없습니다. 사진 AI 분석 탭에서 추가하세요.</div>`;
+        return;
+      }
+
+      container.innerHTML = reportGuidanceItems.map((h, idx) => `
+        <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-slate-900 text-xs">${idx + 1}) ${escapeHtml(h.hazard_title)}</span>
+            <span class="text-[10px] bg-rose-600 text-white font-bold px-1.5 py-0.5 rounded">${escapeHtml(h.risk_level)}</span>
+          </div>
+          <div class="text-[11px] text-amber-900 bg-amber-100/70 p-2 rounded">
+            <b>관련법령:</b> ${escapeHtml(h.legal_basis?.law_name)} ${escapeHtml(h.legal_basis?.article_no)} (${escapeHtml(h.legal_basis?.article_title)})
+          </div>
+          <div class="text-[11px] text-slate-700">
+            <b>시정대책:</b> ${escapeHtml(h.immediate_action)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 3. 법정 결과보고서 원클릭 발행
+    async function generateOfficialReport() {
+      const siteSelect = document.getElementById('input-site-select');
+      const siteId = siteSelect.value;
+      const opinion = document.getElementById('report-overall-opinion').value;
+
+      const canvas = document.getElementById('signature-canvas');
+      const signatureData = canvas.toDataURL();
+
+      const itemsToSubmit = reportGuidanceItems.length > 0 ? reportGuidanceItems : [
+        {
+          hazard_title: "슬래브 바닥 개구부 추락 방호 덮개 미설치 및 고정 불량",
+          hazard_category: "추락 (떨어짐)",
+          risk_level: "상 (즉시작업중지)",
+          legal_basis: {
+            law_name: "산업안전보건기준에 관한 규칙",
+            article_no: "제43조",
+            article_title: "개구부 등의 방호 조치",
+            article_content: "작업발판 및 통로의 끝이나 개구부로서 근로자가 추락할 위험이 있는 장소에는 안전난간, 울 및 덮개 등을 설치하여야 한다."
+          },
+          immediate_action: "개구부 상부에 100kg 이상 하중 지지용 강제 덮개 즉시 설치 및 경고 표지 부착",
+          fundamental_countermeasure: "타설 즉시 개구부 덮개 일체형 매립 설치 공법 적용 및 일일 TBM 체크리스트 필수 지정"
+        }
+      ];
+
+      try {
+        const res = await fetch('/api/technical-guidance/reports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            siteId,
+            roundName: "2026년 11월 1회차",
+            visitDate: "2026-11-02",
+            hazards: itemsToSubmit,
+            overallOpinion: opinion,
+            managerSignature: signatureData
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.report) {
+          currentCreatedReportId = data.report.reportId;
+          document.getElementById('issued-report-result').classList.remove('hidden');
+          document.getElementById('issued-report-id').textContent = data.report.reportId;
+          if (data.report.hwpxDownloadUrl) {
+            document.getElementById('btn-download-hwpx').href = data.report.hwpxDownloadUrl;
+          }
+          alert(`축하합니다! 법정 기술지도 결과보고서(${data.report.reportId})가 성공적으로 발행되었습니다.`);
+        }
+      } catch (e) {
+        alert('보고서 생성 중 오류가 발생했습니다.');
+      }
+    }
+
+    // K2B 데이터 클립보드 복사
+    async function copyK2BData() {
+      if (!currentCreatedReportId) {
+        alert('먼저 보고서를 발행해주세요.');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/technical-guidance/reports/${currentCreatedReportId}/k2b`);
+        const json = await res.json();
+        if (json.success) {
+          const str = JSON.stringify(json.k2bPayload, null, 2);
+          await navigator.clipboard.writeText(str);
+          alert('안전보건공단 K2B 등록용 표준 JSON 데이터가 클립보드에 복사되었습니다!\nK2B 전산망에 바로 붙여넣기 하실 수 있습니다.');
+        }
+      } catch (e) {
+        alert('K2B 데이터 추출 실패');
+      }
+    }
+
+    // 4. 전자서명 캔버스 제어
+    let isDrawing = false;
+    function initSignatureCanvas() {
+      const canvas = document.getElementById('signature-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#0f172a';
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top
+        };
+      }
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      });
+      window.addEventListener('mouseup', () => { isDrawing = false; });
+
+      canvas.addEventListener('touchstart', (e) => {
+        isDrawing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        if (!isDrawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      });
+      window.addEventListener('touchend', () => { isDrawing = false; });
+    }
+
+    function clearSignatureCanvas() {
+      const canvas = document.getElementById('signature-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  </script>
+</body>
+</html>
