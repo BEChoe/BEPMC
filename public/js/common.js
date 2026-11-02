@@ -152,6 +152,10 @@ async function initLayout(activeMenu = '') {
                 <span>건설기술지도 AI관제</span>
                 <span class="text-[10px] bg-red-600 text-white px-1.5 py-0.2 rounded font-black tracking-tight">K2B</span>
               </a>
+              <a href="/mobile-app.html" target="_blank" class="px-2.5 py-1.5 rounded-md text-xs font-black bg-amber-400 text-slate-950 hover:bg-amber-300 transition flex items-center gap-1 shadow-sm ml-1">
+                <span>📱</span>
+                <span>현장앱</span>
+              </a>
               <a href="/qna.html" class="px-3.5 py-2 rounded-md text-sm font-semibold transition ${activeMenu === 'qna' ? 'text-amber-400 bg-blue-950/80' : 'text-slate-300 hover:text-white hover:bg-blue-950/50'}">
                 안전 Q&A 문의
               </a>
@@ -206,6 +210,7 @@ async function initLayout(activeMenu = '') {
                 <li><a href="/boards.html?type=general" class="hover:text-amber-300 transition">일반 안전자료실 (전체열람)</a></li>
                 <li><a href="/boards.html?type=member" class="hover:text-amber-300 transition">회원 전용 게시판 (회원전용)</a></li>
                 <li><a href="/technical-guidance.html" class="hover:text-amber-300 transition text-amber-400 font-semibold flex items-center gap-1"><span>🤖</span> 건설재해예방 기술지도 AI 관제 (K2B)</a></li>
+                <li><a href="/mobile-app.html" target="_blank" class="hover:text-amber-300 transition text-amber-300 font-bold flex items-center gap-1"><span>📱</span> 현장 관리자 모바일앱 (동영상·점검·전자결재)</a></li>
                 <li><a href="/qna.html" class="hover:text-amber-300 transition">안전 Q&A 문의 접수</a></li>
               </ul>
             </div>

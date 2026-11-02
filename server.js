@@ -8,6 +8,7 @@ const publicApiService = require('./services/publicApiService');
 const aiSafetyService = require('./services/aiSafetyInspectionService');
 const technicalGuidanceService = require('./services/technicalGuidanceReportService');
 const safetyKnowledgeBase = require('./services/safetyKnowledgeBaseService');
+const mobileSyncService = require('./services/mobileSyncService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1044,6 +1045,90 @@ app.get('/api/technical-guidance/edge-cctv/events', (req, res) => {
 
   const streamData = cameraStreams[channel] || cameraStreams['CAM-01'];
   res.json({ success: true, timestamp: now.toISOString(), stream: streamData });
+});
+
+// ---------------------------------------------------------------------
+// 9. 현장 관리자용 스마트폰 모바일 앱(PWA) 연동 API
+// ---------------------------------------------------------------------
+
+// [기능 1] 현장 실시간 동영상 촬영본 업로드 및 관제센터 피드 등록
+app.post('/api/mobile/video-upload', async (req, res) => {
+  try {
+    const { videoBase64, mimeType, siteName, uploaderName, workType, gpsLocation, durationSec } = req.body;
+    const result = await mobileSyncService.saveMobileVideo({
+      videoBase64,
+      mimeType,
+      siteName,
+      uploaderName,
+      workType,
+      gpsLocation,
+      durationSec
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('Mobile video upload error:', err);
+    res.status(500).json({ success: false, message: '모바일 동영상 업로드 실패' });
+  }
+});
+
+// [기능 1] 관제센터용 최신 모바일 영상 목록 조회
+app.get('/api/mobile/videos', (req, res) => {
+  try {
+    const videos = mobileSyncService.getRecentMobileVideos();
+    res.json({ success: true, videos });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '동영상 목록 조회 실패' });
+  }
+});
+
+// [기능 2] 현장 사진 및 일일 안전점검 체크리스트 전송
+app.post('/api/mobile/inspections', async (req, res) => {
+  try {
+    const { imageBase64, siteName, inspectorName, workType, location, checklist, memo } = req.body;
+    const result = await mobileSyncService.processMobileInspection({
+      imageBase64,
+      siteName,
+      inspectorName,
+      workType,
+      location,
+      checklist,
+      memo
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('Mobile inspection error:', err);
+    res.status(500).json({ success: false, message: '모바일 점검 전송 실패' });
+  }
+});
+
+// [기능 3] 현장소장 결재 대기 중인 법정 결과보고서 목록 조회
+app.get('/api/mobile/reports/pending', (req, res) => {
+  try {
+    const { siteId } = req.query;
+    const reports = mobileSyncService.getPendingApprovalReports(siteId);
+    res.json({ success: true, reports });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '결재 대기 보고서 조회 실패' });
+  }
+});
+
+// [기능 3] 법정 결과보고서 모바일 전자 서명 및 결재 완료
+app.post('/api/mobile/reports/:id/approve', (req, res) => {
+  try {
+    const reportId = req.params.id;
+    const { siteManagerName, signatureData, actionPlan, targetCompletionDate } = req.body;
+    const result = mobileSyncService.approveMobileReport({
+      reportId,
+      siteManagerName,
+      signatureData,
+      actionPlan,
+      targetCompletionDate
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('Mobile report approval error:', err);
+    res.status(500).json({ success: false, message: '모바일 전자 결재 처리 실패' });
+  }
 });
 
 app.listen(PORT, () => {

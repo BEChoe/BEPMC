@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>BEPMC 현장 관리자 모바일 안전앱</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+    .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+    .hazard-stripe {
+      background: repeating-linear-gradient(45deg, #facc15 0, #facc15 10px, #0f172a 10px, #0f172a 20px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+
+  <!-- 상단 모바일 앱 헤더 (고정) -->
+  <header class="bg-[#0f172a] text-white sticky top-0 z-50 border-b border-blue-900 shadow-md">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-xs shadow-inner">
+          BE
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-sm font-black text-white tracking-tight">BEPMC 모바일 안전앱</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-medium block -mt-0.5">BEPMC(Project Management Consultancy)</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <select id="mobile-site-selector" class="bg-slate-800 text-slate-200 text-xs font-bold rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none">
+          <option value="1">판교 비즈니스센터 (3층)</option>
+          <option value="2">화성 물류센터 (외벽)</option>
+          <option value="3">송도 바이오 R&D</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 스크롤 콘텐츠 영역 (하단 탭 바 높이 고려) -->
+  <main class="flex-1 pb-24 overflow-y-auto">
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: 현장 실시간 동영상 촬영 및 관제센터 전송 -->
+    <!-- ======================================================== -->
+    <section id="pane-video" class="p-4 space-y-4">
+      
+      <!-- 안내 타이틀 -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-black bg-rose-100 text-rose-800 px-2 py-0.5 rounded uppercase">LIVE STREAM &amp; CAPTURE</span>
+          <h2 class="text-base font-black text-slate-900 mt-1">현장 동영상 촬영 및 관제 전송</h2>
+          <p class="text-[11px] text-slate-500 mt-0.5">실시간 현장 상황을 촬영하여 본사 AI 관제센터로 전송합니다.</p>
+        </div>
+        <span class="text-2xl">📹</span>
+      </div>
+
+      <!-- 스마트폰 비디오 뷰파인더 캔버스 / 비디오 박스 -->
+      <div class="bg-black rounded-2xl overflow-hidden relative border-2 border-slate-800 shadow-lg aspect-video flex items-center justify-center">
+        <!-- 웹캠/카메라 라이브 비디오 -->
+        <video id="camera-video-preview" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+        <!-- 시뮬레이션 및 캔버스 뷰 -->
+        <canvas id="mobile-video-canvas" width="640" height="360" class="w-full h-full object-cover"></canvas>
+        
+        <!-- 실시간 OSD 오버레이 (GPS, 타임코드, 녹화 중 표시) -->
+        <div class="absolute top-2 left-2 right-2 flex items-center justify-between text-[10px] font-mono pointer-events-none">
+          <div class="bg-black/70 backdrop-blur px-2 py-0.5 rounded text-emerald-400 flex items-center gap-1.5">
+            <span id="recording-indicator" class="w-2 h-2 rounded-full bg-rose-500 hidden animate-ping"></span>
+            <span id="video-status-text">REC STANDBY</span>
+          </div>
+          <div id="recording-timer" class="bg-black/70 backdrop-blur px-2 py-0.5 rounded text-amber-300 font-bold hidden">
+            00:00
+          </div>
+        </div>
+
+        <div class="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[9px] font-mono text-slate-300 pointer-events-none bg-black/60 backdrop-blur px-2 py-1 rounded">
+          <span id="mobile-gps-coords">GPS: 37.3948 N, 127.1119 E</span>
+          <span id="mobile-timestamp">2026-11-03 08:30</span>
+        </div>
+      </div>
+
+      <!-- 동영상 컨트롤 패널 -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">점검 작업구역</label>
+            <input id="video-work-type" type="text" value="3층 슬래브 배관 개구부 단부" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">촬영자 직책·성명</label>
+            <input id="video-uploader" type="text" value="김안전 현장소장" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold">
+          </div>
+        </div>
+
+        <!-- 녹화 시작 / 중지 / 가상 녹화 버튼 -->
+        <div class="flex items-center gap-2 pt-1">
+          <button id="btn-toggle-camera" onclick="toggleCameraDevice()" class="flex-1 py-3 rounded-xl bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition">
+            <span>📷 카메라 켜기</span>
+          </button>
+          <button id="btn-record-action" onclick="toggleRecording()" class="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition">
+            <span class="w-3 h-3 rounded-full bg-white animate-pulse"></span>
+            <span id="btn-record-text">동영상 촬영 &amp; 전송</span>
+          </button>
+        </div>
+        <p class="text-[10px] text-slate-400 text-center">촬영 완료 즉시 본사 AI 관제 대시보드(Live 30 FPS)로 자동 전송됩니다.</p>
+      </div>
+
+      <!-- 최근 전송된 모바일 영상 목록 -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <span class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+            <span>📡</span> 최근 관제 전송 완료 영상
+          </span>
+          <span class="text-[10px] text-blue-600 font-bold" id="video-history-count">1건 전송됨</span>
+        </div>
+        <div id="video-history-list" class="space-y-2 text-xs">
+          <!-- 동적 리스트 주입 -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: 현장 사진 촬영 & 공종별 안전점검 체크리스트 -->
+    <!-- ======================================================== -->
+    <section id="pane-photo" class="p-4 space-y-4 hidden">
+      
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded uppercase">SMART INSPECTION</span>
+          <h2 class="text-base font-black text-slate-900 mt-1">현장 사진 촬영 &amp; 일일 안전점검</h2>
+          <p class="text-[11px] text-slate-500 mt-0.5">사진을 찍으면 Gemini 멀티모달 &amp; 기술사 RAG가 즉시 분석합니다.</p>
+        </div>
+        <span class="text-2xl">📸</span>
+      </div>
+
+      <!-- 사진 촬영/선택 카드 -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+        
+        <!-- 프리뷰 영역 -->
+        <div class="aspect-video bg-slate-900 rounded-xl overflow-hidden relative flex items-center justify-center border border-slate-300">
+          <img id="mobile-photo-preview" class="w-full h-full object-cover hidden" alt="촬영 사진 미리보기">
+          <div id="mobile-photo-placeholder" class="text-center p-4 text-slate-400 text-xs">
+            <span class="text-3xl block mb-2">📷</span>
+            <span class="font-bold text-slate-300">스마트폰 후면 카메라로 현장 촬영</span>
+            <p class="text-[10px] text-slate-500 mt-1">아래 버튼을 눌러 위험 부위를 촬영하거나 샘플을 선택하세요.</p>
+          </div>
+          <!-- 워터마크 -->
+          <div class="absolute bottom-2 left-2 bg-black/60 text-white text-[9px] px-2 py-0.5 rounded font-mono pointer-events-none">
+            BEPMC SAFETY PHOTO · GPS VERIFIED
+          </div>
+        </div>
+
+        <!-- 카메라 촬영 input & 샘플 버튼 -->
+        <div class="grid grid-cols-2 gap-2">
+          <label class="py-3 rounded-xl bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer">
+            <span>📷 사진 촬영하기</span>
+            <input type="file" accept="image/*" capture="environment" onchange="handleMobilePhotoCapture(event)" class="hidden">
+          </label>
+          <button onclick="loadMobileSamplePhoto('opening')" class="py-3 rounded-xl bg-slate-800 text-amber-300 font-bold text-xs flex items-center justify-center gap-1 shadow-sm active:scale-95 transition">
+            <span>⚡ 개구부 샘플</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 공종 및 점검 체크리스트 선택 -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+        <h3 class="text-xs font-black text-slate-900 flex items-center gap-1.5 pb-2 border-b border-slate-100">
+          <span>📋</span> 공종 선택 및 핵심 체크포인트
+        </h3>
+
+        <!-- 공종 칩 선택 -->
+        <div class="flex flex-wrap gap-1.5" id="worktype-chips">
+          <button type="button" onclick="selectWorkType(this, '골조공사')" class="worktype-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 text-white">골조공사</button>
+          <button type="button" onclick="selectWorkType(this, '비계가설')" class="worktype-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">비계가설</button>
+          <button type="button" onclick="selectWorkType(this, '토공·굴착')" class="worktype-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">토공·굴착</button>
+          <button type="button" onclick="selectWorkType(this, '철골양중')" class="worktype-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">철골양중</button>
+          <button type="button" onclick="selectWorkType(this, '가설전기')" class="worktype-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">가설전기</button>
+        </div>
+
+        <!-- 필수 체크리스트 항목 -->
+        <div class="space-y-2 pt-1 text-xs">
+          <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
+            <input type="checkbox" id="chk-1" checked class="w-4 h-4 text-blue-600 rounded">
+            <span class="font-medium text-slate-700">1. 개구부 덮개 및 단부 안전난간대 고정 상태 양호</span>
+          </label>
+          <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
+            <input type="checkbox" id="chk-2" checked class="w-4 h-4 text-blue-600 rounded">
+            <span class="font-medium text-slate-700">2. 근로자 안전모 턱끈 및 안전대 2개 고리 체결 확인</span>
+          </label>
+          <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
+            <input type="checkbox" id="chk-3" class="w-4 h-4 text-blue-600 rounded">
+            <span class="font-medium text-slate-700">3. 중장비(굴착기/크레인) 유도원 배치 및 작업반경 통제</span>
+          </label>
+          <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
+            <input type="checkbox" id="chk-4" checked class="w-4 h-4 text-blue-600 rounded">
+            <span class="font-medium text-slate-700">4. 가설 분전함 접지 및 누전차단기 정상 작동</span>
+          </label>
+        </div>
+
+        <!-- 점검자 메모 / 음성 입력란 -->
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">현장 특이사항 및 지도 메모</label>
+          <textarea id="mobile-memo" rows="2" placeholder="현장에서 발견한 특이사항이나 구두 지시사항을 입력하세요..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs"></textarea>
+        </div>
+
+        <!-- 전송 및 AI 분석 버튼 -->
+        <button id="btn-submit-inspection" onclick="submitMobileInspection()" class="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-md active:scale-95 transition">
+          <span>⚡ 사진 전송 및 AI 위험성평가 진단</span>
+        </button>
+      </div>
+
+      <!-- AI 즉각 진단 결과 모달 / 카드 (초기 숨김) -->
+      <div id="mobile-ai-card" class="bg-gradient-to-r from-blue-950 to-slate-900 text-white rounded-2xl p-4 border border-blue-600 shadow-xl space-y-3 hidden">
+        <div class="flex items-center justify-between pb-2 border-b border-blue-800">
+          <div class="flex items-center gap-1.5">
+            <span class="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded">AI 진단 완료</span>
+            <span id="ai-card-title" class="text-xs font-black text-white truncate max-w-[200px]">개구부 추락방호 미흡</span>
+          </div>
+          <span id="ai-card-risk" class="text-[10px] bg-rose-600 text-white font-bold px-2 py-0.5 rounded">위험도: 상</span>
+        </div>
+        <div class="p-2.5 bg-blue-900/40 rounded-lg border border-blue-700/50 text-xs space-y-1">
+          <div class="text-amber-300 font-bold text-[11px]">⚖️ 산안기준규칙 제43조 (개구부 방호조치)</div>
+          <p id="ai-card-law" class="text-[11px] text-slate-300 leading-relaxed">
+            작업발판 및 통로의 끝이나 개구부로서 근로자가 추락할 위험이 있는 장소에는 덮개 설치 및 견고히 고정해야 합니다.
+          </p>
+        </div>
+        <div class="p-2.5 bg-slate-950/60 rounded-lg border border-slate-800 text-xs">
+          <div class="text-emerald-400 font-bold text-[11px]">💡 긴급 조치 가이드 (PE 기술사 의견):</div>
+          <p id="ai-card-action" class="text-[11px] text-slate-200 mt-0.5">
+            100kg 집중하중 지지 강제 덮개 즉시 설치 및 앵커 볼트 고정 후 경고 표지 부착
+          </p>
+        </div>
+        <div class="pt-1 flex gap-2">
+          <button onclick="goToApprovalTabWithItem()" class="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-bold text-xs text-center shadow-sm">
+            보고서 결재항목으로 연동 &rarr;
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: 법정 결과보고서 모바일 전자 결재 및 디지털 서명 -->
+    <!-- ======================================================== -->
+    <section id="pane-approval" class="p-4 space-y-4 hidden">
+      
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-black bg-blue-100 text-blue-900 px-2 py-0.5 rounded uppercase">E-SIGNATURE &amp; APPROVAL</span>
+          <h2 class="text-base font-black text-slate-900 mt-1">법정 결과보고서 모바일 전자결재</h2>
+          <p class="text-[11px] text-slate-500 mt-0.5">산업안전보건법 시행규칙 [별지 제103호] 서명 교부</p>
+        </div>
+        <span class="text-2xl">✍️</span>
+      </div>
+
+      <!-- 보고서 개요 카드 -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 text-xs">
+          <div>
+            <span class="font-black text-slate-900 text-sm">2026년 11월 1회차 기술지도 보고서</span>
+            <p class="text-[10px] text-slate-500">판교 복합비즈니스센터 | 담당: 하진우 지도원(기술사)</p>
+          </div>
+          <span id="approval-status-badge" class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black border border-amber-300">
+            소장 서명대기
+          </span>
+        </div>
+
+        <!-- 핵심 지적 사항 리스트 -->
+        <div class="space-y-2 text-xs">
+          <span class="text-[11px] font-bold text-slate-600 block">📌 금회 방문 기술지도 지적사항 (2건)</span>
+          
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900 text-[11px]">1) 슬래브 바닥 개구부 덮개 미설치 및 고정 불량</span>
+              <span class="text-[10px] bg-rose-600 text-white font-bold px-1.5 py-0.2 rounded">상 (즉시)</span>
+            </div>
+            <p class="text-[10px] text-amber-900 bg-amber-100/60 p-1.5 rounded">
+              <b>관련법령:</b> 산안기준규칙 제43조 (개구부 등의 방호 조치)
+            </p>
+            <p class="text-[11px] text-slate-600">
+              <b>시정대책:</b> 개구부 상부 100kg 이상 하중 지지용 강제 덮개 즉시 설치 및 앵커 고정
+            </p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900 text-[11px]">2) 외부 강관비계 상부 안전난간대 누락</span>
+              <span class="text-[10px] bg-rose-600 text-white font-bold px-1.5 py-0.2 rounded">상 (즉시)</span>
+            </div>
+            <p class="text-[10px] text-amber-900 bg-amber-100/60 p-1.5 rounded">
+              <b>관련법령:</b> 산안기준규칙 제56조 (작업발판의 구조)
+            </p>
+            <p class="text-[11px] text-slate-600">
+              <b>시정대책:</b> 상부난간대(90cm) 및 중간난간대 조립 완료 시까지 고소작업 금지
+            </p>
+          </div>
+        </div>
+
+        <!-- 현장소장 조치계획 입력란 -->
+        <div class="pt-2 border-t border-slate-100 space-y-2">
+          <span class="text-[11px] font-bold text-blue-900 flex items-center gap-1">
+            <span>📝</span> 현장책임자(현장소장) 시정조치 계획 입력
+          </span>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">조치 이행 예정일</label>
+              <input id="mobile-action-date" type="date" value="2026-11-04" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">조치 책임 담당자</label>
+              <input id="mobile-action-manager" type="text" value="박골조 반장" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">구체적 시정 조치계획</label>
+            <textarea id="mobile-action-plan" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs">금일 17시 협력업체 안전회의 소집 및 전 층 바닥 개구부 강제 덮개 앵커 체결 완료 예정.</textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 스마트폰 터치 전자 서명 패드 -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-xs font-black text-slate-900 flex items-center gap-1">
+              <span>✍️</span> 현장소장 확인 서명란 (터치 서명)
+            </span>
+            <p class="text-[10px] text-slate-400">손가락 또는 터치펜으로 사각 박스 안에 서명하십시오.</p>
+          </div>
+          <button onclick="clearMobileSignature()" class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 active:bg-rose-100">
+            지우기
+          </button>
+        </div>
+
+        <!-- 서명 캔버스 박스 -->
+        <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 relative overflow-hidden flex items-center justify-center" style="height: 140px;">
+          <canvas id="mobile-signature-canvas" width="400" height="140" class="w-full h-full cursor-crosshair"></canvas>
+          <div id="signature-guide-text" class="absolute pointer-events-none text-slate-300 text-xs font-bold">
+            이곳에 서명해 주십시오 (Sign Here)
+          </div>
+        </div>
+
+        <!-- 최종 결재 완료 버튼 -->
+        <button id="btn-approve-report" onclick="submitMobileApproval()" class="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition">
+          <span>✅ 모바일 전자결재 및 서명 교부 완료</span>
+        </button>
+        <p class="text-[10px] text-slate-400 text-center">
+          결재 시 산업안전보건법 시행규칙 [별지 제103호]에 서명이 날인되며 K2B 전산망에 즉시 동기화됩니다.
+        </p>
+      </div>
+
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 4: 우리 현황 & 법정 지도 이력 -->
+    <!-- ======================================================== -->
+    <section id="pane-status" class="p-4 space-y-4 hidden">
+      
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <span class="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded uppercase">LEGAL COMPLIANCE</span>
+            <h2 class="text-base font-black text-slate-900 mt-1">우리 현장 법정 기술지도 현황</h2>
+          </div>
+          <span class="text-2xl">📋</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 my-3 text-center">
+          <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+            <span class="text-[10px] text-slate-500 font-bold block">11월 법정 방문 주기</span>
+            <span class="text-base font-black text-blue-800">1회 완료 / 2회 의무</span>
+          </div>
+          <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+            <span class="text-[10px] text-slate-500 font-bold block">K2B 전산 등록률</span>
+            <span class="text-base font-black text-emerald-700">100% (적기교부)</span>
+          </div>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">공사명</span>
+            <span class="font-bold text-slate-900">판교 복합비즈니스센터 신축공사</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">시공사 / 발주자</span>
+            <span class="font-semibold text-slate-800">(주)한양종합건설 / 판교PFV(주)</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">담당 지도요원</span>
+            <span class="font-bold text-blue-700">하진우 지도원 (건설안전기술사)</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">지도기관 긴급 연락처</span>
+            <span class="font-bold text-slate-800">xxx-xxxx-xxxx</span>
+          </div>
+          <div class="flex justify-between py-1.5">
+            <span class="text-slate-500">다음 2회차 예정일</span>
+            <span class="font-bold text-amber-700">2026-11-18 (수요일)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 긴급 상황 신고 배너 -->
+      <div class="bg-gradient-to-r from-rose-900 to-slate-900 text-white rounded-2xl p-4 shadow-md space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+          <span class="text-xs font-black text-rose-300">중대재해 비상대응 핫라인</span>
+        </div>
+        <p class="text-[11px] text-slate-300">
+          현장 내 급박한 붕괴/추락 위험 또는 중대사고 발생 시 즉시 비상상황실로 신고하십시오.
+        </p>
+        <div class="pt-1">
+          <a href="tel:xxx-xxxx-xxxx" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow">
+            <span>📞 비상상황실 즉시 연결 (xxx-xxxx-xxxx)</span>
+          </a>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- 하단 고정 탭 바 (Mobile Bottom Navigation Bar) -->
+  <!-- ======================================================== -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#0f172a] border-t border-slate-800 px-3 py-2 z-50 flex items-center justify-around pb-safe shadow-2xl">
+    <button onclick="switchMobileTab('video')" id="nav-btn-video" class="flex flex-col items-center gap-1 py-1 px-3 text-amber-400 font-black text-[10px] transition">
+      <span class="text-lg">📹</span>
+      <span>현장 영상</span>
+    </button>
+    <button onclick="switchMobileTab('photo')" id="nav-btn-photo" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-400 hover:text-white font-medium text-[10px] transition">
+      <span class="text-lg">📸</span>
+      <span>안전 점검</span>
+    </button>
+    <button onclick="switchMobileTab('approval')" id="nav-btn-approval" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-400 hover:text-white font-medium text-[10px] transition relative">
+      <span class="text-lg">✍️</span>
+      <span>전자 결재</span>
+      <span id="approval-badge-dot" class="w-2 h-2 rounded-full bg-rose-500 absolute top-1 right-3 animate-ping"></span>
+    </button>
+    <button onclick="switchMobileTab('status')" id="nav-btn-status" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-400 hover:text-white font-medium text-[10px] transition">
+      <span class="text-lg">📋</span>
+      <span>현장 정보</span>
+    </button>
+  </nav>
+
+  <!-- 토스트 알림창 -->
+  <div id="mobile-toast" class="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-700 shadow-2xl pointer-events-none transition-all duration-300 opacity-0 -translate-y-2">
+    알림 메시지
+  </div>
+
+  <!-- 모바일 스크립트 로직 -->
+  <script>
+    let currentTab = 'video';
+    let currentPhotoBase64 = null;
+    let isRecording = false;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordTimerInterval = null;
+    let recordSeconds = 0;
+    let cameraStream = null;
+    let signatureCanvas = null;
+    let signatureCtx = null;
+    let hasSigned = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initMobileSignature();
+      initMobileVideoCanvas();
+      loadVideoHistory();
+      updateGpsCoords();
+    });
+
+    // 1. 하단 탭 전환
+    function switchMobileTab(tab) {
+      ['video', 'photo', 'approval', 'status'].forEach(t => {
+        const pane = document.getElementById(`pane-${t}`);
+        const btn = document.getElementById(`nav-btn-${t}`);
+        if (t === tab) {
+          pane.classList.remove('hidden');
+          btn.className = "flex flex-col items-center gap-1 py-1 px-3 text-amber-400 font-black text-[10px] transition";
+        } else {
+          pane.classList.add('hidden');
+          btn.className = "flex flex-col items-center gap-1 py-1 px-3 text-slate-400 hover:text-white font-medium text-[10px] transition";
+        }
+      });
+      currentTab = tab;
+      window.scrollTo(0, 0);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('mobile-toast');
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }, 2500);
+    }
+
+    // ========================================================
+    // TAB 1: 동영상 촬영 및 관제 전송
+    // ========================================================
+    function updateGpsCoords() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            const str = `GPS: ${pos.coords.latitude.toFixed(4)} N, ${pos.coords.longitude.toFixed(4)} E`;
+            document.getElementById('mobile-gps-coords').textContent = str;
+          },
+          err => {
+            document.getElementById('mobile-gps-coords').textContent = 'GPS: 37.3948 N, 127.1119 E (판교)';
+          }
+        );
+      }
+    }
+
+    function initMobileVideoCanvas() {
+      const canvas = document.getElementById('mobile-video-canvas');
+      const ctx = canvas.getContext('2d');
+      let tick = 0;
+
+      function drawSimulatedFeed() {
+        if (!cameraStream) {
+          tick++;
+          ctx.fillStyle = '#090d16';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // 배경 그리드
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 1;
+          for (let x = 0; x < canvas.width; x += 30) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+          }
+          for (let y = 0; y < canvas.height; y += 30) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+          }
+
+          // 위험 구역 오버레이
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(180, 80, 280, 180);
+          ctx.setLineDash([]);
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+          ctx.fillRect(180, 80, 280, 180);
+
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText('⚠ DANGER ZONE: SLAB OPENING (100kg LIMIT)', 190, 100);
+
+          // 작업자 시뮬레이션 BBox
+          const osc = Math.sin(tick * 0.05) * 15;
+          const bx = 260 + osc;
+          const by = 120;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(bx, by, 50, 100);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(bx, by - 16, 100, 16);
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText('WORKER #104 (OK)', bx + 4, by - 4);
+
+          // 타임코드
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '10px monospace';
+          const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+          ctx.fillText(`${nowStr} | MOBILE PATROL CAM`, 15, canvas.height - 15);
+        }
+        requestAnimationFrame(drawSimulatedFeed);
+      }
+      drawSimulatedFeed();
+    }
+
+    async function toggleCameraDevice() {
+      const video = document.getElementById('camera-video-preview');
+      const canvas = document.getElementById('mobile-video-canvas');
+      const btn = document.getElementById('btn-toggle-camera');
+
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+        video.classList.add('hidden');
+        canvas.classList.remove('hidden');
+        btn.innerHTML = `<span>📷 카메라 켜기</span>`;
+        showToast('카메라가 꺼졌습니다.');
+      } else {
+        try {
+          cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" }, width: 640, height: 360 },
+            audio: true
+          });
+          video.srcObject = cameraStream;
+          video.classList.remove('hidden');
+          canvas.classList.add('hidden');
+          btn.innerHTML = `<span>⏹ 카메라 끄기</span>`;
+          showToast('현장 후면 카메라가 활성화되었습니다.');
+        } catch (err) {
+          showToast('카메라 접근 권한이 없어 시뮬레이션 모드로 작동합니다.');
+        }
+      }
+    }
+
+    async function toggleRecording() {
+      const recordText = document.getElementById('btn-record-text');
+      const recInd = document.getElementById('recording-indicator');
+      const recTimer = document.getElementById('recording-timer');
+      const statusText = document.getElementById('video-status-text');
+
+      if (!isRecording) {
+        // 녹화 시작
+        isRecording = true;
+        recordSeconds = 0;
+        recordText.textContent = "녹화 중지 및 전송";
+        recInd.classList.remove('hidden');
+        recTimer.classList.remove('hidden');
+        statusText.textContent = "RECORDING (LIVE)";
+        statusText.className = "text-rose-400 font-bold animate-pulse";
+
+        recordTimerInterval = setInterval(() => {
+          recordSeconds++;
+          const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+          const secs = String(recordSeconds % 60).padStart(2, '0');
+          recTimer.textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        showToast('🔴 현장 동영상 녹화를 시작합니다.');
+      } else {
+        // 녹화 종료 및 백엔드 전송
+        clearInterval(recordTimerInterval);
+        isRecording = false;
+        recordText.textContent = "동영상 촬영 & 전송";
+        recInd.classList.add('hidden');
+        recTimer.classList.add('hidden');
+        statusText.textContent = "UPLOADING...";
+        statusText.className = "text-amber-400 font-bold";
+
+        showToast('관제센터로 동영상을 압축 전송 중...');
+
+        const uploader = document.getElementById('video-uploader').value;
+        const workType = document.getElementById('video-work-type').value;
+
+        // 가상 WebM Base64 패킷 생성
+        const dummyBase64 = "GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAA=";
+
+        try {
+          const res = await fetch('/api/mobile/video-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              videoBase64: dummyBase64,
+              mimeType: 'video/webm',
+              siteName: '판교 복합비즈니스센터 신축공사',
+              uploaderName: uploader,
+              workType: workType,
+              gpsLocation: '37.3948 N, 127.1119 E',
+              durationSec: recordSeconds || 12
+            })
+          });
+          const json = await res.json();
+          if (json.success) {
+            showToast('✅ 관제센터에 동영상이 성공적으로 전송되었습니다!');
+            statusText.textContent = "SENT (SUCCESS)";
+            statusText.className = "text-emerald-400 font-bold";
+            loadVideoHistory();
+          }
+        } catch (e) {
+          showToast('동영상 전송 실패');
+        }
+      }
+    }
+
+    async function loadVideoHistory() {
+      try {
+        const res = await fetch('/api/mobile/videos');
+        const json = await res.json();
+        const list = document.getElementById('video-history-list');
+        const countBadge = document.getElementById('video-history-count');
+
+        if (json.success && json.videos) {
+          countBadge.textContent = `${json.videos.length}건 전송됨`;
+          list.innerHTML = json.videos.map(v => `
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-900 block text-[11px]">${v.workType}</span>
+                <span class="text-[10px] text-slate-400">${v.recordedAt} (${v.durationSec}초) · ${v.uploaderName}</span>
+              </div>
+              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">관제수신</span>
+            </div>
+          `).join('');
+        }
+      } catch (e) {}
+    }
+
+    // ========================================================
+    // TAB 2: 스마트폰 사진 촬영 & AI 위험성평가
+    // ========================================================
+    function handleMobilePhotoCapture(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentPhotoBase64 = e.target.result;
+        const img = document.getElementById('mobile-photo-preview');
+        img.src = currentPhotoBase64;
+        img.classList.remove('hidden');
+        document.getElementById('mobile-photo-placeholder').classList.add('hidden');
+        showToast('현장 사진이 등록되었습니다.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadMobileSamplePhoto(type) {
+      // 캔버스 가상 이미지 생성
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, 0, 640, 480);
+      ctx.fillStyle = '#facc15';
+      ctx.font = 'bold 24px Pretendard, sans-serif';
+      ctx.fillText('[현장 사진] 3층 바닥 개구부 덮개 미고정', 40, 220);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '14px Pretendard, sans-serif';
+      ctx.fillText(`판교 복합비즈니스센터 | ${new Date().toLocaleString()}`, 40, 260);
+
+      currentPhotoBase64 = canvas.toDataURL('image/jpeg');
+      const img = document.getElementById('mobile-photo-preview');
+      img.src = currentPhotoBase64;
+      img.classList.remove('hidden');
+      document.getElementById('mobile-photo-placeholder').classList.add('hidden');
+      document.getElementById('mobile-memo').value = "바닥 개구부에 합판만 걸쳐져 있고 앵글 볼트 고정 미실시";
+      showToast('개구부 샘플 사진이 로드되었습니다.');
+    }
+
+    let selectedWorkTypeName = '골조공사';
+    function selectWorkType(btn, name) {
+      selectedWorkTypeName = name;
+      document.querySelectorAll('.worktype-btn').forEach(b => {
+        b.className = "worktype-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600";
+      });
+      btn.className = "worktype-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 text-white";
+    }
+
+    async function submitMobileInspection() {
+      if (!currentPhotoBase64) {
+        showToast('먼저 현장 사진을 촬영해주세요.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-inspection');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin">⏳</span> Gemini &amp; PE 기술사 AI 정밀 분석 중...`;
+
+      const checklist = [];
+      if (document.getElementById('chk-1').checked) checklist.push('개구부 및 단부 안전난간 상태');
+      if (document.getElementById('chk-2').checked) checklist.push('안전모 및 안전대 2개 고리 체결');
+      if (document.getElementById('chk-3').checked) checklist.push('중장비 유도원 배치 및 작업반경');
+      if (document.getElementById('chk-4').checked) checklist.push('가설 분전함 접지 및 누전차단기');
+
+      const memo = document.getElementById('mobile-memo').value;
+
+      try {
+        const res = await fetch('/api/mobile/inspections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: currentPhotoBase64,
+            siteName: '판교 복합비즈니스센터 신축공사',
+            inspectorName: '김안전 현장소장',
+            workType: selectedWorkTypeName,
+            location: '3층 바닥 슬래브',
+            checklist,
+            memo
+          })
+        });
+
+        const json = await res.json();
+        if (json.success && json.inspection?.aiResult) {
+          const ai = json.inspection.aiResult;
+          document.getElementById('ai-card-title').textContent = ai.hazard_title;
+          document.getElementById('ai-card-risk').textContent = `위험도: ${ai.risk_level}`;
+          document.getElementById('ai-card-law').textContent = `${ai.legal_basis?.law_name} ${ai.legal_basis?.article_no}: ${ai.legal_basis?.article_content}`;
+          document.getElementById('ai-card-action').textContent = ai.pe_analysis?.pe_professional_opinion || ai.immediate_action;
+
+          const card = document.getElementById('mobile-ai-card');
+          card.classList.remove('hidden');
+          card.scrollIntoView({ behavior: 'smooth' });
+          showToast('⚡ AI 위험성평가 분석이 완료되었습니다!');
+        } else {
+          showToast('점검 등록 완료');
+        }
+      } catch (e) {
+        showToast('서버 통신 오류');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>⚡ 사진 전송 및 AI 위험성평가 진단</span>`;
+      }
+    }
+
+    function goToApprovalTabWithItem() {
+      switchMobileTab('approval');
+    }
+
+    // ========================================================
+    // TAB 3: 법정 결과보고서 모바일 전자 결재 및 서명
+    // ========================================================
+    function initMobileSignature() {
+      signatureCanvas = document.getElementById('mobile-signature-canvas');
+      if (!signatureCanvas) return;
+      signatureCtx = signatureCanvas.getContext('2d');
+      signatureCtx.lineWidth = 3;
+      signatureCtx.lineCap = 'round';
+      signatureCtx.lineJoin = 'round';
+      signatureCtx.strokeStyle = '#0f172a';
+
+      let isDrawing = false;
+
+      function getPos(e) {
+        const rect = signatureCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top
+        };
+      }
+
+      function startDraw(e) {
+        e.preventDefault();
+        isDrawing = true;
+        hasSigned = true;
+        document.getElementById('signature-guide-text').classList.add('hidden');
+        const pos = getPos(e);
+        signatureCtx.beginPath();
+        signatureCtx.moveTo(pos.x, pos.y);
+      }
+
+      function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        signatureCtx.lineTo(pos.x, pos.y);
+        signatureCtx.stroke();
+      }
+
+      function endDraw() {
+        isDrawing = false;
+      }
+
+      signatureCanvas.addEventListener('mousedown', startDraw);
+      signatureCanvas.addEventListener('mousemove', draw);
+      window.addEventListener('mouseup', endDraw);
+
+      signatureCanvas.addEventListener('touchstart', startDraw, { passive: false });
+      signatureCanvas.addEventListener('touchmove', draw, { passive: false });
+      window.addEventListener('touchend', endDraw);
+    }
+
+    function clearMobileSignature() {
+      if (!signatureCtx || !signatureCanvas) return;
+      signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+      document.getElementById('signature-guide-text').classList.remove('hidden');
+      hasSigned = false;
+      showToast('서명이 초기화되었습니다.');
+    }
+
+    async function submitMobileApproval() {
+      if (!hasSigned) {
+        showToast('먼저 서명란에 현장소장 확인 서명을 입력하십시오.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-approve-report');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin">⏳</span> 전자 결재 및 HWPX 보고서 서명 날인 중...`;
+
+      const actionPlan = document.getElementById('mobile-action-plan').value;
+      const actionDate = document.getElementById('mobile-action-date').value;
+      const signatureData = signatureCanvas.toDataURL('image/png');
+
+      try {
+        const res = await fetch('/api/mobile/reports/BEPMC-TG-202611-01/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            siteManagerName: '김안전 현장소장',
+            signatureData,
+            actionPlan,
+            targetCompletionDate: actionDate
+          })
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          const badge = document.getElementById('approval-status-badge');
+          badge.textContent = "결재완료 (서명교부완료)";
+          badge.className = "px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black border border-emerald-300";
+
+          document.getElementById('approval-badge-dot').classList.add('hidden');
+          btn.className = "w-full py-4 rounded-xl bg-slate-700 text-slate-300 font-black text-sm flex items-center justify-center gap-2 cursor-default";
+          btn.innerHTML = `<span>✓ 전자 결재 완료됨 (K2B 자동 전송)</span>`;
+
+          alert("🎉 [결재 완료]\n\n현장 관리자 전자 서명이 법정 결과보고서 [별지 제103호]에 정식 날인되었습니다.\n발주자 및 안전보건공단 K2B 전산망으로 즉시 교부 전송되었습니다.");
+        }
+      } catch (e) {
+        showToast('결재 처리 실패');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
