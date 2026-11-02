@@ -37,7 +37,11 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <select id="mobile-site-selector" class="bg-slate-800 text-slate-200 text-xs font-bold rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none">
+        <button onclick="promptServerIpSetting()" title="동일 Wi-Fi 서버 주소 설정" class="bg-blue-900/80 hover:bg-blue-800 text-blue-200 text-[10px] font-mono px-2 py-1 rounded border border-blue-700 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span id="header-server-ip-text">Wi-Fi 연동</span>
+        </button>
+        <select id="mobile-site-selector" class="bg-slate-800 text-slate-200 text-xs font-bold rounded-lg px-2 py-1.5 border border-slate-700 focus:outline-none">
           <option value="1">판교 비즈니스센터 (3층)</option>
           <option value="2">화성 물류센터 (외벽)</option>
           <option value="3">송도 바이오 R&D</option>
@@ -518,6 +522,27 @@
       window.scrollTo(0, 0);
     }
 
+    // API 기본 URL 결정 (동일 Wi-Fi 및 APK 내부 file:// 모두 지원)
+    function getApiUrl(path) {
+      if (window.location.protocol.startsWith('http')) {
+        return path;
+      }
+      const savedIp = localStorage.getItem('bepmc_server_ip') || 'http://172.28.123.44:3000';
+      return `${savedIp.replace(/\/$/, '')}${path}`;
+    }
+
+    function promptServerIpSetting() {
+      const current = localStorage.getItem('bepmc_server_ip') || 'http://172.28.123.44:3000';
+      const input = prompt('동일 Wi-Fi 내 PC 서버 주소를 입력하세요:', current);
+      if (input) {
+        localStorage.setItem('bepmc_server_ip', input.trim());
+        const txt = document.getElementById('header-server-ip-text');
+        if (txt) txt.textContent = input.trim().replace(/^https?:\/\//, '');
+        showToast(`서버 연동 주소 설정: ${input.trim()}`);
+        loadVideoHistory();
+      }
+    }
+
     function showToast(msg) {
       const toast = document.getElementById('mobile-toast');
       toast.textContent = msg;
@@ -676,7 +701,7 @@
         const dummyBase64 = "GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAA=";
 
         try {
-          const res = await fetch('/api/mobile/video-upload', {
+          const res = await fetch(getApiUrl('/api/mobile/video-upload'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -704,7 +729,7 @@
 
     async function loadVideoHistory() {
       try {
-        const res = await fetch('/api/mobile/videos');
+        const res = await fetch(getApiUrl('/api/mobile/videos'));
         const json = await res.json();
         const list = document.getElementById('video-history-list');
         const countBadge = document.getElementById('video-history-count');
@@ -795,7 +820,7 @@
       const memo = document.getElementById('mobile-memo').value;
 
       try {
-        const res = await fetch('/api/mobile/inspections', {
+        const res = await fetch(getApiUrl('/api/mobile/inspections'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -914,7 +939,7 @@
       const signatureData = signatureCanvas.toDataURL('image/png');
 
       try {
-        const res = await fetch('/api/mobile/reports/BEPMC-TG-202611-01/approve', {
+        const res = await fetch(getApiUrl('/api/mobile/reports/BEPMC-TG-202611-01/approve'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

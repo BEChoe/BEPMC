@@ -148,6 +148,10 @@
             <button id="btn-cam-3" onclick="switchEdgeCctvChannel('CAM-03')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition">
               CAM-03: 시스템 비계 (보호구)
             </button>
+            <button id="btn-cam-mobile" onclick="switchEdgeCctvChannel('MOBILE-CAM')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 hover:text-white border border-amber-500/60 transition flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span>📱 MOBILE-CAM (현장폰 실시간 전송)</span>
+            </button>
           </div>
         </div>
 
@@ -1078,11 +1082,17 @@
 
     function switchEdgeCctvChannel(ch) {
       currentEdgeCamChannel = ch;
-      ['CAM-01', 'CAM-02', 'CAM-03'].forEach((c, idx) => {
-        const btn = document.getElementById(`btn-cam-${idx + 1}`);
+      const channels = [
+        { id: 'btn-cam-1', key: 'CAM-01' },
+        { id: 'btn-cam-2', key: 'CAM-02' },
+        { id: 'btn-cam-3', key: 'CAM-03' },
+        { id: 'btn-cam-mobile', key: 'MOBILE-CAM' }
+      ];
+      channels.forEach(item => {
+        const btn = document.getElementById(item.id);
         if (!btn) return;
-        if (c === ch) {
-          btn.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-blue-600 text-white border border-blue-400 transition";
+        if (item.key === ch) {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-blue-600 text-white border border-blue-400 transition shadow-sm";
         } else {
           btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition";
         }

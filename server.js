@@ -1040,6 +1040,25 @@ app.get('/api/technical-guidance/edge-cctv/events', (req, res) => {
           actionTaken: '안전게이트 통과 경광등 점멸'
         }
       ]
+    },
+    'MOBILE-CAM': {
+      cameraName: 'MOBILE-CAM: 스마트폰 현장 순회 촬영 실시간 피드 (판교 3층)',
+      siteName: '판교 복합비즈니스센터 신축공사',
+      fps: 30.0,
+      latencyMs: 18,
+      modelEngine: 'Mobile Edge Sensor + VLM Remote Stream (Wi-Fi Sync)',
+      currentEvents: [
+        {
+          id: 'EVT-' + Date.now() + '-5',
+          time: now.toLocaleTimeString('ko-KR'),
+          type: '모바일 실시간 연동',
+          severity: 'DANGER',
+          workerId: '김안전 현장소장 폰',
+          description: '모바일앱에서 촬영된 3층 바닥 개구부 미고정 영상 실시간 수신됨',
+          bbox: { x: 30, y: 35, w: 30, h: 45 },
+          actionTaken: 'PC 관제센터 화면에 실시간 피드 즉시 표시 및 산안법 매칭 연계'
+        }
+      ]
     }
   };
 
