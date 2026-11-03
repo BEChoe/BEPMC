@@ -31,7 +31,7 @@ const defaultData = {
       password: "user1234",
       name: "김안전",
       email: "worker@safety.org",
-      role: "member",
+      role: "paid_member",
       status: "approved",
       createdAt: "2026-10-10 14:20:00"
     },

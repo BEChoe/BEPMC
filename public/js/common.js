@@ -86,17 +86,19 @@ async function initLayout(activeMenu = '') {
   if (headerContainer) {
     let authNavHtml = '';
     if (currentAuth.isLoggedIn) {
+      const isPaid = (currentAuth.mode === 'admin' || currentAuth.membership === 'paid' || (currentAuth.user && currentAuth.user.role === 'paid_member'));
       authNavHtml = `
         <div class="flex items-center gap-3">
           ${currentAuth.mode === 'admin' ? `
-            <a href="/admin.html" class="flex items-center gap-1.5 bg-amber-400 text-slate-900 hover:bg-amber-300 px-3 py-1.5 rounded-md font-bold text-xs tracking-tight transition shadow-sm">
+            <a href="/admin.html" class="flex items-center gap-1.5 bg-amber-400 text-slate-950 hover:bg-amber-300 px-3 py-1.5 rounded-md font-black text-xs tracking-tight transition shadow-sm">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              관리자 모드 대시보드
+              <span>관리자 모드</span>
             </a>
           ` : `
-            <span class="text-xs bg-blue-900/80 text-blue-200 border border-blue-700 px-2.5 py-1 rounded font-medium">
-              회원: <b>${escapeHtml(currentAuth.user.name)}</b>님
-            </span>
+            <div class="flex items-center gap-1.5 text-xs bg-blue-900/80 text-blue-200 border border-blue-700 px-2.5 py-1 rounded font-medium">
+              <span>회원: <b>${escapeHtml(currentAuth.user.name)}</b>님</span>
+              ${isPaid ? '<span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-1.5 py-0.2 rounded font-black">💎 유료회원</span>' : '<span class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.2 rounded font-normal">무료</span>'}
+            </div>
           `}
           <button onclick="logout()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition font-medium border border-slate-700">
             로그아웃

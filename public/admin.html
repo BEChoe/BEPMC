@@ -504,9 +504,10 @@
                 <th class="px-4 py-3 text-center w-28">아이디</th>
                 <th class="px-4 py-3 text-center w-28">성명/담당자</th>
                 <th class="px-4 py-3">이메일</th>
-                <th class="px-4 py-3 text-center w-24">구분</th>
-                <th class="px-4 py-3 text-center w-28">상태</th>
-                <th class="px-4 py-3 text-center w-44">승인 / 거절 처리</th>
+                <th class="px-4 py-3 text-center w-28">회원 등급</th>
+                <th class="px-4 py-3 text-center w-36">AI 관제 권한</th>
+                <th class="px-4 py-3 text-center w-24">상태</th>
+                <th class="px-4 py-3 text-center w-60">등급 전환 &amp; 승인 관리</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -518,6 +519,8 @@
           else if (u.status === 'pending') statusBadge = '<span class="badge-yellow text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">승인 대기</span>';
           else statusBadge = '<span class="badge-red text-[10px] px-2 py-0.5 rounded font-bold">거절됨</span>';
 
+          const isPaid = (u.role === 'admin' || u.role === 'paid_member');
+
           html += `
             <tr class="hover:bg-slate-50 transition ${u.status === 'pending' ? 'bg-amber-50/30' : ''}">
               <td class="px-4 py-3 text-center text-slate-400 font-mono">${u.id}</td>
@@ -525,19 +528,31 @@
               <td class="px-4 py-3 text-center text-slate-800">${escapeHtml(u.name)}</td>
               <td class="px-4 py-3 text-slate-600">${escapeHtml(u.email || '-')}</td>
               <td class="px-4 py-3 text-center">
-                ${u.role === 'admin' ? '<span class="badge-blue text-[10px] px-2 py-0.5 rounded">관리자</span>' : '<span class="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 rounded">일반회원</span>'}
+                ${u.role === 'admin' ? '<span class="badge-blue text-[10px] px-2.5 py-0.5 rounded font-bold">👑 최고관리자</span>' : (u.role === 'paid_member' ? '<span class="bg-indigo-100 text-indigo-800 border border-indigo-300 text-[10px] px-2 py-0.5 rounded font-black">💎 유료회원</span>' : '<span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded">일반회원</span>')}
+              </td>
+              <td class="px-4 py-3 text-center">
+                ${isPaid ? '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>이용 가능</span>' : '<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">🔒 권한 없음</span>'}
               </td>
               <td class="px-4 py-3 text-center">${statusBadge}</td>
               <td class="px-4 py-3 text-center">
                 ${u.role === 'admin' ? '<span class="text-slate-400 text-[11px]">-</span>' : `
-                  <div class="flex items-center justify-center gap-1.5">
+                  <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                    ${u.role === 'paid_member' ? `
+                      <button onclick="changeUserRole(${u.id}, 'member')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-2 py-1 rounded text-[11px] font-bold transition">
+                        무료 전환
+                      </button>
+                    ` : `
+                      <button onclick="changeUserRole(${u.id}, 'paid_member')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded text-[11px] font-black transition shadow-sm flex items-center gap-1">
+                        <span>💎</span> 유료 승급
+                      </button>
+                    `}
                     ${u.status !== 'approved' ? `
-                      <button onclick="changeUserStatus(${u.id}, 'approved')" class="btn-safety-green px-2.5 py-1 rounded text-xs font-bold shadow-sm">
+                      <button onclick="changeUserStatus(${u.id}, 'approved')" class="btn-safety-green px-2 py-1 rounded text-[11px] font-bold shadow-sm">
                         승인
                       </button>
                     ` : ''}
                     ${u.status !== 'rejected' ? `
-                      <button onclick="changeUserStatus(${u.id}, 'rejected')" class="bg-red-50 text-red-600 hover:bg-red-100 px-2.5 py-1 rounded text-xs font-bold transition">
+                      <button onclick="changeUserStatus(${u.id}, 'rejected')" class="bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded text-[11px] font-bold transition">
                         거절
                       </button>
                     ` : ''}
@@ -556,6 +571,28 @@
 
       } catch (err) {
         container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">회원 목록을 불러오지 못했습니다.</div>`;
+      }
+    }
+
+    async function changeUserRole(userId, role) {
+      const roleName = role === 'paid_member' ? '유료 기술지도 회원' : '일반 무료 회원';
+      if (!confirm(`이 회원을 [${roleName}] 등급으로 변경하시겠습니까?`)) return;
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/role`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert(result.message);
+          loadAdminUsers();
+          loadSummaryStats();
+        } else {
+          alert(result.message || '등급 변경 실패');
+        }
+      } catch (e) {
+        alert('처리 중 통신 오류가 발생했습니다.');
       }
     }
 

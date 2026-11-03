@@ -16,13 +16,29 @@
 </head>
 <body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
 
+  <!-- 글로벌 상단 알림 띠배너 -->
+  <div id="global-alert-banner"></div>
+
   <!-- 공통 헤더 & 내비게이션 -->
   <div id="global-header"></div>
 
-  <!-- 상단 타이틀 배너 -->
-  <section class="bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] text-white py-8 border-b-4 border-amber-400 shadow-md">
+  <!-- 상단 타이틀 배너 및 브레드크럼 -->
+  <section class="bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] text-white py-6 sm:py-8 border-b-4 border-amber-400 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      
+      <!-- 브레드크럼 (포털 통합 네비게이션) -->
+      <nav class="flex items-center gap-2 text-xs text-blue-300 py-1 mb-2">
+        <a href="/index.html" class="hover:text-amber-300 flex items-center gap-1 transition">
+          <span>🏠</span> BEPMC 종합 안전 포털
+        </a>
+        <span>&gt;</span>
+        <span class="text-white font-bold">건설재해예방 기술지도 AI 관제 센터</span>
+        <span id="user-membership-badge" class="ml-2 inline-flex items-center gap-1 bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[10px] font-black">
+          🔒 인증 확인 중...
+        </span>
+      </nav>
+
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
         <div>
           <div class="flex items-center gap-2 mb-2">
             <span class="inline-flex items-center gap-1.5 bg-amber-400 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded uppercase tracking-wider">
@@ -39,7 +55,7 @@
             스마트폰 현장 위험 사진을 <b>Gemini 네이티브 멀티모달</b>로 분석하여 산안법 조항 매칭부터 <b>K2B 법정 결과보고서(HWPX)</b> 발행까지 원스톱 자동화합니다.
           </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div id="header-action-buttons" class="flex flex-wrap items-center gap-2">
           <button id="btn-pending-auth-badge" onclick="openAuthModal()" class="hidden inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-lg animate-bounce border border-rose-400">
             <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
             <span>🔔 모바일 승인 요청 <span id="badge-auth-count" class="bg-white text-rose-700 px-1.5 py-0.5 rounded-full text-[10px] font-black">0</span>건</span>
@@ -60,6 +76,111 @@
       </div>
     </div>
   </section>
+
+  <!-- ======================================================== -->
+  <!-- 권한 검증 전 게이트키퍼 가드 (비회원 / 무료회원 안내) -->
+  <!-- ======================================================== -->
+  <div id="gatekeeper-container" class="hidden max-w-4xl mx-auto px-4 py-16 flex-1 w-full">
+    <!-- 비회원 게이트 화면 -->
+    <div id="gatekeeper-unauthenticated" class="hidden bg-white rounded-3xl shadow-xl border-2 border-slate-200 overflow-hidden text-center p-8 sm:p-12 space-y-6">
+      <div class="w-20 h-20 bg-blue-50 text-blue-700 rounded-3xl mx-auto flex items-center justify-center text-4xl shadow-inner border border-blue-200">
+        🔒
+      </div>
+      <div class="space-y-2">
+        <span class="inline-flex items-center gap-1.5 bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full">
+          BEPMC 보안 및 기술 라이선스 인증
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          AI 관제 센터 - 로그인 및 회원 인증 필요
+        </h2>
+        <p class="text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+          산업안전보건법 제73조 법정 기술지도 AI 분석 및 실시간 현장 관제 시스템은 보안 및 전문 컨설팅 계약에 따라 <b>인증된 관리자 및 유료 구독 회원사</b>에게만 제공됩니다.
+        </p>
+      </div>
+
+      <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 max-w-lg mx-auto text-left text-xs text-slate-600 space-y-2.5">
+        <div class="font-bold text-slate-800 flex items-center gap-1.5 text-sm mb-2">
+          <span>🛡️</span> 기술지도 AI 관제 서비스 주요 기능
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-emerald-600 font-bold">✓</span>
+          <span><b>Gemini 네이티브 멀티모달</b>: 현장 위험성 사진 실시간 분석 및 법정 산안법 조항 자동 매칭</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-emerald-600 font-bold">✓</span>
+          <span><b>K2B 종합전산망 연동</b>: 월 2회 법정 주기 관리 및 HWPX 결과보고서 원클릭 생성</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-emerald-600 font-bold">✓</span>
+          <span><b>현장 관리자 모바일 앱 연동</b>: 실시간 현장 영상 스트리밍 및 모바일 전자 서명</span>
+        </div>
+      </div>
+
+      <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="/login.html?redirect=/technical-guidance.html" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black text-sm shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+          <span>🔑</span> 로그인하고 대시보드 이용하기
+        </a>
+        <a href="/register.html" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+          <span>📝</span> 신규 회원가입 신청
+        </a>
+        <a href="/index.html" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">
+          홈페이지 메인으로
+        </a>
+      </div>
+    </div>
+
+    <!-- 일반 무료 회원 전용 유료 플랜 안내 화면 -->
+    <div id="gatekeeper-free-member" class="hidden bg-white rounded-3xl shadow-xl border-2 border-amber-300 overflow-hidden text-center p-8 sm:p-12 space-y-6">
+      <div class="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl mx-auto flex items-center justify-center text-4xl shadow-inner border border-amber-200">
+        💎
+      </div>
+      <div class="space-y-2">
+        <span class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full border border-amber-300">
+          프리미엄 기술지도 멤버십 전용
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          기술지도 유료 구독 플랜 도입 안내
+        </h2>
+        <p class="text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+          안녕하세요, <b id="gatekeeper-user-name" class="text-slate-900">회원</b>님!<br>
+          현재 계정은 <b>[일반 무료 회원]</b> 등급입니다. 건설재해예방 기술지도 AI 관제 및 법정 보고서(K2B) 생성 시스템은 <b>BEPMC 유료 구독 회원사</b> 또는 <b>관리자</b> 계정 전용 서비스입니다.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
+        <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-200">
+          <div class="text-2xl mb-1">🤖</div>
+          <h4 class="font-bold text-slate-900 text-xs">Gemini 멀티모달 AI</h4>
+          <p class="text-[11px] text-slate-500 mt-1">현장 위험 사진 촬영 즉시 산안법 기준 위반 및 대책 자동 분석</p>
+        </div>
+        <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200">
+          <div class="text-2xl mb-1">📄</div>
+          <h4 class="font-bold text-slate-900 text-xs">법정 HWPX 보고서</h4>
+          <p class="text-[11px] text-slate-500 mt-1">월 2회 법정 지도 주기 관리 및 K2B 종합전산망 자동 등록</p>
+        </div>
+        <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-200">
+          <div class="text-2xl mb-1">📱</div>
+          <h4 class="font-bold text-slate-900 text-xs">현장 모바일 앱</h4>
+          <p class="text-[11px] text-slate-500 mt-1">실시간 현장 영상 스트리밍 및 모바일 전자 서명 연동</p>
+        </div>
+      </div>
+
+      <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="/qna.html" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+          <span>📞</span> 유료 기술지도 플랜 도입 상담 / Q&amp;A
+        </a>
+        <a href="/shop.html" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+          <span>🛒</span> 안전용품몰 둘러보기
+        </a>
+        <a href="/index.html" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">
+          홈페이지 메인으로
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 인증된 사용자용 대시보드 전체 콘텐츠 컨테이너 -->
+  <div id="dashboard-authorized-content" class="hidden flex-1 flex flex-col">
 
   <!-- 3개 탭 네비게이션 -->
   <div class="bg-white border-b border-slate-200 sticky top-16 z-20 shadow-sm">
@@ -626,6 +747,7 @@
     </div>
 
   </main>
+  </div> <!-- #dashboard-authorized-content 종료 -->
 
   <!-- 공통 푸터 -->
   <div id="global-footer"></div>
@@ -639,13 +761,74 @@
     let currentCreatedReportId = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      await initLayout('technical-guidance');
+      const auth = await initLayout('technical-guidance');
+      await checkDashboardAccess(auth);
+    });
+
+    async function checkDashboardAccess(auth) {
+      const gatekeeperContainer = document.getElementById('gatekeeper-container');
+      const gateUnauth = document.getElementById('gatekeeper-unauthenticated');
+      const gateFree = document.getElementById('gatekeeper-free-member');
+      const authContent = document.getElementById('dashboard-authorized-content');
+      const badge = document.getElementById('user-membership-badge');
+      const headerActions = document.getElementById('header-action-buttons');
+
+      if (!auth || !auth.isLoggedIn) {
+        if (gatekeeperContainer) gatekeeperContainer.classList.remove('hidden');
+        if (gateUnauth) gateUnauth.classList.remove('hidden');
+        if (gateFree) gateFree.classList.add('hidden');
+        if (authContent) authContent.classList.add('hidden');
+        if (headerActions) headerActions.classList.add('hidden');
+        if (badge) {
+          badge.className = "ml-2 inline-flex items-center gap-1 bg-rose-600 text-white px-2 py-0.5 rounded-full text-[10px] font-black";
+          badge.innerHTML = "🔒 로그인 필요";
+        }
+        return false;
+      }
+
+      if (!auth.canAccessDashboard) {
+        if (gatekeeperContainer) gatekeeperContainer.classList.remove('hidden');
+        if (gateUnauth) gateUnauth.classList.add('hidden');
+        if (gateFree) gateFree.classList.remove('hidden');
+        if (authContent) authContent.classList.add('hidden');
+        if (headerActions) headerActions.classList.add('hidden');
+        const userNameEl = document.getElementById('gatekeeper-user-name');
+        if (userNameEl && auth.user) userNameEl.textContent = auth.user.name;
+        if (badge) {
+          badge.className = "ml-2 inline-flex items-center gap-1 bg-slate-700 text-slate-200 px-2 py-0.5 rounded-full text-[10px] font-bold";
+          badge.innerHTML = "일반 무료 회원 (권한 제한)";
+        }
+        return false;
+      }
+
+      // 인증 성공 (관리자 또는 유료 회원)
+      if (gatekeeperContainer) gatekeeperContainer.classList.add('hidden');
+      if (gateUnauth) gateUnauth.classList.add('hidden');
+      if (gateFree) gateFree.classList.add('hidden');
+      if (authContent) authContent.classList.remove('hidden');
+      if (headerActions) headerActions.classList.remove('hidden');
+
+      if (badge) {
+        if (auth.user && auth.user.role === 'admin') {
+          badge.className = "ml-2 inline-flex items-center gap-1 bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-sm";
+          badge.innerHTML = "👑 최고 관리자 (전체 권한)";
+        } else {
+          badge.className = "ml-2 inline-flex items-center gap-1 bg-emerald-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-sm";
+          badge.innerHTML = "💎 유료 기술지도 회원 (정상 이용)";
+        }
+      }
+
+      // 권한이 있는 경우에만 대시보드 내부 데이터 로드
+      window.__isDashboardAuthorized = true;
       loadSitesStatus();
       loadRecentHazardsFeed();
       initSignatureCanvas();
       initEdgeCctvSimulator();
       loadGoldenDatasetStats();
-    });
+      pollPendingMobileAuth();
+      setInterval(pollPendingMobileAuth, 3000);
+      return true;
+    }
 
     // 탭 전환
     function switchMainTab(tab) {
@@ -1378,9 +1561,7 @@
       }
     }
 
-    // 모바일 접속 승인 폴링 시작 (3초 주기)
-    pollPendingMobileAuth();
-    setInterval(pollPendingMobileAuth, 3000);
+    // (모바일 승인 폴링은 checkDashboardAccess() 인가 검증 성공 시 가동됨)
   </script>
 
   <!-- ======================================================== -->

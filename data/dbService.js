@@ -211,6 +211,7 @@ async function getAllUsers() {
         name: u.name,
         email: u.email,
         role: u.role,
+        membership: (u.role === 'admin' || u.role === 'paid_member') ? 'paid' : 'free',
         status: u.status,
         createdAt: u.created_at ? new Date(u.created_at).toISOString().replace('T', ' ').slice(0, 19) : ''
       }));
@@ -226,9 +227,37 @@ async function getAllUsers() {
     name: u.name,
     email: u.email,
     role: u.role,
+    membership: (u.role === 'admin' || u.role === 'paid_member') ? 'paid' : 'free',
     status: u.status,
     createdAt: u.createdAt
   }));
+}
+
+async function updateUserRole(id, role) {
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ role })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      console.error('Supabase updateUserRole exception:', e);
+      throw e;
+    }
+  }
+
+  const db = localStore.getDb();
+  const target = db.users.find(u => u.id === Number(id));
+  if (target) {
+    target.role = role;
+    localStore.saveDb(db);
+  }
+  return target;
 }
 
 async function updateUserStatus(id, status) {
@@ -971,6 +1000,7 @@ module.exports = {
   createUser,
   getAllUsers,
   updateUserStatus,
+  updateUserRole,
   deleteUser,
   getPosts,
   getPostById,
