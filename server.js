@@ -1150,6 +1150,85 @@ app.post('/api/mobile/reports/:id/approve', (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------
+// 10. 모바일 앱 로그인 & PC 대시보드 실시간 2단계 상호 승인 API
+// ---------------------------------------------------------------------
+
+// [모바일] 1단계 로그인 요청 (비밀번호 검증 후 PC 대시보드 승인 대기)
+app.post('/api/mobile/auth/login-request', async (req, res) => {
+  try {
+    const { username, password, siteName } = req.body;
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '172.28.123.44';
+    const userAgent = req.headers['user-agent'] || 'Mobile Android';
+
+    const result = await mobileSyncService.requestMobileLogin({
+      username,
+      password,
+      siteName,
+      clientIp,
+      userAgent
+    });
+
+    if (!result.success) {
+      return res.status(401).json(result);
+    }
+    res.json(result);
+  } catch (err) {
+    console.error('Mobile login request error:', err);
+    res.status(500).json({ success: false, message: '모바일 로그인 요청 처리 실패' });
+  }
+});
+
+// [PC 대시보드] 승인 대기 중인 모바일 접속 요청 목록 조회
+app.get('/api/mobile/auth/pending-requests', (req, res) => {
+  try {
+    const requests = mobileSyncService.getPendingLoginRequests();
+    res.json({ success: true, count: requests.length, requests, pendingRequests: requests });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '대기 중인 요청 조회 실패' });
+  }
+});
+
+// [PC 대시보드] 모바일 접속 승인(APPROVE) 또는 거절(REJECT)
+app.post('/api/mobile/auth/verify-request', (req, res) => {
+  try {
+    const { sessionId, action, verifierName } = req.body;
+    const result = mobileSyncService.verifyMobileLoginRequest({
+      sessionId,
+      action: action || 'APPROVE',
+      verifierName: verifierName || (req.session.user ? req.session.user.name : '본사 AI 관제 데스크')
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, message: '승인 처리 실패' });
+  }
+});
+
+// [모바일] 승인 완료 여부 상태 폴링 확인
+app.get('/api/mobile/auth/check-status', (req, res) => {
+  try {
+    const { sessionId } = req.query;
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: '세션 ID가 누락되었습니다.' });
+    }
+    const result = mobileSyncService.checkMobileLoginStatus(sessionId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, message: '상태 확인 실패' });
+  }
+});
+
+// [모바일] 로그아웃
+app.post('/api/mobile/auth/logout', (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const result = mobileSyncService.logoutMobileSession(sessionId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, message: '로그아웃 실패' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Safety Portal Server running on http://localhost:${PORT}`);
 });

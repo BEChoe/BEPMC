@@ -41,7 +41,17 @@
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           <span id="header-server-ip-text">Wi-Fi 연동</span>
         </button>
-        <select id="mobile-site-selector" class="bg-slate-800 text-slate-200 text-xs font-bold rounded-lg px-2 py-1.5 border border-slate-700 focus:outline-none">
+        <div id="header-auth-container" class="flex items-center gap-1.5">
+          <button id="btn-header-login" onclick="openLoginModal()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
+            <span>🔐</span> <span>로그인</span>
+          </button>
+          <div id="header-user-badge" class="hidden flex items-center gap-1.5 bg-slate-800 text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="header-user-name" class="font-bold text-[11px]">김안전</span>
+            <button onclick="mobileLogout()" title="로그아웃" class="text-slate-400 hover:text-white text-[10px] ml-1">✕</button>
+          </div>
+        </div>
+        <select id="mobile-site-selector" class="bg-slate-800 text-slate-200 text-xs font-bold rounded-lg px-2 py-1.5 border border-slate-700 focus:outline-none hidden sm:block">
           <option value="1">판교 비즈니스센터 (3층)</option>
           <option value="2">화성 물류센터 (외벽)</option>
           <option value="3">송도 바이오 R&D</option>
@@ -968,6 +978,227 @@
         btn.disabled = false;
       }
     }
+
+    // ========================================================
+    // 모바일 2단계 로그인 & PC 대시보드 실시간 승인 핸드셰이크
+    // ========================================================
+    let currentMobileSessionId = localStorage.getItem('bepmc_mobile_session_id') || null;
+    let isMobileAuthenticated = false;
+    let authPollingTimer = null;
+
+    function openLoginModal() {
+      document.getElementById('modal-mobile-login').classList.remove('hidden');
+    }
+
+    function closeLoginModal() {
+      document.getElementById('modal-mobile-login').classList.add('hidden');
+    }
+
+    function fillAdminDemoAccount() {
+      document.getElementById('login-username').value = 'admin';
+      document.getElementById('login-password').value = 'admin1234';
+      showToast('관리자 계정(admin) 자동 입력 완료');
+    }
+
+    async function submitMobileLogin() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      if (!username || !password) {
+        showToast('아이디와 비밀번호를 입력해주세요.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-login-submit');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin">⏳</span> 비밀번호 검증 중...`;
+
+      try {
+        const res = await fetch(getApiUrl('/api/mobile/auth/login-request'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username,
+            password,
+            siteName: '판교 복합비즈니스센터 신축공사'
+          })
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          currentMobileSessionId = json.sessionId;
+          localStorage.setItem('bepmc_mobile_session_id', currentMobileSessionId);
+          closeLoginModal();
+          showLockScreen(json.user, json.sessionId);
+          startAuthPolling();
+        } else {
+          alert(json.message || '로그인 실패');
+        }
+      } catch (e) {
+        alert('서버 연결 실패. 동일 Wi-Fi 서버 주소를 확인하세요.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>🔐</span> <span>로그인 및 PC 승인 요청</span>`;
+      }
+    }
+
+    function showLockScreen(user, sessionId) {
+      const lockOverlay = document.getElementById('overlay-lock-screen');
+      document.getElementById('lock-user-name').textContent = `${user.name} (${user.username})`;
+      document.getElementById('lock-req-time').textContent = new Date().toLocaleTimeString('ko-KR');
+      lockOverlay.classList.remove('hidden');
+      showToast('🔒 PC 대시보드에서 접속 승인을 기다리는 중...');
+    }
+
+    function hideLockScreen() {
+      const lockOverlay = document.getElementById('overlay-lock-screen');
+      lockOverlay.classList.add('hidden');
+    }
+
+    function startAuthPolling() {
+      if (authPollingTimer) clearInterval(authPollingTimer);
+      authPollingTimer = setInterval(async () => {
+        if (!currentMobileSessionId) return;
+        try {
+          const res = await fetch(getApiUrl(`/api/mobile/auth/check-status?sessionId=${currentMobileSessionId}`));
+          const json = await res.json();
+          if (json.success) {
+            if (json.status === 'APPROVED') {
+              clearInterval(authPollingTimer);
+              authPollingTimer = null;
+              unlockMobileApp(json.user);
+            } else if (json.status === 'REJECTED') {
+              clearInterval(authPollingTimer);
+              authPollingTimer = null;
+              hideLockScreen();
+              localStorage.removeItem('bepmc_mobile_session_id');
+              currentMobileSessionId = null;
+              alert('❌ PC 대시보드 관리자에 의해 접속이 거절되었습니다.');
+            }
+          }
+        } catch (e) {}
+      }, 1500);
+    }
+
+    function unlockMobileApp(user) {
+      isMobileAuthenticated = true;
+      hideLockScreen();
+      document.getElementById('btn-header-login').classList.add('hidden');
+      const badge = document.getElementById('header-user-badge');
+      badge.classList.remove('hidden');
+      document.getElementById('header-user-name').textContent = user.name.split(' ')[0] || user.name;
+
+      alert(`🎉 [PC 대시보드 승인 완료]\n\n'${user.name}' 님의 모바일 현장 권한이 승인되었습니다.\n모바일 앱의 동영상 촬영, 안전 점검 및 전자 결재 기능이 활성화되었습니다!`);
+      showToast('✅ 모든 현장 안전 기능 활성화');
+    }
+
+    function cancelPendingLogin() {
+      if (authPollingTimer) clearInterval(authPollingTimer);
+      hideLockScreen();
+      localStorage.removeItem('bepmc_mobile_session_id');
+      currentMobileSessionId = null;
+      showToast('로그인이 취소되었습니다.');
+    }
+
+    async function mobileLogout() {
+      if (!confirm('모바일 앱에서 로그아웃 하시겠습니까?')) return;
+      if (currentMobileSessionId) {
+        try {
+          await fetch(getApiUrl('/api/mobile/auth/logout'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: currentMobileSessionId })
+          });
+        } catch (e) {}
+      }
+      localStorage.removeItem('bepmc_mobile_session_id');
+      currentMobileSessionId = null;
+      isMobileAuthenticated = false;
+      document.getElementById('btn-header-login').classList.remove('hidden');
+      document.getElementById('header-user-badge').classList.add('hidden');
+      openLoginModal();
+      showToast('로그아웃 되었습니다.');
+    }
+  </script>
+
+  <!-- 모바일 로그인 모달 -->
+  <div id="modal-mobile-login" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 text-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-black shadow-inner">
+          BE
+        </div>
+        <h3 class="text-base font-black text-white pt-2">현장 관리자 2단계 로그인</h3>
+        <p class="text-[11px] text-slate-400">관리자 ID로 로그인 후 PC 관제 대시보드에서 승인을 확인합니다.</p>
+      </div>
+
+      <div class="space-y-3 pt-2">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 mb-1">관리자 아이디</label>
+          <input id="login-username" type="text" value="admin" placeholder="아이디 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 mb-1">비밀번호</label>
+          <input id="login-password" type="password" value="admin1234" placeholder="비밀번호 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+        </div>
+      </div>
+
+      <div class="pt-2 space-y-2">
+        <button onclick="submitMobileLogin()" id="btn-login-submit" class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-1.5">
+          <span>🔐</span> <span>로그인 및 PC 승인 요청</span>
+        </button>
+        <button onclick="fillAdminDemoAccount()" type="button" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-[11px] border border-slate-700 transition">
+          ⚡ 관리자 데모 계정 자동 입력 (admin)
+        </button>
+      </div>
+      <p class="text-[10px] text-slate-500 text-center">동일 Wi-Fi 내 PC 대시보드(http://172.28.123.44:3000)와 실시간 연동</p>
+    </div>
+  </div>
+
+  <!-- PC 대시보드 승인 대기 락 화면 (Full Overlay) -->
+  <div id="overlay-lock-screen" class="fixed inset-0 z-40 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white text-center space-y-6 hidden">
+    <!-- 레이더 애니메이션 -->
+    <div class="relative w-28 h-28 flex items-center justify-center">
+      <div class="absolute inset-0 rounded-full border-2 border-amber-400/40 animate-ping"></div>
+      <div class="absolute inset-2 rounded-full border border-blue-500/60 animate-pulse"></div>
+      <div class="w-16 h-16 rounded-full bg-blue-900/80 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-lg">
+        🔒
+      </div>
+    </div>
+
+    <div class="space-y-2 max-w-xs">
+      <span class="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        PC 대시보드 확인 대기 중
+      </span>
+      <h2 class="text-lg font-black text-white">관리자 접속 확인 대기</h2>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        보안 규정에 따라 <b>본사 PC 관제 대시보드</b>에서 관리자가 <b>[접속 승인]</b> 버튼을 눌러야 현장 기능이 활성화됩니다.
+      </p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 w-full max-w-xs text-left text-xs font-mono space-y-2">
+      <div class="flex justify-between text-slate-400">
+        <span>접속 계정:</span>
+        <span id="lock-user-name" class="font-bold text-white">김안전 현장소장 (admin)</span>
+      </div>
+      <div class="flex justify-between text-slate-400">
+        <span>접속 시각:</span>
+        <span id="lock-req-time" class="text-amber-300">-</span>
+      </div>
+      <div class="flex justify-between text-slate-400">
+        <span>단말 Wi-Fi IP:</span>
+        <span class="text-blue-300 font-bold">172.28.123.44</span>
+      </div>
+      <div class="pt-2 border-t border-slate-800 text-[11px] text-slate-400 text-center font-sans">
+        PC 브라우저에서 대시보드를 새로고침하거나 승인 팝업을 확인하세요.
+      </div>
+    </div>
+
+    <button onclick="cancelPendingLogin()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition">
+      로그인 취소
+    </button>
+  </div>
   </script>
 </body>
 </html>

@@ -40,6 +40,10 @@
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-pending-auth-badge" onclick="openAuthModal()" class="hidden inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-lg animate-bounce border border-rose-400">
+            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+            <span>🔔 모바일 승인 요청 <span id="badge-auth-count" class="bg-white text-rose-700 px-1.5 py-0.5 rounded-full text-[10px] font-black">0</span>건</span>
+          </button>
           <a href="/mobile-app.html" target="_blank" class="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition transform active:scale-95 border border-amber-300">
             <span>📱 현장 관리자 모바일앱 실행</span>
             <span class="text-[10px] bg-slate-950 text-amber-400 px-1.5 py-0.2 rounded font-black">PWA</span>
@@ -1232,6 +1236,211 @@
       fetchEdgeCctvEvents();
       setInterval(fetchEdgeCctvEvents, 5000);
     }
+
+    // ========================================================
+    // 모바일 앱 접속 승인(2차 핸드셰이크) 관제 시스템
+    // ========================================================
+    let cachedPendingAuths = [];
+
+    function openAuthModal() {
+      const modal = document.getElementById('modal-mobile-auth');
+      if (modal) {
+        modal.classList.remove('hidden');
+        renderAuthModalList();
+      }
+    }
+
+    function closeAuthModal() {
+      const modal = document.getElementById('modal-mobile-auth');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function renderAuthModalList() {
+      const container = document.getElementById('modal-auth-list');
+      if (!container) return;
+
+      if (!cachedPendingAuths || cachedPendingAuths.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center text-slate-400">
+            <span class="text-3xl block mb-2">🛡️</span>
+            <p class="text-sm font-bold text-slate-700">현재 대기 중인 모바일 접속 승인 요청이 없습니다.</p>
+            <p class="text-xs text-slate-400 mt-1">현장 관리자가 모바일앱에서 로그인하면 실시간으로 승인 알림이 표시됩니다.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = cachedPendingAuths.map(req => {
+        const timeStr = new Date(req.requestedAt).toLocaleTimeString('ko-KR');
+        return `
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm hover:border-blue-400 transition">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-black shadow-inner">
+                  📱
+                </span>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-black text-slate-900">${req.userName}</span>
+                    <span class="text-[10px] bg-blue-100 text-blue-700 font-bold px-1.5 py-0.5 rounded">ID: ${req.username}</span>
+                    <span class="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded animate-pulse">승인 대기 중</span>
+                  </div>
+                  <p class="text-xs text-slate-600 font-medium mt-0.5">${req.siteName} · <span class="font-bold text-slate-800">${req.role}</span></p>
+                </div>
+              </div>
+              <span class="text-[11px] font-mono text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">${timeStr}</span>
+            </div>
+
+            <div class="bg-white p-2.5 rounded-lg border border-slate-200 text-[11px] text-slate-600 grid grid-cols-2 gap-2 font-mono">
+              <div><span class="text-slate-400">접속 IP:</span> ${req.clientIp}</div>
+              <div class="truncate"><span class="text-slate-400">기기/브라우저:</span> ${req.userAgent.split(' ')[0]}</div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-1 border-t border-slate-200">
+              <button onclick="handleVerifyAuth('${req.sessionId}', 'REJECT')" class="px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition flex items-center gap-1">
+                <span>❌ 접속 거절</span>
+              </button>
+              <button onclick="handleVerifyAuth('${req.sessionId}', 'APPROVE')" class="px-4 py-1.5 text-xs font-black text-white bg-blue-600 hover:bg-blue-500 shadow-sm rounded-lg transition flex items-center gap-1 transform active:scale-95">
+                <span>✅ 현장 접속 승인 (기능 잠금 해제)</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function pollPendingMobileAuth() {
+      try {
+        const res = await fetch('/api/mobile/auth/pending-requests');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success) return;
+
+        const count = data.count || 0;
+        cachedPendingAuths = data.pendingRequests || data.requests || [];
+
+        const badgeBtn = document.getElementById('btn-pending-auth-badge');
+        const badgeCount = document.getElementById('badge-auth-count');
+        const toast = document.getElementById('toast-mobile-auth');
+        const toastText = document.getElementById('toast-auth-text');
+
+        if (count > 0) {
+          if (badgeBtn) {
+            badgeBtn.classList.remove('hidden');
+            if (badgeCount) badgeCount.textContent = count;
+          }
+          if (toast) {
+            toast.classList.remove('hidden');
+            if (toastText) {
+              const latest = cachedPendingAuths[0];
+              toastText.textContent = `[${latest.userName}] 관리자가 현장 앱 접속을 요청했습니다. (${count}건 대기)`;
+            }
+          }
+        } else {
+          if (badgeBtn) badgeBtn.classList.add('hidden');
+          if (toast) toast.classList.add('hidden');
+        }
+
+        // 모달이 열려있다면 내용 갱신
+        const modal = document.getElementById('modal-mobile-auth');
+        if (modal && !modal.classList.contains('hidden')) {
+          renderAuthModalList();
+        }
+      } catch (err) {
+        console.error('Failed to poll mobile auth requests:', err);
+      }
+    }
+
+    async function handleVerifyAuth(sessionId, action) {
+      try {
+        const res = await fetch('/api/mobile/auth/verify-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            action,
+            verifierName: '본사 안전관제센터'
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert(action === 'APPROVE' 
+            ? '✅ 모바일 접속이 승인되었습니다!\n현장 관리자의 모바일 앱 기능(동영상/사진/점검/서명) 잠금이 해제되었습니다.' 
+            : '❌ 모바일 접속이 거절되었습니다.');
+          await pollPendingMobileAuth();
+        } else {
+          alert('처리 실패: ' + (result.error || '알 수 없는 오류'));
+        }
+      } catch (err) {
+        alert('요청 처리 중 통신 에러가 발생했습니다: ' + err.message);
+      }
+    }
+
+    // 모바일 접속 승인 폴링 시작 (3초 주기)
+    pollPendingMobileAuth();
+    setInterval(pollPendingMobileAuth, 3000);
   </script>
+
+  <!-- ======================================================== -->
+  <!-- 모바일 승인 토스트 알림 배너 (우측 하단) -->
+  <!-- ======================================================== -->
+  <div id="toast-mobile-auth" class="hidden fixed bottom-6 right-6 z-50 max-w-sm w-full bg-slate-900 text-white rounded-2xl shadow-2xl border-2 border-amber-400 p-4 transition-all duration-300 transform translate-y-0">
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 animate-bounce">
+        🔔
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-black text-amber-400 tracking-wide uppercase">모바일 접속 승인 요청</h4>
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        </div>
+        <p id="toast-auth-text" class="text-xs text-slate-200 font-semibold mt-1 truncate">현장 관리자가 모바일앱 접속 승인을 요청했습니다.</p>
+        <div class="flex items-center gap-2 mt-3">
+          <button onclick="openAuthModal()" class="flex-1 py-1.5 px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black rounded-lg transition shadow">
+            확인 및 승인하기
+          </button>
+          <button onclick="document.getElementById('toast-mobile-auth').classList.add('hidden')" class="py-1.5 px-2.5 text-xs text-slate-400 hover:text-white rounded-lg">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 모바일 2차 승인 팝업 모달 다이얼로그 -->
+  <!-- ======================================================== -->
+  <div id="modal-mobile-auth" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- 모달 헤더 -->
+      <div class="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🛡️</span>
+          <div>
+            <h3 class="text-base font-black">모바일 현장 접속 승인 (2차 관제)</h3>
+            <p class="text-[11px] text-blue-200">PC 대시보드 승인 후 모바일앱의 동영상/사진/점검 기능이 활성화됩니다.</p>
+          </div>
+        </div>
+        <button onclick="closeAuthModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold text-sm transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- 모달 본문 리스트 -->
+      <div id="modal-auth-list" class="p-6 space-y-4 overflow-y-auto flex-1">
+        <!-- 동적 렌더링 -->
+      </div>
+
+      <!-- 모달 푸터 -->
+      <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <span>* 미승인 시 모바일앱은 보안 대기 잠금 상태를 유지합니다.</span>
+        <button onclick="closeAuthModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg transition">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
