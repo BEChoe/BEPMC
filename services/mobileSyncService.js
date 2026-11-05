@@ -11,6 +11,7 @@ const path = require('path');
 const aiSafetyService = require('./aiSafetyInspectionService');
 const technicalGuidanceService = require('./technicalGuidanceReportService');
 const dbService = require('../data/dbService');
+const { supabase, isSupabaseConfigured } = require('../data/supabaseClient');
 
 // 동영상 및 모바일 업로드 저장 디렉토리 (Vercel 서버리스 읽기전용 파일시스템 대응)
 const isVercel = Boolean(process.env.VERCEL);
@@ -218,7 +219,7 @@ function logoutMobileSession(sessionId) {
 }
 
 /**
- * 1. 현장 촬영 동영상 업로드 및 관제센터 등록
+ * 1. 현장 촬영 동영상 업로드 및 관제센터 등록 (Supabase Storage 영구 저장 및 로컬 폴백)
  */
 async function saveMobileVideo({ videoBase64, mimeType = 'video/webm', siteName, uploaderName, workType, gpsLocation, durationSec = 15 }) {
   const videoId = `VID-${Date.now()}`;
@@ -232,11 +233,47 @@ async function saveMobileVideo({ videoBase64, mimeType = 'video/webm', siteName,
       }
       const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
       const fileName = `${videoId}.${ext}`;
-      const filePath = path.join(UPLOADS_DIR, fileName);
-      fs.writeFileSync(filePath, Buffer.from(rawBase64, 'base64'));
-      relativeUrl = `/uploads/mobile/${fileName}`;
+      const buffer = Buffer.from(rawBase64, 'base64');
+
+      // 1. Supabase Storage 클라우드 영구 저장 시도 (bepmc-media 버킷)
+      let uploadedToCloud = false;
+      if (isSupabaseConfigured()) {
+        try {
+          const { data, error } = await supabase.storage
+            .from('bepmc-media')
+            .upload(`videos/${fileName}`, buffer, {
+              contentType: mimeType,
+              upsert: true
+            });
+
+          if (!error) {
+            const publicUrlData = supabase.storage
+              .from('bepmc-media')
+              .getPublicUrl(`videos/${fileName}`);
+            if (publicUrlData && publicUrlData.data && publicUrlData.data.publicUrl) {
+              relativeUrl = publicUrlData.data.publicUrl;
+              uploadedToCloud = true;
+            }
+          } else {
+            console.warn('[MobileSync] Supabase Storage 동영상 업로드 응답:', error.message);
+          }
+        } catch (storageErr) {
+          console.warn('[MobileSync] Supabase Storage 동영상 예외:', storageErr.message);
+        }
+      }
+
+      // 2. 로컬 디스크 파일 저장 (로컬 개발 환경 또는 클라우드 실패 시)
+      if (!uploadedToCloud) {
+        try {
+          const filePath = path.join(UPLOADS_DIR, fileName);
+          fs.writeFileSync(filePath, buffer);
+          relativeUrl = `/uploads/mobile/${fileName}`;
+        } catch (fsErr) {
+          console.warn('[MobileSync] 로컬 파일 쓰기 스킵 (읽기전용 환경):', fsErr.message);
+        }
+      }
     } catch (err) {
-      console.warn('[MobileSync] 동영상 파일 저장 실패 (메타데이터만 유지):', err.message);
+      console.warn('[MobileSync] 동영상 처리 실패:', err.message);
     }
   }
 
@@ -262,7 +299,7 @@ function getRecentMobileVideos() {
 }
 
 /**
- * 2. 현장 스마트폰 사진 및 점검 체크리스트 전송
+ * 2. 현장 스마트폰 사진 및 점검 체크리스트 전송 (Supabase Storage 영구 저장 및 로컬 폴백)
  */
 async function processMobileInspection({ imageBase64, siteName, inspectorName, workType, location, checklist = [], memo = '' }) {
   const inspectionId = `INSP-${Date.now()}`;
@@ -275,11 +312,47 @@ async function processMobileInspection({ imageBase64, siteName, inspectorName, w
         rawBase64 = rawBase64.split(',')[1];
       }
       const photoFileName = `${inspectionId}.jpg`;
-      const photoFilePath = path.join(UPLOADS_DIR, photoFileName);
-      fs.writeFileSync(photoFilePath, Buffer.from(rawBase64, 'base64'));
-      photoFileUrl = `/uploads/mobile/${photoFileName}`;
+      const buffer = Buffer.from(rawBase64, 'base64');
+
+      // 1. Supabase Storage 클라우드 영구 저장 시도 (bepmc-media 버킷)
+      let uploadedToCloud = false;
+      if (isSupabaseConfigured()) {
+        try {
+          const { data, error } = await supabase.storage
+            .from('bepmc-media')
+            .upload(`photos/${photoFileName}`, buffer, {
+              contentType: 'image/jpeg',
+              upsert: true
+            });
+
+          if (!error) {
+            const publicUrlData = supabase.storage
+              .from('bepmc-media')
+              .getPublicUrl(`photos/${photoFileName}`);
+            if (publicUrlData && publicUrlData.data && publicUrlData.data.publicUrl) {
+              photoFileUrl = publicUrlData.data.publicUrl;
+              uploadedToCloud = true;
+            }
+          } else {
+            console.warn('[MobileSync] Supabase Storage 사진 업로드 응답:', error.message);
+          }
+        } catch (storageErr) {
+          console.warn('[MobileSync] Supabase Storage 사진 예외:', storageErr.message);
+        }
+      }
+
+      // 2. 로컬 디스크 파일 저장
+      if (!uploadedToCloud) {
+        try {
+          const photoFilePath = path.join(UPLOADS_DIR, photoFileName);
+          fs.writeFileSync(photoFilePath, buffer);
+          photoFileUrl = `/uploads/mobile/${photoFileName}`;
+        } catch (fsErr) {
+          console.warn('[MobileSync] 사진 로컬 파일 쓰기 스킵:', fsErr.message);
+        }
+      }
     } catch (e) {
-      console.warn('[MobileSync] 사진 파일 저장 실패:', e.message);
+      console.warn('[MobileSync] 사진 처리 실패:', e.message);
     }
   }
 

@@ -698,6 +698,10 @@
 
     // API 기본 URL 결정 (클라우드 HTTPS 및 APK 내부 file:// 모두 지원)
     function getApiUrl(path) {
+      if (!path) return '';
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+      }
       if (window.location.protocol.startsWith('http')) {
         return path;
       }
