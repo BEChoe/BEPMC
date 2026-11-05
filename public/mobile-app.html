@@ -1402,8 +1402,9 @@
 
     function fillAdminDemoAccount() {
       document.getElementById('login-username').value = 'admin';
-      document.getElementById('login-password').value = 'admin1234';
-      showToast('관리자 계정(admin) 자동 입력 완료');
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-password').focus();
+      showToast('관리자 ID(admin) 입력 완료 (비밀번호를 입력하세요)');
     }
 
     async function submitMobileLogin(skipApproval = false) {
@@ -1673,7 +1674,7 @@
         </div>
         <div>
           <label class="block text-[11px] font-bold text-slate-300 mb-1">비밀번호</label>
-          <input id="login-password" type="password" value="admin1234" placeholder="비밀번호 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+          <input id="login-password" type="password" value="" placeholder="비밀번호 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
         </div>
       </div>
 

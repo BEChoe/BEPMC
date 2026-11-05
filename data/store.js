@@ -18,9 +18,9 @@ const defaultData = {
     {
       id: 1,
       username: "admin",
-      password: "admin1234",
+      password: process.env.ADMIN_INITIAL_PASSWORD || "bepmc_admin_init!",
       name: "최고관리자",
-      email: "admin@safety.go.kr",
+      email: "admin@bepmc.co.kr",
       role: "admin",
       status: "approved",
       createdAt: "2026-10-01 09:00:00"
@@ -28,9 +28,9 @@ const defaultData = {
     {
       id: 2,
       username: "safeworker",
-      password: "user1234",
+      password: process.env.MEMBER_INITIAL_PASSWORD || "bepmc_member_init!",
       name: "김안전",
-      email: "worker@safety.org",
+      email: "worker@bepmc.co.kr",
       role: "paid_member",
       status: "approved",
       createdAt: "2026-10-10 14:20:00"
@@ -38,9 +38,9 @@ const defaultData = {
     {
       id: 3,
       username: "newbie",
-      password: "user1234",
+      password: process.env.MEMBER_INITIAL_PASSWORD || "bepmc_member_init!",
       name: "이신청",
-      email: "newbie@safety.org",
+      email: "newbie@bepmc.co.kr",
       role: "member",
       status: "pending",
       createdAt: "2026-10-22 17:45:00"

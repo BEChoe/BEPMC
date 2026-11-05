@@ -50,13 +50,11 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 초기 사용자 삽입
-INSERT INTO users (username, password, name, email, role, status, created_at)
-VALUES 
-  ('admin', 'admin1234', '최고관리자', 'admin@safety.go.kr', 'admin', 'approved', NOW() - INTERVAL '15 days'),
-  ('safeworker', 'user1234', '김안전', 'worker@safety.org', 'member', 'approved', NOW() - INTERVAL '10 days'),
-  ('newbie', 'user1234', '이신청', 'newbie@safety.org', 'member', 'pending', NOW() - INTERVAL '1 days')
-ON CONFLICT (username) DO NOTHING;
+-- 초기 사용자 샘플 (배포 환경에서는 실제 비밀번호를 bcrypt 등으로 해싱하거나 시스템 환경설정을 통해 등록 권장)
+-- INSERT INTO users (username, password, name, email, role, status, created_at)
+-- VALUES 
+--   ('admin', 'CHANGE_TO_SECURE_PASSWORD', '최고관리자', 'admin@bepmc.co.kr', 'admin', 'approved', NOW() - INTERVAL '15 days')
+-- ON CONFLICT (username) DO NOTHING;
 
 
 -- 3. 게시판 테이블 (일반 공익자료실 & 회원 전용 게시판)

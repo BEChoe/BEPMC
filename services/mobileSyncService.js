@@ -51,8 +51,9 @@ async function requestMobileLogin({ username, password, siteName, clientIp, user
     } catch (e) {}
   }
 
-  // 관리자 및 일반 사용자 인증 (Supabase DB, 로컬 DB, 또는 기본 관리자 암호 admin1234 지원)
-  const isMasterAdmin = (username === 'admin' && (password === 'admin1234' || password === 'Rmsidrk9!'));
+  // 관리자 및 사용자 인증 (환경변수 ADMIN_MASTER_PASSWORD 또는 DB 비밀번호 검증)
+  const masterPassword = process.env.ADMIN_MASTER_PASSWORD;
+  const isMasterAdmin = (username === 'admin' && Boolean(masterPassword && password === masterPassword));
   const isPasswordMatch = user && user.password && (user.password === password);
 
   if (!user && isMasterAdmin) {
@@ -64,7 +65,7 @@ async function requestMobileLogin({ username, password, siteName, clientIp, user
       email: 'safety_admin@bepmc.co.kr'
     };
   } else if (user && isMasterAdmin) {
-    // admin 계정은 기본 암호 admin1234 및 DB 암호 모두 허용
+    // 환경변수 마스터 비밀번호 일치 시 통과
   } else if (!user || !isPasswordMatch) {
     return { success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다.' };
   }

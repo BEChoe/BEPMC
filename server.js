@@ -126,7 +126,8 @@ app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
     const user = await dbService.findUserByUsername(username);
 
-    const isMasterAdmin = (username === 'admin' && (password === 'admin1234' || password === 'Rmsidrk9!'));
+    const masterPassword = process.env.ADMIN_MASTER_PASSWORD;
+    const isMasterAdmin = (username === 'admin' && Boolean(masterPassword && password === masterPassword));
     const isPasswordMatch = user && user.password && (user.password === password);
 
     if (!user || (!isMasterAdmin && !isPasswordMatch)) {
