@@ -78,6 +78,23 @@ async function requestMobileLogin({ username, password, siteName, clientIp, user
     return { success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다.' };
   }
 
+  // 승인 대기(pending) 및 거절(rejected) 상태 검증 (관리자 제외)
+  if (user && user.role !== 'admin') {
+    if (user.status === 'pending') {
+      return {
+        success: false,
+        isPending: true,
+        message: '가입 승인 대기 중인 계정입니다. 본사 관리자의 승인 완료 후 이용하실 수 있습니다.'
+      };
+    }
+    if (user.status === 'rejected') {
+      return {
+        success: false,
+        message: '관리자에 의해 가입 승인이 거절된 계정입니다. 본사 관리자에게 문의하세요.'
+      };
+    }
+  }
+
   const sessionId = `MBL-AUTH-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const now = new Date();
 

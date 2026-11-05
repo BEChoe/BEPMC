@@ -78,9 +78,9 @@ class MainActivity : Activity() {
                 ) {
                     super.onReceivedError(view, request, error)
                     val failingUrl = request?.url?.toString()
-                    // Wi-Fi 서버 접속 실패 시 오프라인 로컬 에셋으로 안전 폴백
-                    if (request?.isForMainFrame == true && failingUrl?.startsWith("http://192.168.35.161") == true) {
-                        Log.w("BEPMC_SAFETY", "Wi-Fi server unreachable ($error), fallback to local assets")
+                    // 클라우드 인터넷 서버 접속 실패 시(오프라인 또는 통신 두절) 로컬 에셋으로 안전 폴백
+                    if (request?.isForMainFrame == true && (failingUrl?.contains("bepmc-3z5g.vercel.app") == true || failingUrl?.contains("192.168.") == true)) {
+                        Log.w("BEPMC_SAFETY", "Cloud server unreachable ($error), fallback to local assets")
                         view?.loadUrl("file:///android_asset/www/index.html")
                     }
                 }
@@ -125,8 +125,8 @@ class MainActivity : Activity() {
 
         setContentView(webView)
 
-        // 딥링크 및 인텐트 파라미터 처리 (Wi-Fi 서버 우선 로드 -> 미연결 시 로컬 에셋 폴백)
-        val defaultUrl = "http://192.168.35.161:3000/mobile-app.html"
+        // 딥링크 및 인텐트 파라미터 처리 (Vercel 클라우드 상용 사이트 기본 로드 -> 미연결 시 로컬 에셋 폴백)
+        val defaultUrl = "https://bepmc-3z5g.vercel.app/mobile-app.html"
         val targetUrl = intent?.dataString ?: defaultUrl
         webView.loadUrl(targetUrl)
     }

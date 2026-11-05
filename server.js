@@ -179,7 +179,7 @@ app.post('/api/auth/login', async (req, res) => {
 // 회원가입 신청 (기본 상태: pending)
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { username, password, name, email } = req.body;
+    const { username, password, name, email, site, phone } = req.body;
     if (!username || !password || !name) {
       return res.status(400).json({ success: false, message: '모든 필수 항목을 입력해주세요.' });
     }
@@ -189,18 +189,27 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ success: false, message: '이미 존재하는 아이디입니다.' });
     }
 
+    // 소속 현장 및 연락처가 전달된 경우 성명 필드에 유용한 메타정보 함께 표기
+    let displayName = name.trim();
+    if (site && !displayName.includes(site)) {
+      displayName = `${displayName} [${site.trim()}]`;
+    }
+    if (phone && !displayName.includes(phone)) {
+      displayName = `${displayName} (${phone.trim()})`;
+    }
+
     await dbService.createUser({
-      username,
-      password,
-      name,
-      email: email || '',
+      username: username.trim(),
+      password: password.trim(),
+      name: displayName,
+      email: email ? email.trim() : `${username.trim()}@bepmc-site.co.kr`,
       role: 'member',
       status: 'pending' // 관리자 승인 대기
     });
 
     res.json({
       success: true,
-      message: '회원가입 신청이 완료되었습니다. 관리자의 승인 후 정식 이용이 가능합니다.'
+      message: '회원가입 신청이 완료되었습니다. 본사 관리자의 승인 후 정식 이용이 가능합니다.'
     });
   } catch (err) {
     console.error('Register error:', err);

@@ -65,9 +65,9 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="promptServerIpSetting()" title="동일 Wi-Fi 서버 주소 설정" class="bg-blue-900/80 hover:bg-blue-800 text-blue-200 text-[10px] font-mono px-2 py-1 rounded border border-blue-700 flex items-center gap-1">
+        <button onclick="promptServerIpSetting()" title="클라우드 서버 연동 주소 설정" class="bg-blue-900/80 hover:bg-blue-800 text-blue-200 text-[10px] font-mono px-2 py-1 rounded border border-blue-700 flex items-center gap-1">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-          <span id="header-server-ip-text">Wi-Fi 연동</span>
+          <span id="header-server-ip-text">LTE/인터넷 연동</span>
         </button>
         <div id="header-auth-container" class="flex items-center gap-1.5">
           <button id="btn-header-login" onclick="openLoginModal()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
@@ -681,22 +681,22 @@
       if (currentTab === 'approval') loadPendingMobileReports();
     }
 
-    const DEFAULT_SERVER_IP = 'http://192.168.35.161:3000';
+    const DEFAULT_SERVER_URL = 'https://bepmc-3z5g.vercel.app';
 
     function getServerBaseUrl() {
       if (window.location.protocol.startsWith('http')) {
         return window.location.origin;
       }
       let saved = localStorage.getItem('bepmc_server_ip');
-      // 이전 구버전 IP(172.28.x.x 등) 캐시 자동 정제 및 최신 Wi-Fi IP 설정
-      if (!saved || saved.includes('172.28.') || !saved.startsWith('http')) {
-        saved = DEFAULT_SERVER_IP;
-        localStorage.setItem('bepmc_server_ip', DEFAULT_SERVER_IP);
+      // 구버전 로컬 IP(192.168.x.x, 172.28.x.x, localhost) 캐시를 Vercel 상용 클라우드 URL로 자동 마이그레이션
+      if (!saved || saved.includes('192.168.') || saved.includes('172.28.') || saved.includes('localhost') || !saved.startsWith('http')) {
+        saved = DEFAULT_SERVER_URL;
+        localStorage.setItem('bepmc_server_ip', DEFAULT_SERVER_URL);
       }
       return saved.replace(/\/$/, '');
     }
 
-    // API 기본 URL 결정 (동일 Wi-Fi 및 APK 내부 file:// 모두 지원)
+    // API 기본 URL 결정 (클라우드 HTTPS 및 APK 내부 file:// 모두 지원)
     function getApiUrl(path) {
       if (window.location.protocol.startsWith('http')) {
         return path;
@@ -706,12 +706,12 @@
 
     function promptServerIpSetting() {
       const current = getServerBaseUrl();
-      const input = prompt('동일 Wi-Fi 내 PC 서버 주소를 입력하세요:', current);
+      const input = prompt('서버 연동 URL을 입력하세요 (기본: https://bepmc-3z5g.vercel.app):', current);
       if (input) {
         localStorage.setItem('bepmc_server_ip', input.trim());
         const txt = document.getElementById('header-server-ip-text');
-        if (txt) txt.textContent = input.trim().replace(/^https?:\/\//, '');
-        showToast(`서버 연동 주소 설정: ${input.trim()}`);
+        if (txt) txt.textContent = input.trim().replace(/^https?:\/\//, '').substring(0, 16);
+        showToast(`서버 주소 설정: ${input.trim()}`);
         loadVideoHistory();
       }
     }
@@ -1407,6 +1407,77 @@
       showToast('관리자 ID(admin) 입력 완료 (비밀번호를 입력하세요)');
     }
 
+    function openRegisterModal() {
+      closeLoginModal();
+      document.getElementById('modal-mobile-register').classList.remove('hidden');
+    }
+
+    function closeRegisterModal() {
+      document.getElementById('modal-mobile-register').classList.add('hidden');
+      openLoginModal();
+    }
+
+    async function submitMobileRegister() {
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
+      const name = document.getElementById('reg-name').value.trim();
+      const site = document.getElementById('reg-site').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+
+      if (!username || !password || !name || !site || !phone) {
+        showToast('모든 필수 항목(아이디, 비번, 성명, 현장명, 연락처)을 입력해주세요.');
+        return;
+      }
+
+      if (username.length < 3) {
+        showToast('아이디는 3자 이상 입력해주세요.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-register-submit');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="animate-spin">⏳</span> 가입 신청서 전송 중...`;
+      }
+
+      try {
+        const res = await fetch(getApiUrl('/api/auth/register'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username,
+            password,
+            name,
+            site,
+            phone,
+            email: email || `${username}@bepmc-site.co.kr`
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert(`[회원가입 신청 접수 완료]\n\n${name} 님의 현장 계정 신청이 성공적으로 접수되었습니다.\n\n본사 관리자의 [가입 승인] 완료 후 입력하신 아이디(${username})로 로그인하실 수 있습니다.`);
+          document.getElementById('modal-mobile-register').classList.add('hidden');
+          openLoginModal();
+          document.getElementById('login-username').value = username;
+          document.getElementById('login-password').value = '';
+          document.getElementById('login-password').focus();
+          showToast('가입 신청 완료 (본사 승인 대기)');
+        } else {
+          alert(data.message || '회원가입 신청 실패');
+        }
+      } catch (err) {
+        console.error('Register submit error:', err);
+        alert('서버 통신 실패: 인터넷 연결 상태(LTE/5G/Wi-Fi)를 확인해주세요.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>📨</span> <span>회원가입 신청서 제출</span>`;
+        }
+      }
+    }
+
     async function submitMobileLogin(skipApproval = false) {
       const username = document.getElementById('login-username').value.trim();
       const pwInput = document.getElementById('login-password');
@@ -1464,7 +1535,7 @@
           alert(json.message || '로그인 실패');
         }
       } catch (e) {
-        alert('서버 연결 실패. 동일 Wi-Fi 서버 주소를 확인하세요.');
+        alert('서버 연결 실패. 네트워크 연결(LTE/5G/Wi-Fi) 상태를 확인하세요.');
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -1689,7 +1760,63 @@
           ⚡ 관리자 데모 계정 자동 입력 (admin)
         </button>
       </div>
-      <p class="text-[10px] text-slate-500 text-center">동일 Wi-Fi 내 PC 대시보드(http://192.168.35.161:3000)와 실시간 연동</p>
+
+      <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+        <span class="text-slate-400 text-[11px]">아직 현장 계정이 없으신가요?</span>
+        <button onclick="openRegisterModal()" type="button" class="text-blue-400 hover:text-blue-300 font-bold text-xs underline underline-offset-4">
+          📝 회원가입 신청
+        </button>
+      </div>
+      <p class="text-[10px] text-slate-500 text-center">클라우드 서버(https://bepmc-3z5g.vercel.app)와 실시간 연동</p>
+    </div>
+  </div>
+
+  <!-- 현장 담당자 모바일 회원가입 신청 모달 -->
+  <div id="modal-mobile-register" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-blue-500/40 text-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="text-center space-y-1">
+        <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center mx-auto text-lg font-black shadow-inner">
+          📝
+        </div>
+        <h3 class="text-base font-black text-white pt-1">현장 담당자 회원가입 신청</h3>
+        <p class="text-[11px] text-slate-400">가입 신청 후 본사 관리자 승인을 통해 정식 활성화됩니다.</p>
+      </div>
+
+      <div class="space-y-2.5 pt-1 text-left">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 mb-1">희망 아이디 *</label>
+          <input id="reg-username" type="text" placeholder="영문/숫자 3자 이상" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 mb-1">비밀번호 *</label>
+          <input id="reg-password" type="password" placeholder="비밀번호 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 mb-1">담당자 성명 *</label>
+          <input id="reg-name" type="text" placeholder="예: 박안전" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 mb-1">소속 회사 / 현장명 *</label>
+          <input id="reg-site" type="text" value="판교 복합비즈니스센터 신축공사" placeholder="예: 현장명 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 mb-1">연락처 *</label>
+          <input id="reg-phone" type="tel" placeholder="010-xxxx-xxxx" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 mb-1">이메일 (선택)</label>
+          <input id="reg-email" type="email" placeholder="example@bepmc.co.kr" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+      </div>
+
+      <div class="pt-2 space-y-2">
+        <button onclick="submitMobileRegister()" id="btn-register-submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-1.5">
+          <span>📨</span> <span>회원가입 신청서 제출</span>
+        </button>
+        <button onclick="closeRegisterModal()" type="button" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-xs transition">
+          닫기 (로그인으로 돌아가기)
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1729,8 +1856,8 @@
         <span id="lock-req-time" class="text-amber-300">-</span>
       </div>
       <div class="flex justify-between text-slate-400">
-        <span>단말 Wi-Fi IP:</span>
-        <span class="text-blue-300 font-bold">192.168.35.161</span>
+        <span>연결 네트워크:</span>
+        <span class="text-blue-300 font-bold">LTE / 5G / 인터넷</span>
       </div>
       <div class="pt-2 border-t border-slate-800 text-[11px] text-center font-sans space-y-1">
         <div id="lock-status-indicator" class="flex items-center justify-center gap-1.5 text-amber-300 font-bold">

@@ -513,6 +513,13 @@
             <tbody class="divide-y divide-slate-100">
         `;
 
+        // 승인 대기(pending) 회원을 목록 최상단으로 우선 정렬
+        users.sort((a, b) => {
+          if (a.status === 'pending' && b.status !== 'pending') return -1;
+          if (a.status !== 'pending' && b.status === 'pending') return 1;
+          return (b.id || 0) - (a.id || 0);
+        });
+
         users.forEach(u => {
           let statusBadge = '';
           if (u.status === 'approved') statusBadge = '<span class="badge-green text-[10px] px-2 py-0.5 rounded font-bold">승인 완료</span>';
