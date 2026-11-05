@@ -12,10 +12,18 @@ const aiSafetyService = require('./aiSafetyInspectionService');
 const technicalGuidanceService = require('./technicalGuidanceReportService');
 const dbService = require('../data/dbService');
 
-// 동영상 및 모바일 업로드 저장 디렉토리
-const UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads', 'mobile');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+// 동영상 및 모바일 업로드 저장 디렉토리 (Vercel 서버리스 읽기전용 파일시스템 대응)
+const isVercel = Boolean(process.env.VERCEL);
+const UPLOADS_DIR = isVercel
+  ? path.join('/tmp', 'uploads', 'mobile')
+  : path.join(__dirname, '..', 'public', 'uploads', 'mobile');
+
+try {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.warn('[mobileSyncService] 업로드 디렉토리 생성 스킵 (읽기전용 환경):', err.message);
 }
 
 // 인메모리 모바일 데이터 스토어 (서버 가동 중 보존)

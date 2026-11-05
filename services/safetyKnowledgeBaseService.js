@@ -147,9 +147,13 @@ function searchSafetyKnowledge(query = '', category = '') {
  * 향후 독자 VLM/LLM 파인튜닝용 정형화 데이터(JSONL)
  */
 function ensureDataDir() {
-  const dir = path.dirname(GOLDEN_DATASET_FILE);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    const dir = path.dirname(GOLDEN_DATASET_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (e) {
+    // Vercel 서버리스 등 읽기 전용 환경 무시
   }
 }
 
@@ -169,7 +173,11 @@ function appendGoldenDataset({ imageMeta, hazardData, siteName, inspectorName })
     training_target: hazardData
   };
 
-  fs.appendFileSync(GOLDEN_DATASET_FILE, JSON.stringify(record) + '\n', 'utf8');
+  try {
+    fs.appendFileSync(GOLDEN_DATASET_FILE, JSON.stringify(record) + '\n', 'utf8');
+  } catch (e) {
+    console.warn('[safetyKnowledgeBase] 골든 데이터셋 저장 스킵 (읽기전용 환경):', e.message);
+  }
   return { success: true, recordCount: getGoldenDatasetStats().count };
 }
 
