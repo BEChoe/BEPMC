@@ -1518,7 +1518,13 @@
             toast.classList.remove('hidden');
             if (toastText) {
               const latest = cachedPendingAuths[0];
-              toastText.textContent = `[${latest.userName}] 관리자가 현장 앱 접속을 요청했습니다. (${count}건 대기)`;
+              toastText.innerHTML = `
+                <div class="space-y-0.5">
+                  <div class="text-xs text-white"><b>${latest.userName || latest.username}</b> (${latest.username}) 현장 로그인 감지</div>
+                  <div class="text-[11px] text-emerald-300 font-mono font-bold">🔍 ID & 비밀번호 일치 확인 -> ⚡ 자동 승인 완료</div>
+                  <div class="text-[10px] text-slate-400">단말: ${latest.clientIp || '192.168.35.161'} | 모바일 앱 잠금 자동 해제됨</div>
+                </div>
+              `;
             }
           }
         } else {

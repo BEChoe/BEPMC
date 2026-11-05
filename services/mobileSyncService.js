@@ -85,23 +85,42 @@ async function requestMobileLogin({ username, password, siteName, clientIp, user
     username: user.username,
     role: user.role || 'admin',
     siteName: siteName || '판교 복합비즈니스센터 신축공사',
-    clientIp: clientIp || '172.28.123.44',
+    clientIp: clientIp || '192.168.35.161',
     userAgent: userAgent || 'Android Mobile App',
     status: 'PENDING_VERIFICATION', // PENDING_VERIFICATION | APPROVED | REJECTED | EXPIRED
     requestedAt: now.toLocaleTimeString('ko-KR'),
     timestamp: now.toISOString(),
     verifiedAt: null,
-    verifierName: null
+    verifierName: null,
+    verificationInfo: {
+      idVerified: true,
+      passwordVerified: true,
+      method: isMasterAdmin ? '관리자 보안 자격증명 일치' : '안전 포털 DB 자격증명 일치',
+      checkedAt: now.toLocaleTimeString('ko-KR')
+    },
+    autoApproveSeconds: 2
   };
 
   mobileAuthSessions[sessionId] = sessionRecord;
+
+  // [핵심] 대시보드 상에서 ID 및 비밀번호 확인 후 2초 뒤 자동 승인(Auto-Approval) 프로토콜
+  setTimeout(() => {
+    if (mobileAuthSessions[sessionId] && mobileAuthSessions[sessionId].status === 'PENDING_VERIFICATION') {
+      mobileAuthSessions[sessionId].status = 'APPROVED';
+      mobileAuthSessions[sessionId].verifiedAt = new Date().toISOString();
+      mobileAuthSessions[sessionId].verifierName = '본사 PC 대시보드 (ID/비번 대조 자동 승인)';
+      mobileAuthSessions[sessionId].isAutoApproved = true;
+      console.log(`[Auto-Approve] 모바일 세션(${sessionId}) 계정(${user.username}) ID/비번 확인 완료 -> PC 대시보드 자동 승인`);
+    }
+  }, 2200);
 
   return {
     success: true,
     sessionId,
     status: 'PENDING_VERIFICATION',
-    message: '1차 비밀번호 검증 완료. 본사 PC 관제 대시보드에서 관리자 접속 승인을 기다리는 중입니다.',
-    user: sessionRecord.user
+    message: '1차 비밀번호 검증 완료. 본사 PC 대시보드에서 계정 확인 후 자동 승인을 진행합니다.',
+    user: sessionRecord.user,
+    autoApproveDelaySec: 2
   };
 }
 
@@ -155,7 +174,10 @@ function checkMobileLoginStatus(sessionId) {
     sessionId: session.sessionId,
     status: session.status,
     user: session.user,
-    verifiedAt: session.verifiedAt
+    verifiedAt: session.verifiedAt,
+    verifierName: session.verifierName,
+    verificationInfo: session.verificationInfo,
+    isAutoApproved: session.isAutoApproved || false
   };
 }
 
@@ -218,6 +240,22 @@ function getRecentMobileVideos() {
  */
 async function processMobileInspection({ imageBase64, siteName, inspectorName, workType, location, checklist = [], memo = '' }) {
   const inspectionId = `INSP-${Date.now()}`;
+  let photoFileUrl = null;
+
+  if (imageBase64) {
+    try {
+      let rawBase64 = imageBase64;
+      if (rawBase64.includes(',')) {
+        rawBase64 = rawBase64.split(',')[1];
+      }
+      const photoFileName = `${inspectionId}.jpg`;
+      const photoFilePath = path.join(UPLOADS_DIR, photoFileName);
+      fs.writeFileSync(photoFilePath, Buffer.from(rawBase64, 'base64'));
+      photoFileUrl = `/uploads/mobile/${photoFileName}`;
+    } catch (e) {
+      console.warn('[MobileSync] 사진 파일 저장 실패:', e.message);
+    }
+  }
 
   // Gemini & PE 비전 분석 호출
   let aiAnalysis = null;
@@ -243,6 +281,7 @@ async function processMobileInspection({ imageBase64, siteName, inspectorName, w
     location: location || "지상 3층",
     checklist: checklist,
     memo: memo,
+    photoUrl: photoFileUrl,
     aiResult: aiAnalysis?.data || null,
     source: aiAnalysis?.source || "BEPMC AI Vision"
   };

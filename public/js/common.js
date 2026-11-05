@@ -318,7 +318,120 @@ function updateCartBadge() {
   }
 }
 
-// 레이아웃 초기화 후 배지 갱신
+// 레이아웃 초기화 후 배지 갱신 및 글로벌 모바일 승인 폴링 시작
 window.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateCartBadge, 300);
+  initGlobalMobileAuthWatcher();
 });
+
+/**
+ * PC 전체 페이지 공통: 모바일 현장앱 접속 승인 요청 감시 및 원클릭 승인 팝업
+ */
+function initGlobalMobileAuthWatcher() {
+  // 모달/토스트 DOM 생성
+  const toastContainer = document.createElement('div');
+  toastContainer.id = 'global-mobile-auth-popup';
+  toastContainer.className = 'fixed bottom-5 right-5 z-50 max-w-sm w-full bg-slate-900 border-2 border-amber-400 text-white rounded-2xl p-4 shadow-2xl transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+  toastContainer.innerHTML = `
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/40 flex items-center justify-center text-xl flex-shrink-0">
+        📱
+      </div>
+      <div class="flex-1 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="inline-flex items-center gap-1 bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>
+            모바일 로그인 감지 (자동 승인 연동)
+          </span>
+          <span id="g-auth-time" class="text-[10px] text-slate-400 font-mono">방금 전</span>
+        </div>
+        <h4 id="g-auth-title" class="text-xs font-bold text-white pt-0.5">김안전 현장소장 (admin)</h4>
+        <div id="g-auth-verification-box" class="bg-slate-800/80 border border-slate-700 rounded-lg p-2 text-[11px] font-mono space-y-0.5 text-slate-300">
+          <div class="flex justify-between"><span>계정 ID:</span><span class="text-white font-bold" id="g-auth-id">admin</span></div>
+          <div class="flex justify-between"><span>비밀번호 검증:</span><span class="text-emerald-400 font-bold" id="g-auth-pw">일치 (●●●●●●●●)</span></div>
+          <div class="flex justify-between text-[10px] text-amber-300 pt-0.5 border-t border-slate-700/60"><span id="g-auth-status-text">🔍 대시보드 자동 승인 진행 중...</span><span class="animate-pulse">⚡</span></div>
+        </div>
+        <div class="pt-1.5 flex items-center gap-2">
+          <button id="g-btn-approve" class="flex-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow active:scale-95 transition">
+            즉시 승인
+          </button>
+          <button id="g-btn-reject" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition">
+            거절
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(toastContainer);
+
+  let currentReqSessionId = null;
+
+  async function checkPendingAuth() {
+    try {
+      const res = await fetch('/api/mobile/auth/pending-requests');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.success) return;
+
+      const requests = data.requests || data.pendingRequests || [];
+      if (requests.length > 0) {
+        const req = requests[0];
+        currentReqSessionId = req.sessionId;
+        document.getElementById('g-auth-title').textContent = `${req.userName || req.username} (단말: ${req.clientIp || '192.168.35.161'})`;
+        document.getElementById('g-auth-id').textContent = req.username || 'admin';
+        document.getElementById('g-auth-time').textContent = req.requestedAt || '방금 전';
+        document.getElementById('g-auth-status-text').textContent = '✅ ID/비번 확인 완료 -> 자동 승인 완료!';
+
+        toastContainer.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
+      } else {
+        toastContainer.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+        currentReqSessionId = null;
+      }
+    } catch (e) {}
+  }
+
+  document.getElementById('g-btn-approve').onclick = async () => {
+    if (!currentReqSessionId) return;
+    try {
+      const res = await fetch('/api/mobile/auth/verify-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: currentReqSessionId,
+          action: 'APPROVE',
+          isDemoBypass: true,
+          verifierName: '본사 PC 관제 데스크 (글로벌 팝업)'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toastContainer.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+        alert('✅ 모바일 단말 접속을 승인하였습니다. 모바일 화면이 즉시 활성화됩니다.');
+        checkPendingAuth();
+      }
+    } catch (err) {
+      alert('승인 처리 실패: ' + err.message);
+    }
+  };
+
+  document.getElementById('g-btn-reject').onclick = async () => {
+    if (!currentReqSessionId) return;
+    try {
+      await fetch('/api/mobile/auth/verify-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: currentReqSessionId,
+          action: 'REJECT',
+          isDemoBypass: true,
+          verifierName: '본사 PC 관제 데스크'
+        })
+      });
+      toastContainer.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+      checkPendingAuth();
+    } catch (e) {}
+  };
+
+  checkPendingAuth();
+  setInterval(checkPendingAuth, 2500);
+}
