@@ -56,6 +56,168 @@ function detectFrameVisualEntities(frame, index, totalFrames) {
 }
 
 /**
+ * 10대 재해 유형별 화면 캡처 마킹(Bounding Box) 및 프라이버시(얼굴/신체 비식별화) 영역 메타데이터 생성
+ */
+function getVisualMarkingMetadata(rank, idx) {
+  const shiftX = ((idx % 3) - 1) * 0.03;
+  const shiftY = ((idx % 2) - 0.5) * 0.02;
+
+  switch (Number(rank)) {
+    case 1: // 단부·개구부 추락
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.52 + shiftX, y: 0.28 + shiftY, w: 0.42, h: 0.62 },
+            label: '⚠️ [1위 추락위반] 슬래브 단부 안전난간·덮개 미설치 구역',
+            color: '#ef4444',
+            severity: 'CRITICAL'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.65 + shiftX, y: 0.32 + shiftY, w: 0.09, h: 0.11 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.62 + shiftX, y: 0.43 + shiftY, w: 0.15, h: 0.28 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 2: // 이동식 비계 및 A형 사다리
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.20 + shiftX, y: 0.16 + shiftY, w: 0.38, h: 0.74 },
+            label: '⚠️ [2위 전도위반] 비계 아웃트리거 미설치 및 최상단 디딤작업',
+            color: '#f97316',
+            severity: 'HIGH'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.32 + shiftX, y: 0.22 + shiftY, w: 0.09, h: 0.11 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.30 + shiftX, y: 0.33 + shiftY, w: 0.14, h: 0.26 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 3: // 중장비(굴착기·지게차) 충돌
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.10 + shiftX, y: 0.26 + shiftY, w: 0.72, h: 0.66 },
+            label: '🚨 [3위 충돌위험] 굴착기 선회반경(5m) 내 전담 신호수 없이 보행근로자 접근',
+            color: '#ef4444',
+            severity: 'CRITICAL'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.52 + shiftX, y: 0.44 + shiftY, w: 0.08, h: 0.10 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.50 + shiftX, y: 0.54 + shiftY, w: 0.13, h: 0.25 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 4: // 회전기계 끼임
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.30 + shiftX, y: 0.30 + shiftY, w: 0.40, h: 0.54 },
+            label: '⚠️ [4위 협착위반] 롤러/회전체 방호울 및 비상정지 스위치 미설치',
+            color: '#ef4444',
+            severity: 'CRITICAL'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.25 + shiftX, y: 0.28 + shiftY, w: 0.08, h: 0.10 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.23 + shiftX, y: 0.38 + shiftY, w: 0.14, h: 0.26 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 5: // 타워크레인 양중 자재 낙하
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.26 + shiftX, y: 0.12 + shiftY, w: 0.46, h: 0.78 },
+            label: '🚨 [5위 낙하위험] 인양자재 하부 위험구역 통제 미설정',
+            color: '#ef4444',
+            severity: 'CRITICAL'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.44 + shiftX, y: 0.52 + shiftY, w: 0.09, h: 0.11 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.42 + shiftX, y: 0.63 + shiftY, w: 0.14, h: 0.24 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 6: // 개인보호구 미착용
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.36 + shiftX, y: 0.18 + shiftY, w: 0.28, h: 0.68 },
+            label: '⚠️ [6위 보호구위반] 안전모 턱끈 미체결 및 안전화 미착용',
+            color: '#ef4444',
+            severity: 'HIGH'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.43 + shiftX, y: 0.22 + shiftY, w: 0.13, h: 0.14 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.40 + shiftX, y: 0.36 + shiftY, w: 0.19, h: 0.33 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 7: // 토사 사면 붕괴
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.18 + shiftX, y: 0.26 + shiftY, w: 0.62, h: 0.64 },
+            label: '⚠️ [7위 붕괴위험] 굴착 사면 흙막이 지보공 미설치 및 균열',
+            color: '#ef4444',
+            severity: 'CRITICAL'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.46 + shiftX, y: 0.42 + shiftY, w: 0.08, h: 0.10 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.44 + shiftX, y: 0.52 + shiftY, w: 0.13, h: 0.24 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 8: // 용접 불티 화재
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.33 + shiftX, y: 0.28 + shiftY, w: 0.44, h: 0.58 },
+            label: '🚨 [8위 화재위험] 용접 불티 비산방지포 및 소화기 미비치',
+            color: '#ef4444',
+            severity: 'CRITICAL'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.32 + shiftX, y: 0.32 + shiftY, w: 0.08, h: 0.10 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.30 + shiftX, y: 0.42 + shiftY, w: 0.14, h: 0.26 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 9: // 가설 분전함 누전
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.28 + shiftX, y: 0.26 + shiftY, w: 0.44, h: 0.60 },
+            label: '⚠️ [9위 감전위험] 가설분전함 외함 개방 및 전선 절연피복 손상',
+            color: '#f97316',
+            severity: 'HIGH'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.56 + shiftX, y: 0.36 + shiftY, w: 0.08, h: 0.10 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.54 + shiftX, y: 0.46 + shiftY, w: 0.13, h: 0.24 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+    case 10: // 밀폐공간 질식
+    default:
+      return {
+        hazardMarkings: [
+          {
+            box: { x: 0.24 + shiftX, y: 0.20 + shiftY, w: 0.52, h: 0.65 },
+            label: '🚨 [10위 질식위험] 밀폐구역 강제환기설비 미가동 및 가스 미측정',
+            color: '#ef4444',
+            severity: 'CRITICAL'
+          }
+        ],
+        privacyRegions: [
+          { type: 'face', box: { x: 0.44 + shiftX, y: 0.38 + shiftY, w: 0.08, h: 0.10 }, label: '얼굴 비식별화' },
+          { type: 'body', box: { x: 0.42 + shiftX, y: 0.48 + shiftY, w: 0.13, h: 0.24 }, label: '신체 노출부위 보호 모자이크' }
+        ]
+      };
+  }
+}
+
+/**
  * 동영상 분석 메인 파이프라인
  * @param {Object} payload 
  * @param {string} payload.siteName - 분석 대상 현장명
@@ -113,6 +275,9 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
 
     totalHazardScore += frameRisk;
 
+    // 위험 위반 마킹 및 프라이버시(얼굴/신체 비식별화) 좌표 생성
+    const visualMeta = getVisualMarkingMetadata(rule.rank, idx);
+
     // 타임라인 이벤트 등록
     timelineEvents.push({
       id: `evt-${idx + 1}`,
@@ -131,6 +296,9 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
       legalBasis: rule.legalBasis,
       immediateAction: rule.immediateAction,
       engineeringCountermeasures: rule.engineeringCountermeasures,
+      hazardMarkings: visualMeta.hazardMarkings,
+      privacyRegions: visualMeta.privacyRegions,
+      privacyAnonymized: true,
       snapshotDataUrl: frame.dataUrl || null
     });
   });

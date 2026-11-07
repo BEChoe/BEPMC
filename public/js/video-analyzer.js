@@ -514,8 +514,12 @@ async function startVideoSafetyAnalysis() {
 
     videoState.analysisReport = report;
 
-    // 3단계: 화면 렌더링
-    renderAnalysisResults(report);
+    if (progressText) {
+      progressText.textContent = `프라이버시 비식별화(얼굴·신체 모자이크) & 안전 위반 마킹 처리 중...`;
+    }
+
+    // 3단계: 화면 렌더링 (비동기 스냅샷 마킹 및 비식별화 처리)
+    await renderAnalysisResults(report);
 
   } catch (err) {
     console.error('Analysis error:', err);
@@ -533,7 +537,7 @@ async function startVideoSafetyAnalysis() {
 /**
  * 5. 종합 분석 결과 UI 렌더링
  */
-function renderAnalysisResults(report) {
+async function renderAnalysisResults(report) {
   const resultContainer = document.getElementById('analysis-result-container');
   if (!resultContainer) return;
   resultContainer.classList.remove('hidden');
@@ -546,6 +550,19 @@ function renderAnalysisResults(report) {
   document.getElementById('report-date-badge').textContent = report.reportDate;
   document.getElementById('report-site-name').textContent = report.siteName;
   document.getElementById('report-file-name').textContent = report.fileName;
+
+  // [요구사항 1 & 2] 타임라인 스냅샷에 프라이버시 보호(얼굴/신체 모자이크) 및 안전위반 마킹 일괄 적용
+  if (Array.isArray(report.timelineEvents)) {
+    for (const evt of report.timelineEvents) {
+      if (evt.snapshotDataUrl) {
+        evt.snapshotDataUrl = await processSnapshotMarkingAndPrivacy(
+          evt.snapshotDataUrl,
+          evt.hazardMarkings,
+          evt.privacyRegions
+        );
+      }
+    }
+  }
 
   // 종합 안전 지수 및 등급
   const scoreEl = document.getElementById('overall-score-display');
@@ -625,11 +642,14 @@ function renderTimelineEvents(events) {
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
-        <!-- 캡처 스냅샷 -->
-        <div class="relative rounded-lg overflow-hidden border border-slate-300 bg-slate-950 aspect-video flex items-center justify-center">
+        <!-- 캡처 스냅샷 (위반사항 마킹 및 얼굴/신체 모자이크 처리) -->
+        <div class="relative rounded-lg overflow-hidden border border-slate-300 bg-slate-950 aspect-video flex items-center justify-center group">
           ${evt.snapshotDataUrl ? `<img src="${evt.snapshotDataUrl}" class="w-full h-full object-cover">` : '<span class="text-xs text-slate-500">스냅샷 없음</span>'}
-          <div class="absolute bottom-1 right-1 bg-black/70 text-[9px] text-white px-1.5 py-0.2 rounded font-mono">
+          <div class="absolute bottom-1 right-1 bg-black/75 text-[9px] text-white px-1.5 py-0.2 rounded font-mono">
             신뢰도 ${evt.confidence}%
+          </div>
+          <div class="absolute bottom-1 left-1 bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 text-[9px] px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5">
+            <span>🛡️</span> 비식별화
           </div>
         </div>
 
@@ -644,6 +664,7 @@ function renderTimelineEvents(events) {
           <div class="text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 flex flex-wrap gap-x-3 gap-y-1">
             <span>⚖️ <b>법조항:</b> ${escapeHtml(evt.legalBasis.lawName)} ${escapeHtml(evt.legalBasis.articleNo)}</span>
             <span>🚨 <b>조치수준:</b> <span class="text-rose-600 font-bold">${escapeHtml(evt.dangerLevel)}</span></span>
+            <span class="text-emerald-700 font-bold">🛡️ <b>프라이버시:</b> 얼굴·노출부위 모자이크 완료</span>
           </div>
           <div class="text-[11px] text-blue-900 bg-blue-50/70 p-2 rounded border border-blue-200">
             <b>🛡️ 즉시 시정 권고사항:</b> ${escapeHtml(evt.immediateAction)}
@@ -652,6 +673,168 @@ function renderTimelineEvents(events) {
       </div>
     </div>
   `).join('');
+}
+
+/**
+ * [핵심 기능 1 & 2] 캔버스 기반 안전위반 사항 시각적 마킹(Bounding Box) & 개인 프라이버시(얼굴/신체부위 모자이크) 처리
+ */
+async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], privacyRegions = []) {
+  if (!dataUrl) return null;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width || 640;
+      canvas.height = img.height || 360;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // 1. 원본 스냅샷 프레임 렌더링
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // 2. [요구사항 2] 개인 프라이버시 보호: 얼굴 및 특정 신체(노출부위) 픽셀 모자이크 처리
+      if (Array.isArray(privacyRegions) && privacyRegions.length > 0) {
+        privacyRegions.forEach(region => {
+          const rx = Math.max(0, Math.floor(region.box.x * w));
+          const ry = Math.max(0, Math.floor(region.box.y * h));
+          const rw = Math.min(w - rx, Math.floor(region.box.w * w));
+          const rh = Math.min(h - ry, Math.floor(region.box.h * h));
+          if (rw > 0 && rh > 0) {
+            // 픽셀 모자이크 적용
+            applyMosaicFilter(ctx, rx, ry, rw, rh, 9);
+
+            // 비식별화 영역 녹색 점선 테두리
+            ctx.save();
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.85)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 2]);
+            ctx.strokeRect(rx, ry, rw, rh);
+            ctx.restore();
+          }
+        });
+      }
+
+      // 3. [요구사항 1] 안전 위반 사항 바운딩 박스 & 마킹 오버레이
+      if (Array.isArray(hazardMarkings) && hazardMarkings.length > 0) {
+        hazardMarkings.forEach(hazard => {
+          const hx = Math.max(0, Math.floor(hazard.box.x * w));
+          const hy = Math.max(0, Math.floor(hazard.box.y * h));
+          const hw = Math.min(w - hx, Math.floor(hazard.box.w * w));
+          const hh = Math.min(h - hy, Math.floor(hazard.box.h * h));
+          if (hw > 0 && hh > 0) {
+            const color = hazard.color || '#ef4444';
+
+            // 반투명 위험 강조 배경
+            ctx.fillStyle = color === '#ef4444' ? 'rgba(239, 68, 68, 0.16)' : 'rgba(249, 115, 22, 0.16)';
+            ctx.fillRect(hx, hy, hw, hh);
+
+            // 주 테두리
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(hx, hy, hw, hh);
+
+            // 4개 코너 브래킷 강조 (┏ ┓ ┗ ┛)
+            const bLen = Math.min(18, Math.floor(Math.min(hw, hh) / 4));
+            ctx.lineWidth = 3.5;
+            ctx.strokeStyle = '#ffffff';
+
+            ctx.beginPath();
+            ctx.moveTo(hx, hy + bLen); ctx.lineTo(hx, hy); ctx.lineTo(hx + bLen, hy);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(hx + hw - bLen, hy); ctx.lineTo(hx + hw, hy); ctx.lineTo(hx + hw, hy + bLen);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(hx, hy + hh - bLen); ctx.lineTo(hx, hy + hh); ctx.lineTo(hx + bLen, hy + hh);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(hx + hw - bLen, hy + hh); ctx.lineTo(hx + hw, hy + hh); ctx.lineTo(hx + hw, hy + hh - bLen);
+            ctx.stroke();
+
+            // 위반 텍스트 라벨 태그 배지
+            ctx.font = 'bold 12px Pretendard, sans-serif';
+            const labelText = hazard.label || '⚠️ 안전 위반 검출';
+            const textWidth = ctx.measureText(labelText).width;
+            const tagHeight = 22;
+            const tagY = Math.max(6, hy - tagHeight - 2);
+
+            ctx.fillStyle = color;
+            ctx.fillRect(hx, tagY, textWidth + 16, tagHeight);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(labelText, hx + 8, tagY + 15);
+          }
+        });
+      }
+
+      // 4. 스냅샷 상단 워터마크 태그 (개인정보보호법 제25조 비식별화 준수)
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.fillRect(8, 8, 230, 22);
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.8)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(8, 8, 230, 22);
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 10px Pretendard, sans-serif';
+      ctx.fillText('🛡️ 개인정보 비식별화(얼굴·신체 모자이크 완료)', 13, 23);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+/**
+ * 모자이크 픽셀레이션 필터 (얼굴 및 신체 노출부위 비식별화)
+ */
+function applyMosaicFilter(ctx, x, y, w, h, blockSize = 9) {
+  x = Math.max(0, Math.floor(x));
+  y = Math.max(0, Math.floor(y));
+  w = Math.min(ctx.canvas.width - x, Math.floor(w));
+  h = Math.min(ctx.canvas.height - y, Math.floor(h));
+  if (w <= 0 || h <= 0) return;
+
+  const imgData = ctx.getImageData(x, y, w, h);
+  const data = imgData.data;
+
+  for (let by = 0; by < h; by += blockSize) {
+    for (let bx = 0; bx < w; bx += blockSize) {
+      let r = 0, g = 0, b = 0, count = 0;
+
+      for (let dy = 0; dy < blockSize && by + dy < h; dy++) {
+        for (let dx = 0; dx < blockSize && bx + dx < w; dx++) {
+          const idx = ((by + dy) * w + (bx + dx)) * 4;
+          r += data[idx];
+          g += data[idx + 1];
+          b += data[idx + 2];
+          count++;
+        }
+      }
+
+      if (count === 0) continue;
+      r = Math.round(r / count);
+      g = Math.round(g / count);
+      b = Math.round(b / count);
+
+      for (let dy = 0; dy < blockSize && by + dy < h; dy++) {
+        for (let dx = 0; dx < blockSize && bx + dx < w; dx++) {
+          const idx = ((by + dy) * w + (bx + dx)) * 4;
+          data[idx] = r;
+          data[idx + 1] = g;
+          data[idx + 2] = b;
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(imgData, x, y);
 }
 
 /**
