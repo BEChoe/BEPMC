@@ -74,6 +74,70 @@ function checkPaidUserAccess() {
 }
 
 /**
+ * 대시보드 화면 내 즉시 로그인 핸들러 (전체 화면으로 튕기지 않고 본 동영상 분석 보드로 바로 입장)
+ */
+async function handleDirectStudioLogin(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const usernameInput = document.getElementById('studio-login-username');
+  const passwordInput = document.getElementById('studio-login-password');
+  const btnLogin = document.getElementById('btn-studio-login');
+  const errorMsg = document.getElementById('studio-login-error');
+
+  const username = usernameInput ? usernameInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value.trim() : '';
+
+  if (!username || !password) {
+    alert('아이디와 비밀번호를 모두 입력해주세요.');
+    return;
+  }
+
+  try {
+    if (btnLogin) {
+      btnLogin.disabled = true;
+      btnLogin.innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> 인증 확인 중...';
+    }
+    if (errorMsg) errorMsg.classList.add('hidden');
+
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      // 1. 공통 세션 상태 즉시 갱신
+      if (typeof checkAuth === 'function') {
+        await checkAuth();
+      }
+      // 2. 상단 글로벌 헤더 회원/관리자 배지 재렌더링
+      if (typeof initLayout === 'function') {
+        await initLayout('technical-guidance');
+      }
+      // 3. 전체 화면으로 튕기지 않고 본 동영상 분석 대시보드 영역 즉시 오픈
+      checkPaidUserAccess();
+      // 4. 공공데이터 기준표 재로드
+      loadTop10RulesReference();
+    } else {
+      if (errorMsg) {
+        errorMsg.textContent = result.message || '아이디 또는 비밀번호가 올바르지 않습니다.';
+        errorMsg.classList.remove('hidden');
+      } else {
+        alert(result.message || '로그인 실패');
+      }
+    }
+  } catch (err) {
+    console.error('Direct login error:', err);
+    alert('로그인 처리 중 오류 발생: ' + err.message);
+  } finally {
+    if (btnLogin) {
+      btnLogin.disabled = false;
+      btnLogin.innerHTML = '<span>🔓</span> 동영상 분석 대시보드 바로 입장';
+    }
+  }
+}
+
+/**
  * 공공데이터 10대 재해 기준 매트릭스 참조 로드
  */
 async function loadTop10RulesReference() {
