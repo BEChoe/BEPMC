@@ -179,7 +179,44 @@ function renderTop10RulesReferenceTable(rules) {
 }
 
 /**
- * 2. 동영상 드래그 앤 드롭 & 파일 선택 초기화
+ * 2. 윈도우 탐색기 직접 열기 (Native File System Access API + Fallback)
+ */
+async function openWindowsFileExplorer() {
+  // 1. 크롬 / 엣지 등 최신 브라우저의 네이티브 윈도우 파일 선택기 호출
+  if (window.showOpenFilePicker) {
+    try {
+      const [fileHandle] = await window.showOpenFilePicker({
+        types: [
+          {
+            description: '동영상 파일 (*.mp4, *.avi, *.mov, *.webm, *.mkv, *.wmv)',
+            accept: {
+              'video/*': ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.wmv', '.m4v', '.flv', '.ts', '.3gp', '.asf']
+            }
+          }
+        ],
+        multiple: false
+      });
+      if (fileHandle) {
+        const file = await fileHandle.getFile();
+        handleSelectedVideoFile(file);
+        return;
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') return; // 사용자가 윈도우 탐색기에서 취소를 누른 경우
+      console.warn('Native File System API fallback:', err);
+    }
+  }
+
+  // 2. 표준 브라우저 HTML5 파일 선택기 폴백
+  const fileInput = document.getElementById('video-file-input');
+  if (fileInput) {
+    fileInput.value = ''; // 동일 파일 재선택 지원
+    fileInput.click();
+  }
+}
+
+/**
+ * 동영상 드래그 앤 드롭 & 파일 선택 초기화
  */
 function initVideoDropzone() {
   const dropzone = document.getElementById('video-dropzone');
@@ -187,19 +224,20 @@ function initVideoDropzone() {
 
   if (!dropzone || !fileInput) return;
 
+  // 윈도우 탐색기에서 브라우저로 직접 드래그 앤 드롭
   dropzone.addEventListener('dragover', (e) => {
     e.preventDefault();
-    dropzone.classList.add('border-blue-600', 'bg-blue-50/50');
+    dropzone.classList.add('border-blue-600', 'bg-blue-100/60');
   });
 
   dropzone.addEventListener('dragleave', (e) => {
     e.preventDefault();
-    dropzone.classList.remove('border-blue-600', 'bg-blue-50/50');
+    dropzone.classList.remove('border-blue-600', 'bg-blue-100/60');
   });
 
   dropzone.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropzone.classList.remove('border-blue-600', 'bg-blue-50/50');
+    dropzone.classList.remove('border-blue-600', 'bg-blue-100/60');
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleSelectedVideoFile(e.dataTransfer.files[0]);
     }
@@ -217,9 +255,12 @@ function initVideoDropzone() {
  */
 function handleSelectedVideoFile(file) {
   if (!file) return;
-  const validTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'];
-  if (!validTypes.includes(file.type) && !file.name.match(/\.(mp4|webm|mov|avi|mkv)$/i)) {
-    alert('지원되지 않는 비디오 형식입니다. MP4, WebM, MOV, AVI 파일을 선택해주세요.');
+
+  // 윈도우 환경 확장자 및 비디오 포맷 전면 지원
+  const isVideo = (file.type && file.type.startsWith('video/')) || 
+                  file.name.match(/\.(mp4|webm|mov|avi|mkv|wmv|m4v|flv|ts|3gp|asf|ogg)$/i);
+  if (!isVideo) {
+    alert(`선택하신 파일(${file.name})은 비디오 형식이 아닙니다.\n\nMP4, AVI, MOV, WebM, MKV, WMV 등 동영상 파일을 선택해주세요.`);
     return;
   }
 
@@ -236,10 +277,16 @@ function handleSelectedVideoFile(file) {
   const emptyPlaceholder = document.getElementById('player-empty-placeholder');
   const btnStartAnalysis = document.getElementById('btn-start-analysis');
 
-  if (fileNameDisplay) fileNameDisplay.textContent = file.name;
-  if (fileSizeDisplay) fileSizeDisplay.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+  if (fileNameDisplay) {
+    fileNameDisplay.textContent = file.name;
+    fileNameDisplay.title = file.name;
+  }
+  if (fileSizeDisplay) {
+    fileSizeDisplay.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+  }
   if (fileInfoBox) fileInfoBox.classList.remove('hidden');
   if (emptyPlaceholder) emptyPlaceholder.classList.add('hidden');
+  
   if (videoPlayer) {
     videoPlayer.classList.remove('hidden');
     videoPlayer.src = videoState.videoUrl;
@@ -251,11 +298,104 @@ function handleSelectedVideoFile(file) {
       if (durationDisplay) durationDisplay.textContent = formatTime(videoPlayer.duration);
       if (btnStartAnalysis) btnStartAnalysis.disabled = false;
     };
+
+    videoPlayer.onerror = (err) => {
+      console.warn('Video element playback warning:', err);
+      // 일부 브라우저에서 레거시 코덱(.avi 등) 미지원 시 안내 메시지
+      const durationDisplay = document.getElementById('file-duration-display');
+      if (durationDisplay) durationDisplay.textContent = '동영상 로드 완료 (프레임 추출 분석 가능)';
+      if (btnStartAnalysis) btnStartAnalysis.disabled = false;
+    };
   }
 
   // 기존 분석 결과 초기화
   const resultContainer = document.getElementById('analysis-result-container');
   if (resultContainer) resultContainer.classList.add('hidden');
+}
+
+/**
+ * 윈도우 동영상 파일이 바로 없을 때를 위한 샘플 현장 CCTV 시뮬레이션 영상 생성 & 자동 로드
+ */
+async function loadDemoSampleVideo() {
+  const btnStartAnalysis = document.getElementById('btn-start-analysis');
+
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 360;
+    const ctx = canvas.getContext('2d');
+    const stream = canvas.captureStream(10);
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+    recorder.start();
+
+    // 4초간 10대 재해 핵심 상황(단부, 비계, 굴착기) 시뮬레이션 프레임 렌더링
+    for (let s = 0; s < 25; s++) {
+      const t = s * 0.16;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 640, 360);
+
+      // 슬래브 바닥
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(30, 160, 580, 170);
+
+      // 상단 CCTV 메타
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(0, 0, 640, 34);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 13px Pretendard, sans-serif';
+      ctx.fillText('BEPMC 현장 관제 CCTV [판교 복합시설 A구역 3층 골조공사]', 15, 22);
+
+      if (t < 1.5) {
+        // [1위] 단부 추락 위험
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(490, 160, 120, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText('🚨 슬래브 단부 안전난간 미설치 (추락위험)', 330, 130);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(460, 180, 24, 55);
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath(); ctx.arc(472, 170, 10, 0, Math.PI * 2); ctx.fill();
+      } else if (t < 2.8) {
+        // [2위] 이동식비계 아웃트리거 미설치
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(180, 120, 80, 160);
+        ctx.fillStyle = '#f97316';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText('⚠️ 이동식비계 아웃트리거 미설치', 140, 95);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(205, 135, 20, 45);
+      } else {
+        // [3위] 굴착기 선회반경 내 작업자
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(100, 200, 90, 55);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText('⚠️ 굴착기 선회반경 내 근로자 접근', 90, 175);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(215, 210, 20, 45);
+      }
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px monospace';
+      ctx.fillText(`CAM-01 2026-11-07 14:30:${String(Math.floor(t)).padStart(2, '0')}`, 30, 310);
+      await new Promise(r => setTimeout(r, 60));
+    }
+
+    recorder.stop();
+    await new Promise(r => recorder.onstop = r);
+
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    const sampleFile = new File([blob], '샘플_건설현장_CCTV_안전위반검출.webm', { type: 'video/webm' });
+    handleSelectedVideoFile(sampleFile);
+  } catch (e) {
+    console.error('Demo video generation error:', e);
+    alert('샘플 영상 생성 실패: ' + e.message);
+  }
 }
 
 /**

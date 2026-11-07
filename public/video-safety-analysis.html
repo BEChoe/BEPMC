@@ -225,35 +225,50 @@
           <div id="video-timeline-markers-bar" class="absolute bottom-12 left-4 right-4 h-3 pointer-events-auto"></div>
         </div>
 
-        <!-- 우측: 드롭존 및 파일 정보 -->
+        <!-- 우측: 윈도우 파일 탐색기 연동 드롭존 및 파일 정보 -->
         <div class="lg:col-span-5 space-y-4">
-          <div id="video-dropzone" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-blue-500 hover:bg-blue-50/30 transition cursor-pointer flex flex-col items-center justify-center space-y-3 min-h-[180px]">
-            <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-msvideo" class="hidden">
-            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl">
+          <div id="video-dropzone" onclick="openWindowsFileExplorer()"
+               class="border-2 border-dashed border-blue-400 bg-blue-50/20 rounded-2xl p-6 text-center hover:border-blue-600 hover:bg-blue-50/50 transition cursor-pointer flex flex-col items-center justify-center space-y-3 min-h-[190px] group shadow-sm">
+            <input type="file" id="video-file-input" accept="video/*, .mp4, .webm, .mov, .avi, .mkv, .wmv, .m4v, .flv, .ts, .3gp, .asf" class="hidden">
+            <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-inner">
               📂
             </div>
             <div>
-              <p class="text-xs font-bold text-slate-800">동영상 파일을 이곳에 끌어다 놓으세요</p>
-              <p class="text-[11px] text-slate-400 mt-0.5">또는 클릭하여 로컬 폴더에서 파일 찾기</p>
+              <p class="text-sm font-black text-slate-800">로컬 동영상 파일 선택 (윈도우 탐색기)</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">클릭하거나 윈도우 탐색기 폴더에서 파일을 직접 끌어다 놓으세요</p>
             </div>
-            <button type="button" onclick="document.getElementById('video-file-input').click()" class="px-4 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold shadow-sm transition">
-              파일 찾아보기 (.mp4, .webm, .mov)
-            </button>
+            <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <button type="button" onclick="event.stopPropagation(); openWindowsFileExplorer();" 
+                      class="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-black shadow-md transition flex items-center gap-1.5">
+                <span>📁</span> 윈도우 탐색기 열기
+              </button>
+              <button type="button" onclick="event.stopPropagation(); loadDemoSampleVideo();"
+                      class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1 border border-slate-300">
+                <span>🎥</span> 샘플 동영상 테스트
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">지원 포맷: MP4, AVI, MOV, WebM, MKV, WMV, FLV, TS</p>
           </div>
 
           <!-- 선택된 파일 상세 정보 박스 -->
           <div id="selected-file-info" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
             <div class="flex items-center justify-between">
-              <span class="text-slate-500">파일명:</span>
-              <span id="file-name-display" class="font-bold text-slate-800 truncate max-w-[200px]"></span>
+              <span class="text-slate-500 font-semibold">파일명:</span>
+              <span id="file-name-display" class="font-bold text-slate-800 truncate max-w-[200px]" title=""></span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-500">파일 크기:</span>
+              <span class="text-slate-500 font-semibold">파일 크기:</span>
               <span id="file-size-display" class="font-bold text-slate-800"></span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-500">재생 시간:</span>
+              <span class="text-slate-500 font-semibold">재생 시간:</span>
               <span id="file-duration-display" class="font-bold text-blue-700"></span>
+            </div>
+            <div class="pt-1 flex items-center justify-between border-t border-slate-200/60 mt-1">
+              <button type="button" onclick="openWindowsFileExplorer()" class="text-[11px] text-blue-700 font-bold hover:underline flex items-center gap-1">
+                <span>🔄</span> 다른 동영상 선택 (윈도우 탐색기)
+              </button>
+              <span class="text-[10px] text-emerald-600 font-bold">✓ 파일 준비 완료</span>
             </div>
           </div>
 
