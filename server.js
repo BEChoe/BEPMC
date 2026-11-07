@@ -9,6 +9,8 @@ const aiSafetyService = require('./services/aiSafetyInspectionService');
 const technicalGuidanceService = require('./services/technicalGuidanceReportService');
 const safetyKnowledgeBase = require('./services/safetyKnowledgeBaseService');
 const mobileSyncService = require('./services/mobileSyncService');
+const publicDataTop10RulesService = require('./services/publicDataTop10RulesService');
+const videoSafetyAnalysisService = require('./services/videoSafetyAnalysisService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1178,6 +1180,56 @@ app.get('/api/technical-guidance/edge-cctv/events', requirePaidOrAdmin, (req, re
 
   const streamData = cameraStreams[channel] || cameraStreams['CAM-01'];
   res.json({ success: true, timestamp: now.toISOString(), stream: streamData });
+});
+
+// ---------------------------------------------------------------------
+// 8-1. [유료 회원 전용] 공공데이터 10대 다발사고 기반 동영상 안전분석 & 엔지니어링 대책 보고서 API
+// ---------------------------------------------------------------------
+
+// 공공데이터 과거 1년 최다 빈도 10대 재해 기준 매트릭스 전체 조회
+app.get('/api/technical-guidance/top10-rules', requirePaidOrAdmin, (req, res) => {
+  try {
+    const rules = publicDataTop10RulesService.getTop10AccidentRules();
+    res.json({
+      success: true,
+      standardSource: "고용노동부(MOEL) & 한국산업안전보건공단(KOSHA) 최근 1년 중대재해 통계",
+      count: rules.length,
+      rules
+    });
+  } catch (err) {
+    console.error('Top10 rules fetch error:', err);
+    res.status(500).json({ success: false, message: '10대 재해 규칙 조회 실패' });
+  }
+});
+
+// 동영상 프레임 안전 분석 & 종합 엔지니어링 대책 보고서 생성
+app.post('/api/technical-guidance/top10-video-analysis', requirePaidOrAdmin, async (req, res) => {
+  try {
+    const { siteName, fileName, frames, customNotes } = req.body;
+    if (!frames || !Array.isArray(frames) || frames.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '분석할 동영상 프레임이 전달되지 않았습니다.'
+      });
+    }
+
+    const userName = req.session.user ? (req.session.user.name || req.session.user.username) : '유료회원';
+    const analysisReport = await videoSafetyAnalysisService.analyzeVideoSafety({
+      siteName: siteName || '미지정 건설현장',
+      fileName: fileName || 'video.mp4',
+      frames,
+      userName,
+      customNotes: customNotes || ''
+    });
+
+    res.json(analysisReport);
+  } catch (err) {
+    console.error('Top10 video analysis error:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || '동영상 안전 분석 처리 중 오류가 발생했습니다.'
+    });
+  }
 });
 
 // ---------------------------------------------------------------------

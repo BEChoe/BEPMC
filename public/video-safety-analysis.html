@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>공공데이터 10대 다발재해 동영상 AI 위험성평가 & 대책 보고서 - BEPMC</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800;900&display=swap');
+    body { font-family: 'Pretendard', sans-serif; }
+    
+    /* 인쇄 전용 스타일 (A4 공식 엔지니어링 기술보고서 양식) */
+    @media print {
+      body { background-color: #ffffff !important; color: #000000 !important; }
+      #global-header, #global-alert-banner, #global-footer, #video-input-panel, #btn-print-panel, .no-print {
+        display: none !important;
+      }
+      #analysis-result-container {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      .page-break { page-break-before: always; }
+      .print-border { border: 1px solid #cbd5e1 !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+
+  <!-- 글로벌 상단 알림 띠배너 -->
+  <div id="global-alert-banner"></div>
+
+  <!-- 공통 헤더 & 내비게이션 -->
+  <div id="global-header"></div>
+
+  <!-- 상단 타이틀 배너 -->
+  <section class="bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a] text-white py-6 border-b-4 border-amber-400 shadow-md no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- 브레드크럼 -->
+      <nav class="flex items-center gap-2 text-xs text-blue-300 py-1 mb-2">
+        <a href="/index.html" class="hover:text-amber-300 flex items-center gap-1 transition">
+          <span>🏠</span> BEPMC 종합 안전 포털
+        </a>
+        <span>&gt;</span>
+        <a href="/technical-guidance.html" class="hover:text-amber-300 transition">
+          건설재해예방 기술지도 AI 관제
+        </a>
+        <span>&gt;</span>
+        <span class="text-white font-bold">10대 다발재해 동영상 AI 안전분석 센터</span>
+        <span id="user-tier-badge" class="ml-2 inline-flex items-center"></span>
+      </nav>
+
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-1">
+        <div>
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="inline-flex items-center gap-1 bg-amber-400 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded uppercase tracking-wider">
+              공공데이터 빅데이터 연계
+            </span>
+            <span class="text-xs font-semibold text-blue-300">
+              고용노동부(MOEL) · KOSHA 과거 1년 최다 빈도 10대 재해 원인 판정 기준
+            </span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <span>동영상 AI 위험성평가 &amp; 공학적 안전대책 보고서 시스템</span>
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
+            외부/로컬 동영상을 업로드하면 공공 빅데이터 10대 재해 기준과 대조하여 위반사항을 정밀 탐지하고, 산안법 조항과 공학적 방호대책 보고서를 즉시 발행합니다.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="/technical-guidance.html" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3.5 py-2 rounded-xl text-xs font-bold transition">
+            <span>◀ 기술지도 관제로 복귀</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 권한 제어 게이트키퍼 (비회원 / 무료회원 차단 안내) -->
+  <!-- ======================================================== -->
+  <div id="gatekeeper-section" class="hidden max-w-4xl mx-auto px-4 py-16 flex-1 w-full no-print">
+    
+    <!-- 비회원용 안내 -->
+    <div id="gate-unauth" class="hidden bg-white rounded-3xl shadow-xl border-2 border-slate-200 p-8 sm:p-12 text-center space-y-6">
+      <div class="w-20 h-20 bg-blue-50 text-blue-700 rounded-3xl mx-auto flex items-center justify-center text-4xl shadow-inner border border-blue-200">
+        🔒
+      </div>
+      <div class="space-y-2">
+        <span class="inline-flex items-center gap-1.5 bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full">
+          로그인 필수 서비스
+        </span>
+        <h2 class="text-2xl font-black text-slate-900">로그인이 필요한 프리미엄 서비스입니다</h2>
+        <p class="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
+          본 동영상 AI 안전분석 시스템은 <b>BEPMC 유료 회원사</b> 전용 서비스입니다. 로그인 후 이용해주세요.
+        </p>
+      </div>
+      <div class="flex justify-center gap-3">
+        <a href="/login.html" class="px-6 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-xs shadow-md transition">
+          로그인하러 가기
+        </a>
+        <a href="/register.html" class="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+          회원가입 신청
+        </a>
+      </div>
+    </div>
+
+    <!-- 무료회원용 안내 (유료 업그레이드 유도) -->
+    <div id="gate-free" class="hidden bg-white rounded-3xl shadow-xl border-2 border-amber-300 p-8 sm:p-12 text-center space-y-6">
+      <div class="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl mx-auto flex items-center justify-center text-4xl shadow-inner border border-amber-200">
+        💎
+      </div>
+      <div class="space-y-2">
+        <span class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full">
+          유료 회원 전용 플랜
+        </span>
+        <h2 class="text-2xl font-black text-slate-900">유료 회원사 전용 AI 분석 센터입니다</h2>
+        <p class="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+          현재 일반 무료 회원으로 로그인되어 있습니다. 본 기능은 <b>고용노동부 10대 재해 빅데이터 기반 동영상 무제한 정밀 분석 및 공학적 대책 보고서 출력</b>을 지원하는 유료 전용 서비스입니다.
+        </p>
+      </div>
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 max-w-lg mx-auto text-left space-y-2 text-xs">
+        <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+          <span>🛡️</span> 유료 회원 혜택:
+        </div>
+        <p class="text-slate-600">✔ 로컬/외부 건설현장 동영상(MP4/WebM) 고속 프레임 AI 판정</p>
+        <p class="text-slate-600">✔ 과거 1년 공공데이터 10대 중대재해 원인 및 산안법 조항 자동 매칭</p>
+        <p class="text-slate-600">✔ KOSHA GUIDE 기준 공학적 방호대책 및 A4 정식 기술자문 보고서 출력</p>
+      </div>
+      <div class="flex justify-center gap-3">
+        <a href="/qna.html" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition">
+          📞 유료 기술지도 플랜 도입 문의
+        </a>
+        <a href="/index.html" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+          홈으로 이동
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 유료 회원 전용 메인 스튜디오 섹션 -->
+  <!-- ======================================================== -->
+  <main id="studio-main-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-1 w-full">
+
+    <!-- 1. 비디오 선택 및 분석 컨트롤 패널 -->
+    <div id="video-input-panel" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 no-print">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
+            <span>🎬</span> 현장 동영상 선택 &amp; 분석 설정
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            로컬 PC 또는 외부 저장소의 동영상 파일(MP4, WebM, MOV)을 선택하세요.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-bold border border-blue-200">
+            <span>⚡ 고속 프레임 캡처 모드</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- 상단 메타 입력 (현장명, 샘플링 간격, 메모) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">🏗️ 대상 건설현장명</label>
+          <input type="text" id="site-name-input" value="판교 제2테크노밸리 복합시설 신축공사" 
+                 class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">⏱️ 프레임 샘플링 간격</label>
+          <select id="sample-interval-select" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium">
+            <option value="1.0">1.0초 간격 (초정밀 분석)</option>
+            <option value="1.5" selected>1.5초 간격 (표준 권장)</option>
+            <option value="2.0">2.0초 간격 (빠른 분석)</option>
+            <option value="3.0">3.0초 간격 (장시간 영상용)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">📝 특이사항 / 공종 메모</label>
+          <input type="text" id="custom-notes-input" placeholder="예: 3층 슬래브 거푸집 조립 및 단부 작업 중" 
+                 class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+
+      <!-- 드래그 앤 드롭 영역 & 플레이어 -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- 좌측: 비디오 플레이어 화면 (16:9) -->
+        <div class="lg:col-span-7 bg-slate-950 rounded-2xl overflow-hidden shadow-inner border border-slate-800 relative aspect-video flex items-center justify-center">
+          
+          <!-- 파일 미선택 시 플레이스홀더 -->
+          <div id="player-empty-placeholder" class="text-center p-6 space-y-3">
+            <div class="text-5xl opacity-40">🎥</div>
+            <p class="text-xs text-slate-400">우측 파일 선택 영역에서 동영상을 업로드하세요.</p>
+          </div>
+
+          <!-- 비디오 플레이어 태그 -->
+          <video id="source-video-player" class="hidden w-full h-full object-contain" controls playsinline></video>
+
+          <!-- 비디오 상단 타임라인 마커 오버레이 바 -->
+          <div id="video-timeline-markers-bar" class="absolute bottom-12 left-4 right-4 h-3 pointer-events-auto"></div>
+        </div>
+
+        <!-- 우측: 드롭존 및 파일 정보 -->
+        <div class="lg:col-span-5 space-y-4">
+          <div id="video-dropzone" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-blue-500 hover:bg-blue-50/30 transition cursor-pointer flex flex-col items-center justify-center space-y-3 min-h-[180px]">
+            <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-msvideo" class="hidden">
+            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl">
+              📂
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-800">동영상 파일을 이곳에 끌어다 놓으세요</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">또는 클릭하여 로컬 폴더에서 파일 찾기</p>
+            </div>
+            <button type="button" onclick="document.getElementById('video-file-input').click()" class="px-4 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold shadow-sm transition">
+              파일 찾아보기 (.mp4, .webm, .mov)
+            </button>
+          </div>
+
+          <!-- 선택된 파일 상세 정보 박스 -->
+          <div id="selected-file-info" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">파일명:</span>
+              <span id="file-name-display" class="font-bold text-slate-800 truncate max-w-[200px]"></span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">파일 크기:</span>
+              <span id="file-size-display" class="font-bold text-slate-800"></span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">재생 시간:</span>
+              <span id="file-duration-display" class="font-bold text-blue-700"></span>
+            </div>
+          </div>
+
+          <!-- 분석 실행 버튼 -->
+          <button id="btn-start-analysis" onclick="startVideoSafetyAnalysis()" disabled
+                  class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 hover:from-blue-600 hover:to-indigo-600 text-white font-black text-sm shadow-lg transition transform active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2">
+            <span>⚡</span> 공공데이터 10대 재해 동영상 정밀 분석 실행
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 진행률 표시 프로그레스 바 -->
+      <div id="analysis-progress-container" class="hidden space-y-2 pt-2 border-t border-slate-100">
+        <div class="flex items-center justify-between text-xs font-bold text-blue-700">
+          <span id="extraction-progress-text">프레임 추출 중...</span>
+          <span class="animate-pulse">⏳ 안전 빅데이터 매칭 진행 중</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+          <div id="extraction-progress-bar" class="h-full bg-gradient-to-r from-blue-600 to-indigo-600 w-0 transition-all duration-300"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 2. 분석 결과 종합 엔지니어링 대책 보고서 카드 (A4 인쇄 대응) -->
+    <div id="analysis-result-container" class="hidden space-y-8 bg-white p-6 sm:p-10 rounded-3xl border border-slate-200 shadow-xl">
+      
+      <!-- 보고서 헤더 (공식 자문 워터마크 및 문서 번호) -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-900 pb-5">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="bg-blue-900 text-amber-300 px-2.5 py-0.5 rounded text-[11px] font-black tracking-tight">
+              BEPMC ENGINEERING REPORT
+            </span>
+            <span class="text-xs text-slate-500 font-bold">
+              문서번호: <span id="report-id-badge" class="font-mono text-slate-800 font-black"></span>
+            </span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
+            공공데이터 10대 다발재해 기반 동영상 안전위험성평가 결과보고서
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">
+            현장명: <b id="report-site-name" class="text-slate-800"></b> · 분석 파일: <span id="report-file-name" class="font-mono text-slate-700"></span> · 발행일: <span id="report-date-badge"></span>
+          </p>
+        </div>
+
+        <!-- 인쇄 및 다운로드 버튼 (화면에서만 노출) -->
+        <div id="btn-print-panel" class="flex items-center gap-2 no-print">
+          <button onclick="printSafetyReport()" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md transition">
+            <span>🖨️</span> 보고서 인쇄 / PDF 저장
+          </button>
+          <button onclick="exportReportJson()" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold transition">
+            <span>💾</span> JSON 데이터
+          </button>
+        </div>
+      </div>
+
+      <!-- 종합 안전 지수 & 긴급 경보 요약 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- 종합 안전 지수 게이지 카드 -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-md space-y-4">
+          <div class="flex items-center justify-between text-xs text-slate-300 font-semibold">
+            <span>종합 안전 진단 지수</span>
+            <span class="text-amber-400">100점 만점 기준</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="overall-score-display" class="text-5xl font-black tracking-tight text-white">--</span>
+            <span class="text-sm font-bold text-slate-400">/ 100 점</span>
+          </div>
+          <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+            <div id="overall-score-bar" class="h-full w-0 transition-all duration-500"></div>
+          </div>
+          <div class="pt-1 flex items-center justify-between">
+            <span class="text-xs text-slate-400">종합 판정 등급:</span>
+            <span id="overall-grade-display" class="px-2.5 py-0.5 rounded-full text-xs font-black">--</span>
+          </div>
+        </div>
+
+        <!-- 최다 빈도 핵심 위험 항목 (1위 단부추락 등) -->
+        <div class="md:col-span-2 bg-rose-50 border-2 border-rose-300 rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="inline-flex items-center gap-1.5 bg-rose-600 text-white text-xs font-black px-2.5 py-0.5 rounded">
+              🚨 최우선 중점 관리 대상 (최대 위험 위반)
+            </span>
+            <span id="critical-hazard-share" class="text-xs font-black text-rose-700"></span>
+          </div>
+          <h3 id="critical-hazard-title" class="text-base sm:text-lg font-black text-rose-950"></h3>
+          <div class="text-xs text-slate-700 space-y-1">
+            <p id="critical-hazard-law" class="font-bold text-slate-900"></p>
+            <p id="critical-hazard-penalty" class="text-rose-700 font-semibold"></p>
+          </div>
+          <p class="text-[11px] text-slate-500 bg-white/80 p-2.5 rounded-lg border border-rose-200">
+            💡 본 항목은 고용노동부 불시 기획감독 시 <b>시정명령 및 즉시 과태료·작업중지</b>가 부과되는 핵심 위반 유형입니다.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- 10대 재해 유형별 탐지 현황 매트릭스 그리드 -->
+      <div class="space-y-3">
+        <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+          <span>📊</span> 공공데이터 과거 1년 10대 재해 유형별 검출 매트릭스
+        </h3>
+        <div id="top10-matrix-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"></div>
+      </div>
+
+      <!-- 타임라인별 검출 이벤트 로그 (동영상 스냅샷 + 법조항) -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+            <span>⏱️</span> 동영상 타임라인별 정밀 위반 검출 로그
+          </h3>
+          <span class="text-xs text-slate-500">※ 카드를 클릭하면 동영상의 해당 시점으로 즉시 이동합니다.</span>
+        </div>
+        <div id="timeline-events-list" class="space-y-3"></div>
+      </div>
+
+      <!-- 3단계 공학적·관리적 개선 대책 보고서 섹션 -->
+      <div class="space-y-4 pt-6 border-t border-slate-200">
+        <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+          <span>🛡️</span> BEPMC 공학적 안전 개선 대책 (Action Plan)
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- 1단계: 즉시 조치 -->
+          <div class="bg-rose-50/70 p-5 rounded-2xl border border-rose-200 space-y-3">
+            <div class="flex items-center gap-2 font-black text-xs text-rose-800">
+              <span class="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs">1</span>
+              <span>즉시 시정 조치 (현장 즉각 대응)</span>
+            </div>
+            <ul id="immediate-actions-list" class="space-y-2"></ul>
+          </div>
+
+          <!-- 2단계: 공학적 방호대책 -->
+          <div class="bg-blue-50/70 p-5 rounded-2xl border border-blue-200 space-y-3">
+            <div class="flex items-center gap-2 font-black text-xs text-blue-800">
+              <span class="w-6 h-6 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs">2</span>
+              <span>공학적 방호대책 (KOSHA GUIDE 기준)</span>
+            </div>
+            <ul id="engineering-controls-list" class="space-y-2"></ul>
+          </div>
+
+          <!-- 3단계: 관리적 이행계획 -->
+          <div class="bg-emerald-50/70 p-5 rounded-2xl border border-emerald-200 space-y-3">
+            <div class="flex items-center gap-2 font-black text-xs text-emerald-800">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">3</span>
+              <span>관리적 안전계획 (법정 서류·교육)</span>
+            </div>
+            <ul id="administrative-plans-list" class="space-y-2"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 공식 기술자문단 검증 서명 및 워터마크 푸터 -->
+      <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-8">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2 font-black text-xs text-slate-800">
+            <span>🏛️</span>
+            <span>BEPMC (Project Management Consultancy) 기술자문단</span>
+          </div>
+          <p class="text-[11px] text-slate-500">
+            본 보고서는 고용노동부 중대재해 통계 및 산업안전보건기준에 관한 규칙을 근거로 자동 생성된 공식 공학 진단서입니다.
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <div class="text-[10px] text-slate-400">공학 인증 검증</div>
+            <div class="text-xs font-black text-blue-900">VERIFIED OFFICIAL</div>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-blue-900 text-amber-300 flex items-center justify-center font-black text-xs border border-blue-700 shadow-inner">
+            BEPMC<br>SEAL
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. 공공데이터 10대 재해 기준 가이드 매트릭스 참조 섹션 (아코디언 형태) -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 no-print">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+            <span>📚</span> 고용노동부 &amp; KOSHA 공식 10대 재해 원인 판정 매트릭스 가이드
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">
+            본 시스템이 동영상 분석의 판단 근거로 사용하는 공공데이터 10대 중대재해 기준표입니다.
+          </p>
+        </div>
+      </div>
+      <div id="top10-reference-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </div>
+
+  </main>
+
+  <!-- 공통 푸터 -->
+  <div id="global-footer"></div>
+
+  <!-- 공통 스크립트 및 비디오 분석 엔진 -->
+  <script src="/js/common.js"></script>
+  <script src="/js/video-analyzer.js"></script>
+</body>
+</html>

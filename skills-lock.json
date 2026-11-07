@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "ffmpeg": {
+      "source": "digitalsamba/claude-code-video-toolkit",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ffmpeg/SKILL.md",
+      "computedHash": "453ce416b404291eb9ae04164b68447b3f35d9fb019f924ab5b72c503b2a6dc8"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "913b9d37d0d54047dd65222bb8c67b2bf04e3cb87dcad1729068d7a8b2c8c396"
+    },
+    "yolo-inference": {
+      "source": "ultralytics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/yolo-inference/SKILL.md",
+      "computedHash": "885ffa6d64ce59637312e23c48c84d746d0e6fea642a547140c3f7ec7578bf21"
+    }
+  }
+}
