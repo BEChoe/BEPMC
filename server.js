@@ -1206,7 +1206,7 @@ app.get('/api/technical-guidance/top10-rules', requirePaidOrAdmin, (req, res) =>
 // 동영상 프레임 안전 분석 & 종합 엔지니어링 대책 보고서 생성
 app.post('/api/technical-guidance/top10-video-analysis', requirePaidOrAdmin, async (req, res) => {
   try {
-    const { siteName, fileName, frames, customNotes } = req.body;
+    const { siteName, fileName, frames, customNotes, selectedRuleRanks, customRules } = req.body;
     if (!frames || !Array.isArray(frames) || frames.length === 0) {
       return res.status(400).json({
         success: false,
@@ -1220,7 +1220,9 @@ app.post('/api/technical-guidance/top10-video-analysis', requirePaidOrAdmin, asy
       fileName: fileName || 'video.mp4',
       frames,
       userName,
-      customNotes: customNotes || ''
+      customNotes: customNotes || '',
+      selectedRuleRanks,
+      customRules
     });
 
     res.json(analysisReport);

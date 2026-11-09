@@ -241,15 +241,60 @@ function getVisualMarkingMetadata(rank, idx) {
  * @param {string} payload.fileName - 동영상 파일명
  * @param {Array} payload.frames - 프레임 목록 [{ timestamp, timeStr, dataUrl, detectedLabels, analysisHint }]
  * @param {string} payload.userName - 요청자 (유료 회원)
+ * @param {string} payload.customNotes - 추가 현장 특이사항
+ * @param {Array<number>} payload.selectedRuleRanks - 활성화된 공공데이터 10대 규칙 순위 번호 목록
+ * @param {Array<Object>} payload.customRules - 사용자 정의 현장 맞춤형 규칙 목록
  */
-async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileName = "video.mp4", frames = [], userName = "유료회원", customNotes = "" }) {
+async function analyzeVideoSafety({ 
+  siteName = "미지정 건설현장", 
+  fileName = "video.mp4", 
+  frames = [], 
+  userName = "유료회원", 
+  customNotes = "",
+  selectedRuleRanks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  customRules = []
+}) {
   if (!frames || frames.length === 0) {
     throw new Error("분석할 동영상 프레임이 전달되지 않았습니다.");
   }
 
+  // 0. 선택된 규칙 필터링 및 커스텀 규칙 통합
+  const selectedRanks = Array.isArray(selectedRuleRanks) ? selectedRuleRanks.map(Number) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const activeStandardRules = TOP10_SAFETY_ACCIDENT_RULES.filter(r => selectedRanks.includes(r.rank));
+
+  const formattedCustomRules = (Array.isArray(customRules) ? customRules : []).map((cr, idx) => {
+    const rank = 100 + (idx + 1);
+    return {
+      rank: rank,
+      title: cr.title || `맞춤 규칙 ${idx + 1}`,
+      accidentType: cr.accidentType || '현장 맞춤형 위험',
+      sharePercent: 5.0,
+      dangerLevel: cr.dangerLevel === 'CRITICAL' ? '상 (즉시작업중지)' : '중 (시정조치)',
+      detectionLabels: Array.isArray(cr.keywords) && cr.keywords.length > 0 ? cr.keywords : (cr.title ? [cr.title] : ['custom_hazard']),
+      criteria: cr.title + ' (현장 맞춤 위험 관리 조건)',
+      legalBasis: typeof cr.legalBasis === 'object' ? cr.legalBasis : { lawName: cr.legalBasis || '산업안전보건기준에 관한 규칙', articleNo: '현장 특별관리' },
+      immediateAction: cr.immediateAction || '즉시 안전 확보 조치 및 작업 중지',
+      engineeringCountermeasures: [
+        `${cr.title} 관련 안전시설 점검 및 통제구역 지정`,
+        '관리감독자 현장 입회 및 작업 전 안전교육(TBM) 강화'
+      ],
+      isCustom: true
+    };
+  });
+
+  const candidateRules = [...activeStandardRules, ...formattedCustomRules];
+  if (candidateRules.length === 0) {
+    candidateRules.push(TOP10_SAFETY_ACCIDENT_RULES[0]);
+  }
+
+  const findRule = (rank) => candidateRules.find(r => r.rank === Number(rank)) || getRuleByRank(rank) || TOP10_SAFETY_ACCIDENT_RULES[0];
+
   const timelineEvents = [];
   const top10Counter = {};
+
+  // 표준 10대 규칙 상태 초기화 (제외된 규칙은 isExcluded: true)
   TOP10_SAFETY_ACCIDENT_RULES.forEach(r => {
+    const isSelected = selectedRanks.includes(r.rank);
     top10Counter[r.rank] = {
       rank: r.rank,
       title: r.title,
@@ -258,7 +303,27 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
       dangerLevel: r.dangerLevel,
       violationCount: 0,
       maxSeverityScore: 0,
-      detectedTimestamps: []
+      detectedTimestamps: [],
+      isExcluded: !isSelected,
+      status: isSelected ? 'ACTIVE' : 'EXCLUDED',
+      isCustom: false
+    };
+  });
+
+  // 맞춤형 규칙 상태 초기화
+  formattedCustomRules.forEach(cr => {
+    top10Counter[cr.rank] = {
+      rank: cr.rank,
+      title: `[맞춤] ${cr.title}`,
+      accidentType: cr.accidentType,
+      sharePercent: cr.sharePercent,
+      dangerLevel: cr.dangerLevel,
+      violationCount: 0,
+      maxSeverityScore: 0,
+      detectedTimestamps: [],
+      isExcluded: false,
+      status: 'ACTIVE',
+      isCustom: true
     };
   });
 
@@ -283,10 +348,11 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
       if (!labels.includes(d.class)) labels.push(d.class);
     });
 
-    // 공공데이터 10대 재해 규칙 대조 매칭
+    // 선택/활성화된 규칙 후보군만 대조 매칭
     const matchResult = matchTop10HazardRule({
       labels: labels,
-      contextDescription: frame.analysisHint || ''
+      contextDescription: frame.analysisHint || '',
+      candidateRules: candidateRules
     });
 
     const rule = matchResult.matchedRule;
@@ -297,10 +363,12 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
     frameRisk = Math.min(99, Math.max(45, frameRisk));
 
     // 집계 카운터 업데이트
-    top10Counter[rule.rank].violationCount += 1;
-    top10Counter[rule.rank].detectedTimestamps.push(timeStr);
-    if (frameRisk > top10Counter[rule.rank].maxSeverityScore) {
-      top10Counter[rule.rank].maxSeverityScore = frameRisk;
+    if (top10Counter[rule.rank]) {
+      top10Counter[rule.rank].violationCount += 1;
+      top10Counter[rule.rank].detectedTimestamps.push(timeStr);
+      if (frameRisk > top10Counter[rule.rank].maxSeverityScore) {
+        top10Counter[rule.rank].maxSeverityScore = frameRisk;
+      }
     }
 
     totalHazardScore += frameRisk;
@@ -425,12 +493,12 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
     gradeBadgeColor = "#ef4444"; // red
   }
 
-  // 3. 최다/최고 위험 위반 항목 추출
+  // 3. 최다/최고 위험 위반 항목 추출 (분석 제외 항목 제외)
   const detectedViolationList = Object.values(top10Counter)
-    .filter(item => item.violationCount > 0)
+    .filter(item => !item.isExcluded && item.violationCount > 0)
     .sort((a, b) => (b.violationCount * 100 + b.sharePercent) - (a.violationCount * 100 + a.sharePercent));
 
-  const primaryViolation = detectedViolationList[0] ? getRuleByRank(detectedViolationList[0].rank) : TOP10_SAFETY_ACCIDENT_RULES[0];
+  const primaryViolation = detectedViolationList[0] ? findRule(detectedViolationList[0].rank) : (candidateRules[0] || TOP10_SAFETY_ACCIDENT_RULES[0]);
 
   // 4. 공학적 대책 종합 수립 (3단계 계층형)
   const immediateActions = [];
@@ -438,14 +506,16 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
   const administrativePlans = [];
 
   detectedViolationList.slice(0, 4).forEach(item => {
-    const rule = getRuleByRank(item.rank);
+    const rule = findRule(item.rank);
     if (!rule) return;
     immediateActions.push(`[${rule.accidentType}] ${rule.immediateAction}`);
-    rule.engineeringCountermeasures.forEach(measure => {
-      if (!engineeringControls.includes(measure)) {
-        engineeringControls.push(measure);
-      }
-    });
+    if (Array.isArray(rule.engineeringCountermeasures)) {
+      rule.engineeringCountermeasures.forEach(measure => {
+        if (!engineeringControls.includes(measure)) {
+          engineeringControls.push(measure);
+        }
+      });
+    }
   });
 
   administrativePlans.push("작업 전 10분 TBM(Tool Box Meeting) 시 본 동영상 검출 위반사례(타임라인 스냅샷) 근로자 전파 및 서명 날인");

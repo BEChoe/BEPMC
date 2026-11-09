@@ -17,7 +17,10 @@ let videoState = {
   isAnalyzing: false,
   selectedEventId: null,
   analysisMode: 'CONSTRUCTION', // 'CONSTRUCTION' | 'RAILWAY'
-  reportDisplayMode: 'ANALYSIS' // 'ANALYSIS' (무손실 원본) | 'EXTERNAL' (비식별화 보호)
+  reportDisplayMode: 'ANALYSIS', // 'ANALYSIS' (무손실 원본) | 'EXTERNAL' (비식별화 보호)
+  selectedRuleRanks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // 활성화된 공공데이터 10대 규칙
+  customRules: [], // 사용자 정의 현장 맞춤 규칙
+  referenceRules: [] // 서버 로드 기준 규칙 캐시
 };
 
 /**
@@ -291,7 +294,9 @@ async function loadTop10RulesReference() {
     if (!res.ok) return;
     const data = await res.json();
     if (data.success && Array.isArray(data.rules)) {
+      videoState.referenceRules = data.rules;
       renderTop10RulesReferenceTable(data.rules);
+      renderRuleSelectionGrid();
     }
   } catch (e) {
     console.error('Failed to load top10 rules reference:', e);
@@ -320,6 +325,236 @@ function renderTop10RulesReferenceTable(rules) {
         <span class="text-rose-600 font-semibold">${escapeHtml(r.dangerLevel)}</span>
       </div>
     </div>
+  `).join('');
+}
+
+/**
+ * 🎯 판정 매트릭스 조건 선택 그리드 동적 렌더링
+ */
+function renderRuleSelectionGrid() {
+  const container = document.getElementById('rule-selection-grid');
+  if (!container) return;
+
+  const rules = (videoState.referenceRules && videoState.referenceRules.length > 0)
+    ? videoState.referenceRules
+    : [
+        { rank: 1, title: '단부·개구부 추락', accidentType: '추락', sharePercent: 34.8 },
+        { rank: 2, title: '비계·사다리 전도/추락', accidentType: '추락', sharePercent: 14.2 },
+        { rank: 3, title: '굴착기·지게차 장비충돌', accidentType: '부딪힘', sharePercent: 11.5 },
+        { rank: 4, title: '회전기계 끼임/협착', accidentType: '끼임', sharePercent: 9.3 },
+        { rank: 5, title: '양중기·크레인 낙하', accidentType: '맞음', sharePercent: 8.1 },
+        { rank: 6, title: '보호구(안전모/조끼) 미착용', accidentType: '보호구', sharePercent: 6.7 },
+        { rank: 7, title: '굴착사면·가시설 붕괴', accidentType: '무너짐', sharePercent: 5.2 },
+        { rank: 8, title: '용접 화재·폭발 위험', accidentType: '화재폭발', sharePercent: 4.1 },
+        { rank: 9, title: '가설분전함 누전 감전', accidentType: '감전', sharePercent: 3.5 },
+        { rank: 10, title: '밀폐공간 유해가스 질식', accidentType: '질식', sharePercent: 2.6 }
+      ];
+
+  container.innerHTML = rules.map(r => {
+    const isSelected = videoState.selectedRuleRanks.includes(r.rank);
+    const shortType = (r.accidentType || '').split(' ')[0];
+    const isTop3 = r.rank <= 3;
+
+    return `
+      <label class="relative flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer select-none transition-all ${
+        isSelected 
+          ? (isTop3 ? 'border-rose-400 bg-rose-50/40 ring-1 ring-rose-300' : 'border-blue-400 bg-blue-50/40 ring-1 ring-blue-300')
+          : 'border-slate-200 bg-slate-50/60 opacity-60 hover:opacity-100 hover:border-slate-300'
+      }">
+        <input type="checkbox" 
+               class="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+               ${isSelected ? 'checked' : ''} 
+               onchange="toggleRuleSelection(${r.rank})">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-1 mb-0.5">
+            <span class="inline-flex items-center gap-1 font-black text-xs ${isTop3 ? 'text-rose-700' : 'text-slate-800'}">
+              <span class="w-4 h-4 rounded-full ${isTop3 ? 'bg-rose-600 text-white' : 'bg-slate-700 text-white'} flex items-center justify-center text-[10px] font-black">${r.rank}</span>
+              ${escapeHtml(r.title.length > 14 ? r.title.slice(0, 13) + '…' : r.title)}
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] ${isSelected ? 'text-slate-600' : 'text-slate-400'}">
+            <span>[${escapeHtml(shortType)}]</span>
+            <span class="font-bold">${r.sharePercent}%</span>
+          </div>
+        </div>
+      </label>
+    `;
+  }).join('');
+
+  updateRuleSelectionUI();
+}
+
+/**
+ * 특정 규칙 선택 토글
+ */
+function toggleRuleSelection(rank) {
+  const r = Number(rank);
+  if (videoState.selectedRuleRanks.includes(r)) {
+    videoState.selectedRuleRanks = videoState.selectedRuleRanks.filter(k => k !== r);
+  } else {
+    videoState.selectedRuleRanks.push(r);
+    videoState.selectedRuleRanks.sort((a, b) => a - b);
+  }
+  renderRuleSelectionGrid();
+}
+
+/**
+ * 규칙 선택 프리셋 적용
+ */
+function setRulePreset(preset) {
+  switch (preset) {
+    case 'ALL':
+      videoState.selectedRuleRanks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      break;
+    case 'NONE':
+      videoState.selectedRuleRanks = [];
+      break;
+    case 'TOP3':
+      videoState.selectedRuleRanks = [1, 2, 3];
+      break;
+    case 'FALL':
+      videoState.selectedRuleRanks = [1, 2]; // 1위 단부개구부 추락, 2위 비계사다리
+      break;
+    case 'MACHINERY':
+      videoState.selectedRuleRanks = [3, 4, 5]; // 3위 굴착기지게차, 4위 회전기계, 5위 양중기
+      break;
+  }
+  renderRuleSelectionGrid();
+}
+
+/**
+ * 규칙 선택 카운트 및 UI 상태 동기화
+ */
+function updateRuleSelectionUI() {
+  const countBadge = document.getElementById('active-rules-count-badge');
+  const btnStart = document.getElementById('btn-start-analysis');
+  const standardCount = videoState.selectedRuleRanks.length;
+  const customCount = videoState.customRules.length;
+  const totalCount = standardCount + customCount;
+
+  if (countBadge) {
+    if (totalCount === 0) {
+      countBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse';
+      countBadge.textContent = '선택 조건 없음 (진단 불가)';
+    } else {
+      countBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-100 text-blue-800 border border-blue-200';
+      countBadge.textContent = customCount > 0 
+        ? `10개 중 ${standardCount}개 + 맞춤 ${customCount}개 활성` 
+        : `10개 중 ${standardCount}개 조건 활성화`;
+    }
+  }
+
+  if (btnStart && !videoState.isAnalyzing) {
+    if (videoState.analysisMode === 'RAILWAY') {
+      btnStart.innerHTML = '<span>🚅</span> 철도 주행선로 작업자 안전 &amp; 속도/TTC 정밀 분석 실행';
+    } else {
+      if (totalCount === 0) {
+        btnStart.innerHTML = '<span>⚠️</span> 최소 1개 이상의 진단 조건을 선택해주세요';
+      } else {
+        btnStart.innerHTML = `<span>⚡</span> 선택된 ${totalCount}개 조건으로 동영상 AI 정밀 분석 실행`;
+      }
+    }
+  }
+
+  renderCustomRulesList();
+}
+
+/**
+ * 커스텀 규칙 모달 열기
+ */
+function openAddCustomRuleModal() {
+  const modal = document.getElementById('custom-rule-modal');
+  if (!modal) return;
+  const t = document.getElementById('modal-rule-title');
+  const p = document.getElementById('modal-rule-type');
+  const k = document.getElementById('modal-rule-keywords');
+  const l = document.getElementById('modal-rule-law');
+  const a = document.getElementById('modal-rule-action');
+  if (t) t.value = '';
+  if (p) p.value = '';
+  if (k) k.value = '';
+  if (l) l.value = '';
+  if (a) a.value = '';
+  modal.classList.remove('hidden');
+}
+
+/**
+ * 커스텀 규칙 모달 닫기
+ */
+function closeAddCustomRuleModal() {
+  const modal = document.getElementById('custom-rule-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+/**
+ * 커스텀 규칙 저장 및 적용
+ */
+function saveCustomRule() {
+  const title = (document.getElementById('modal-rule-title')?.value || '').trim();
+  const type = (document.getElementById('modal-rule-type')?.value || '').trim();
+  const dangerLevel = document.getElementById('modal-rule-danger-level')?.value || 'HIGH';
+  const keywordsStr = (document.getElementById('modal-rule-keywords')?.value || '').trim();
+  const law = (document.getElementById('modal-rule-law')?.value || '').trim();
+  const action = (document.getElementById('modal-rule-action')?.value || '').trim();
+
+  if (!title) {
+    alert('규칙명 또는 위험 공종을 입력해주세요.');
+    return;
+  }
+
+  const keywords = keywordsStr ? keywordsStr.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : [title.toLowerCase()];
+
+  const newRule = {
+    id: `custom-${Date.now()}`,
+    title: title,
+    accidentType: type || '현장 맞춤형 위험',
+    dangerLevel: dangerLevel,
+    keywords: keywords,
+    legalBasis: {
+      lawName: law || '산업안전보건기준에 관한 규칙',
+      articleNo: '현장 특별 안전수칙'
+    },
+    immediateAction: action || '위험 요인 제거 및 작업 안전성 재검토 전까지 출입 통제',
+    isCustom: true
+  };
+
+  videoState.customRules.push(newRule);
+  closeAddCustomRuleModal();
+  updateRuleSelectionUI();
+}
+
+/**
+ * 커스텀 규칙 삭제
+ */
+function deleteCustomRule(id) {
+  videoState.customRules = videoState.customRules.filter(r => r.id !== id);
+  updateRuleSelectionUI();
+}
+
+/**
+ * 커스텀 규칙 태그 리스트 렌더링
+ */
+function renderCustomRulesList() {
+  const container = document.getElementById('custom-rules-container');
+  const list = document.getElementById('custom-rules-list');
+  if (!container || !list) return;
+
+  if (videoState.customRules.length === 0) {
+    container.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  list.innerHTML = videoState.customRules.map(r => `
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-xs">
+      <span>⭐</span>
+      <span>${escapeHtml(r.title)}</span>
+      <span class="text-[10px] text-emerald-700 bg-emerald-100/80 px-1.5 py-0.2 rounded font-mono">${escapeHtml(r.accidentType)}</span>
+      <button type="button" onclick="deleteCustomRule('${r.id}')" class="text-emerald-700 hover:text-rose-600 transition ml-1 font-black cursor-pointer" title="규칙 삭제">
+        ✕
+      </button>
+    </span>
   `).join('');
 }
 
@@ -797,6 +1032,12 @@ async function startVideoSafetyAnalysis() {
     return;
   }
 
+  const totalConditions = videoState.selectedRuleRanks.length + videoState.customRules.length;
+  if (videoState.analysisMode !== 'RAILWAY' && totalConditions === 0) {
+    alert('최소 1개 이상의 AI 안전 진단 판정 조건을 선택해주세요.\n상단의 체크박스를 활성화하거나 [➕ 맞춤 규칙 추가]를 진행할 수 있습니다.');
+    return;
+  }
+
   const videoPlayer = document.getElementById('source-video-player');
   const btnStart = document.getElementById('btn-start-analysis');
   const progressContainer = document.getElementById('analysis-progress-container');
@@ -831,7 +1072,7 @@ async function startVideoSafetyAnalysis() {
     if (progressText) {
       progressText.textContent = isRailway
         ? `철도 표준궤간(1,435mm) 호모그래피 및 열차 속도/TTC 엔진 분석 중...`
-        : `공공데이터 10대 재해 규칙 엔진 & CV 심층 판정 실행 중...`;
+        : `선택된 ${totalConditions}개 안전 규칙 엔진 & CV 심층 판정 실행 중...`;
     }
 
     // 2단계: 백엔드 판정 API 전송
@@ -842,7 +1083,9 @@ async function startVideoSafetyAnalysis() {
         siteName: siteNameInput ? (siteNameInput.value.trim() || defaultSite) : defaultSite,
         fileName: videoState.file.name,
         customNotes: customNotesInput ? customNotesInput.value.trim() : '',
-        frames: frames
+        frames: frames,
+        selectedRuleRanks: videoState.selectedRuleRanks,
+        customRules: videoState.customRules
       })
     });
 
@@ -867,9 +1110,14 @@ async function startVideoSafetyAnalysis() {
     videoState.isAnalyzing = false;
     if (btnStart) {
       btnStart.disabled = false;
-      btnStart.innerHTML = videoState.analysisMode === 'RAILWAY'
-        ? `<span>🚅</span> 철도 주행선로 작업자 안전 &amp; 속도/TTC 정밀 분석 실행`
-        : `<span>⚡</span> 공공데이터 10대 재해 동영상 정밀 분석 실행`;
+      if (videoState.analysisMode === 'RAILWAY') {
+        btnStart.innerHTML = `<span>🚅</span> 철도 주행선로 작업자 안전 &amp; 속도/TTC 정밀 분석 실행`;
+      } else {
+        const total = videoState.selectedRuleRanks.length + videoState.customRules.length;
+        btnStart.innerHTML = total === 0
+          ? `<span>⚠️</span> 최소 1개 이상의 진단 조건을 선택해주세요`
+          : `<span>⚡</span> 선택된 ${total}개 조건으로 동영상 AI 정밀 분석 실행`;
+      }
     }
     if (progressContainer) progressContainer.classList.add('hidden');
   }
@@ -1526,32 +1774,62 @@ function seekVideoTo(seconds, eventId) {
 }
 
 /**
- * 10대 재해 매트릭스 그리드 렌더링
+ * 10대 재해 매트릭스 그리드 렌더링 (분석 제외 및 맞춤 규칙 표시 지원)
  */
 function renderTop10MatrixGrid(matrixStatus) {
   const container = document.getElementById('top10-matrix-grid');
   if (!container) return;
 
   container.innerHTML = matrixStatus.map(item => {
-    const isDetected = item.violationCount > 0;
+    const isExcluded = !!item.isExcluded;
+    const isCustom = !!item.isCustom;
+    const isDetected = !isExcluded && item.violationCount > 0;
+
+    let cardClass = 'border-slate-200 bg-white opacity-70';
+    if (isExcluded) {
+      cardClass = 'border-dashed border-slate-300 bg-slate-50/70 opacity-50';
+    } else if (isDetected) {
+      cardClass = 'border-rose-400 bg-rose-50/30 shadow-sm';
+    } else if (isCustom) {
+      cardClass = 'border-emerald-300 bg-emerald-50/30';
+    }
+
+    let badgeHtml = '';
+    if (isExcluded) {
+      badgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded bg-slate-200 text-slate-500">분석 제외 (설정)</span>';
+    } else if (isDetected) {
+      badgeHtml = `<span class="text-[10px] font-black px-2 py-0.5 rounded bg-rose-600 text-white animate-pulse">검출 ${item.violationCount}건</span>`;
+    } else if (isCustom) {
+      badgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">맞춤 규칙 (정상)</span>';
+    } else {
+      badgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded bg-slate-200 text-slate-600">정상 (미검출)</span>';
+    }
+
+    const rankDisplay = isCustom ? '⭐' : item.rank;
+    const rankBadgeColor = isExcluded 
+      ? 'bg-slate-300 text-slate-600' 
+      : (item.rank <= 3 ? 'bg-rose-600 text-white' : (isCustom ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-white'));
+
     return `
-      <div class="p-3.5 rounded-xl border ${isDetected ? 'border-rose-400 bg-rose-50/30 shadow-sm' : 'border-slate-200 bg-white opacity-70'} space-y-1.5">
+      <div class="p-3.5 rounded-xl border ${cardClass} space-y-1.5 transition">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1.5">
-            <span class="w-5 h-5 rounded-full ${item.rank <= 3 ? 'bg-rose-600 text-white' : 'bg-slate-700 text-white'} flex items-center justify-center text-[10px] font-black">
-              ${item.rank}
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="w-5 h-5 rounded-full ${rankBadgeColor} flex items-center justify-center text-[10px] font-black shrink-0">
+              ${rankDisplay}
             </span>
             <span class="text-xs font-black text-slate-900 truncate max-w-[140px] sm:max-w-none" title="${escapeHtml(item.title)}">
               ${escapeHtml(item.title)}
             </span>
           </div>
-          <span class="text-[10px] font-black px-2 py-0.5 rounded ${isDetected ? 'bg-rose-600 text-white animate-pulse' : 'bg-slate-200 text-slate-600'}">
-            ${isDetected ? `검출 ${item.violationCount}건` : '정상 (미검출)'}
-          </span>
+          ${badgeHtml}
         </div>
         <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
           <span>과거 1년 점유율: <b>${item.sharePercent}%</b></span>
-          ${isDetected ? `<span class="text-rose-700 font-bold">최대 위험도: ${item.maxSeverityScore}점</span>` : '<span class="text-emerald-600 font-medium">안전 구역</span>'}
+          ${isExcluded 
+            ? '<span class="text-slate-400 font-medium">검출 대상 제외됨</span>' 
+            : (isDetected 
+                ? `<span class="text-rose-700 font-bold">최대 위험도: ${item.maxSeverityScore}점</span>` 
+                : '<span class="text-emerald-600 font-medium">안전 구역</span>')}
         </div>
       </div>
     `;

@@ -248,25 +248,30 @@ function getRuleByRank(rank) {
 }
 
 /**
- * 3. 탐지된 객체 라벨 및 위험 정황을 기반으로 10대 사고 유형 매칭
+ * 3. 탐지된 객체 라벨 및 위험 정황을 기반으로 10대 사고 유형 매칭 (후보군 필터링 지원)
  */
-function matchTop10HazardRule({ labels = [], contextDescription = '' }) {
+function matchTop10HazardRule({ labels = [], contextDescription = '', candidateRules = null }) {
   const normalizedLabels = labels.map(l => l.toLowerCase());
   const context = (contextDescription || '').toLowerCase();
+
+  const rulesToMatch = (Array.isArray(candidateRules) && candidateRules.length > 0)
+    ? candidateRules
+    : TOP10_SAFETY_ACCIDENT_RULES;
 
   let matchedRule = null;
   let matchScore = 0;
 
-  for (const rule of TOP10_SAFETY_ACCIDENT_RULES) {
+  for (const rule of rulesToMatch) {
     let score = 0;
     // 라벨 일치도 검사
-    for (const dLabel of rule.detectionLabels) {
+    const targetLabels = Array.isArray(rule.detectionLabels) ? rule.detectionLabels : [];
+    for (const dLabel of targetLabels) {
       if (normalizedLabels.includes(dLabel.toLowerCase()) || context.includes(dLabel.toLowerCase())) {
         score += 2;
       }
     }
     // 재해 유형 단어 포함 여부 검사
-    if (context.includes(rule.accidentType.split(' ')[0].toLowerCase())) {
+    if (rule.accidentType && context.includes(rule.accidentType.split(' ')[0].toLowerCase())) {
       score += 1;
     }
 
@@ -276,9 +281,9 @@ function matchTop10HazardRule({ labels = [], contextDescription = '' }) {
     }
   }
 
-  // 기본값: 단부 추락 (가장 다발하는 1순위)
+  // 기본값: 후보군 중 첫 번째 규칙 (선택된 활성 규칙 중 최우선)
   if (!matchedRule || matchScore === 0) {
-    matchedRule = TOP10_SAFETY_ACCIDENT_RULES[0];
+    matchedRule = rulesToMatch[0] || TOP10_SAFETY_ACCIDENT_RULES[0];
   }
 
   return {
