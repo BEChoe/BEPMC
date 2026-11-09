@@ -15,8 +15,132 @@ let videoState = {
   extractedFrames: [],
   analysisReport: null,
   isAnalyzing: false,
-  selectedEventId: null
+  selectedEventId: null,
+  analysisMode: 'CONSTRUCTION', // 'CONSTRUCTION' | 'RAILWAY'
+  reportDisplayMode: 'ANALYSIS' // 'ANALYSIS' (무손실 원본) | 'EXTERNAL' (비식별화 보호)
 };
+
+/**
+ * 분석 모드 전환 (건설현장 10대 재해 vs 철도 주행선로 작업자 안전)
+ */
+function switchAnalysisMode(mode) {
+  videoState.analysisMode = mode;
+  const btnConst = document.getElementById('mode-btn-construction');
+  const btnRail = document.getElementById('mode-btn-railway');
+  const badge = document.getElementById('active-mode-badge');
+  const siteInput = document.getElementById('site-name-input');
+  const notesInput = document.getElementById('custom-notes-input');
+  const btnStart = document.getElementById('btn-start-analysis');
+
+  if (mode === 'RAILWAY') {
+    if (btnRail) {
+      btnRail.className = 'px-3 py-1.5 rounded-md text-xs font-black transition bg-blue-700 text-white shadow-sm';
+    }
+    if (btnConst) {
+      btnConst.className = 'px-3 py-1.5 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    }
+    if (badge) {
+      badge.textContent = '🚅 [철도 특화 AI] 표준궤간(1,435mm) 호모그래피 + 열차 속도/TTC + 건축한계 지오펜싱';
+      badge.className = 'text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200';
+    }
+    if (siteInput && (siteInput.value === '판교 제2테크노밸리 복합시설 신축공사' || !siteInput.value)) {
+      siteInput.value = '경부선 궤도유지보수 제3공구 (수원-평택 구간)';
+    }
+    if (notesInput) {
+      notesInput.placeholder = '예: 3선 상하행 궤도 체결구 점검 및 레일 용접 보수 작업';
+    }
+    if (btnStart) {
+      btnStart.innerHTML = '<span>🚅</span> 철도 주행선로 작업자 안전 &amp; 속도/TTC 정밀 분석 실행';
+    }
+  } else {
+    if (btnConst) {
+      btnConst.className = 'px-3 py-1.5 rounded-md text-xs font-black transition bg-blue-700 text-white shadow-sm';
+    }
+    if (btnRail) {
+      btnRail.className = 'px-3 py-1.5 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    }
+    if (badge) {
+      badge.textContent = '⚡ [하이브리드 AI] Roboflow 산업안전 PPE + ByteTrack 지오펜싱';
+      badge.className = 'text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200';
+    }
+    if (siteInput && siteInput.value === '경부선 궤도유지보수 제3공구 (수원-평택 구간)') {
+      siteInput.value = '판교 제2테크노밸리 복합시설 신축공사';
+    }
+    if (notesInput) {
+      notesInput.placeholder = '예: 3층 슬래브 거푸집 조립 및 단부 작업 중';
+    }
+    if (btnStart) {
+      btnStart.innerHTML = '<span>⚡</span> 공공데이터 10대 재해 동영상 정밀 분석 실행';
+    }
+  }
+}
+
+/**
+ * 이원화 보고서 보기 모드 전환 (정밀 분석용 원본 vs 대외 배포용 비식별화)
+ */
+function setReportDisplayMode(mode) {
+  videoState.reportDisplayMode = mode;
+  const btnAnalysis = document.getElementById('btn-switch-analysis-view');
+  const btnExternal = document.getElementById('btn-switch-external-view');
+  const banner = document.getElementById('report-view-mode-banner');
+  const icon = document.getElementById('report-mode-icon');
+  const title = document.getElementById('report-mode-title');
+  const desc = document.getElementById('report-mode-desc');
+  const pill = document.getElementById('report-mode-pill');
+
+  if (mode === 'EXTERNAL') {
+    if (btnExternal) btnExternal.className = 'inline-flex items-center gap-1.5 bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition ring-2 ring-emerald-400';
+    if (btnAnalysis) btnAnalysis.className = 'inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold transition';
+    if (banner) banner.className = 'p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between';
+    if (icon) icon.textContent = '🛡️';
+    if (title) {
+      title.textContent = '대외 배포용 보고서 (개인정보 및 민감영상 비식별화 완료)';
+      title.className = 'font-bold text-emerald-900';
+    }
+    if (desc) desc.textContent = '— 안면, 사고 손상 부위, 신체 주요 노출 부위 정밀 모자이크 적용, 대관/외부 제출용';
+    if (pill) {
+      pill.textContent = '대외 배포용';
+      pill.className = 'px-2 py-0.5 rounded text-[10px] font-black bg-emerald-600 text-white';
+    }
+  } else {
+    if (btnAnalysis) btnAnalysis.className = 'inline-flex items-center gap-1.5 bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition ring-2 ring-blue-400';
+    if (btnExternal) btnExternal.className = 'inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold transition';
+    if (banner) banner.className = 'p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs flex items-center justify-between';
+    if (icon) icon.textContent = '📋';
+    if (title) {
+      title.textContent = '정밀 내부 분석용 보고서 (원본 무손실 고화질)';
+      title.className = 'font-bold text-blue-900';
+    }
+    if (desc) desc.textContent = '— 모자이크/블러 미적용, 정밀 수치 및 위험 Bounding Box 원본 출력';
+    if (pill) {
+      pill.textContent = '내부 검증용';
+      pill.className = 'px-2 py-0.5 rounded text-[10px] font-black bg-blue-700 text-white';
+    }
+  }
+
+  // 타임라인 이미지 교체
+  const report = videoState.analysisReport;
+  if (report && Array.isArray(report.timelineEvents)) {
+    report.timelineEvents.forEach((evt, idx) => {
+      const img = document.getElementById(`event-snapshot-img-${idx}`);
+      if (img) {
+        img.src = (mode === 'EXTERNAL' && evt.externalSnapshotDataUrl)
+          ? evt.externalSnapshotDataUrl
+          : (evt.analysisSnapshotDataUrl || evt.snapshotDataUrl);
+      }
+      const privacyBadge = document.getElementById(`event-privacy-badge-${idx}`);
+      if (privacyBadge) {
+        if (mode === 'EXTERNAL') {
+          privacyBadge.className = 'absolute bottom-1 left-1 bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 text-[9px] px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5';
+          privacyBadge.innerHTML = '<span>🛡️</span> 비식별화 적용';
+        } else {
+          privacyBadge.className = 'absolute bottom-1 left-1 bg-blue-950/80 text-blue-300 border border-blue-500/50 text-[9px] px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5';
+          privacyBadge.innerHTML = '<span>📋</span> 무손실 원본';
+        }
+      }
+    });
+  }
+}
 
 // 1. 초기화 & 권한 검증
 document.addEventListener('DOMContentLoaded', async () => {
@@ -491,16 +615,27 @@ async function startVideoSafetyAnalysis() {
     const frames = await extractVideoKeyframes(videoPlayer, sampleInterval, 20);
     videoState.extractedFrames = frames;
 
+    const isRailway = videoState.analysisMode === 'RAILWAY';
+    const apiUrl = isRailway
+      ? '/api/technical-guidance/railway-video-analysis'
+      : '/api/technical-guidance/top10-video-analysis';
+
+    const defaultSite = isRailway
+      ? '경부선 궤도유지보수 제3공구 (수원-평택 구간)'
+      : '판교 제2테크노밸리 복합시설 신축공사';
+
     if (progressText) {
-      progressText.textContent = `공공데이터 10대 재해 규칙 엔진 & CV 심층 판정 실행 중...`;
+      progressText.textContent = isRailway
+        ? `철도 표준궤간(1,435mm) 호모그래피 및 열차 속도/TTC 엔진 분석 중...`
+        : `공공데이터 10대 재해 규칙 엔진 & CV 심층 판정 실행 중...`;
     }
 
     // 2단계: 백엔드 판정 API 전송
-    const response = await fetch('/api/technical-guidance/top10-video-analysis', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        siteName: siteNameInput ? siteNameInput.value.trim() : '미지정 건설현장',
+        siteName: siteNameInput ? (siteNameInput.value.trim() || defaultSite) : defaultSite,
         fileName: videoState.file.name,
         customNotes: customNotesInput ? customNotesInput.value.trim() : '',
         frames: frames
@@ -528,7 +663,9 @@ async function startVideoSafetyAnalysis() {
     videoState.isAnalyzing = false;
     if (btnStart) {
       btnStart.disabled = false;
-      btnStart.innerHTML = `<span>⚡</span> 공공데이터 10대 재해 동영상 정밀 분석 실행`;
+      btnStart.innerHTML = videoState.analysisMode === 'RAILWAY'
+        ? `<span>🚅</span> 철도 주행선로 작업자 안전 &amp; 속도/TTC 정밀 분석 실행`
+        : `<span>⚡</span> 공공데이터 10대 재해 동영상 정밀 분석 실행`;
     }
     if (progressContainer) progressContainer.classList.add('hidden');
   }
@@ -545,21 +682,52 @@ async function renderAnalysisResults(report) {
   // 스크롤 이동
   resultContainer.scrollIntoView({ behavior: 'smooth' });
 
-  // 상단 메타데이터
-  document.getElementById('report-id-badge').textContent = report.reportId;
-  document.getElementById('report-date-badge').textContent = report.reportDate;
-  document.getElementById('report-site-name').textContent = report.siteName;
-  document.getElementById('report-file-name').textContent = report.fileName;
+  const isRailway = report.mode === 'RAILWAY_TRACK_SAFETY' || videoState.analysisMode === 'RAILWAY';
 
-  // [요구사항 1 & 2] 타임라인 스냅샷에 프라이버시 보호(얼굴/신체 모자이크) 및 안전위반 마킹 일괄 적용
+  // 상단 메타데이터
+  document.getElementById('report-id-badge').textContent = isRailway 
+    ? (report.reportId || `RAIL-KRS-${Date.now().toString().slice(-6)}`) 
+    : report.reportId;
+  document.getElementById('report-date-badge').textContent = isRailway
+    ? (report.metadata?.analyzedAt?.split('T')[0] || new Date().toISOString().split('T')[0])
+    : report.reportDate;
+  document.getElementById('report-site-name').textContent = isRailway
+    ? (report.metadata?.siteName || '경부선 궤도유지보수 제3공구')
+    : report.siteName;
+  document.getElementById('report-file-name').textContent = isRailway
+    ? (report.metadata?.fileName || 'railway_video.mp4')
+    : report.fileName;
+
+  // 보고서 타이틀 동적 전환
+  const titleEl = document.querySelector('#analysis-result-container h2');
+  if (titleEl) {
+    titleEl.textContent = isRailway
+      ? '한국철도표준규격(KRS) 기반 주행선로 작업자 안전 & 속도/TTC 결과보고서'
+      : '공공데이터 10대 다발재해 기반 동영상 안전위험성평가 결과보고서';
+  }
+
+  // [이원화 스냅샷 일괄 생성]
+  // 1) 분석용 보고서: applyPrivacy = false (100% 무손실 원본, 모자이크 없음)
+  // 2) 대외 배포용 보고서: applyPrivacy = true (안면/민감부위 모자이크 적용)
   if (Array.isArray(report.timelineEvents)) {
     for (const evt of report.timelineEvents) {
-      if (evt.snapshotDataUrl) {
-        evt.snapshotDataUrl = await processSnapshotMarkingAndPrivacy(
-          evt.snapshotDataUrl,
-          evt.hazardMarkings,
-          evt.privacyRegions
+      const baseDataUrl = evt.snapshotDataUrl || evt.imageSnapshot;
+      if (baseDataUrl) {
+        evt.analysisSnapshotDataUrl = await processSnapshotMarkingAndPrivacy(
+          baseDataUrl,
+          evt.hazardMarkings || [],
+          evt.privacyRegions || [],
+          { applyPrivacy: false, mode: report.mode, telemetry: evt.telemetry, workers: evt.workers }
         );
+        evt.externalSnapshotDataUrl = await processSnapshotMarkingAndPrivacy(
+          baseDataUrl,
+          evt.hazardMarkings || [],
+          evt.privacyRegions || [],
+          { applyPrivacy: true, mode: report.mode, telemetry: evt.telemetry, workers: evt.workers }
+        );
+        evt.snapshotDataUrl = videoState.reportDisplayMode === 'EXTERNAL'
+          ? evt.externalSnapshotDataUrl
+          : evt.analysisSnapshotDataUrl;
       }
     }
   }
@@ -569,127 +737,255 @@ async function renderAnalysisResults(report) {
   const gradeEl = document.getElementById('overall-grade-display');
   const scoreBar = document.getElementById('overall-score-bar');
 
-  if (scoreEl) scoreEl.textContent = report.videoSummary.overallSafetyScore;
+  const score = isRailway ? report.summary.safetyScore : report.videoSummary.overallSafetyScore;
+  const grade = isRailway ? report.summary.safetyGrade : report.videoSummary.overallGrade;
+  const gradeColor = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
+
+  if (scoreEl) scoreEl.textContent = score;
   if (gradeEl) {
-    gradeEl.textContent = report.videoSummary.overallGrade;
-    gradeEl.style.backgroundColor = report.videoSummary.gradeBadgeColor;
+    gradeEl.textContent = grade;
+    gradeEl.style.backgroundColor = gradeColor;
     gradeEl.style.color = '#ffffff';
   }
   if (scoreBar) {
-    scoreBar.style.width = `${report.videoSummary.overallSafetyScore}%`;
-    scoreBar.style.backgroundColor = report.videoSummary.gradeBadgeColor;
+    scoreBar.style.width = `${score}%`;
+    scoreBar.style.backgroundColor = gradeColor;
   }
 
-  // 최다 위험 위반 항목 하이라이트
-  const pri = report.primaryCriticalViolation;
-  if (pri) {
-    document.getElementById('critical-hazard-title').textContent = `[${pri.rank}위 ${pri.accidentType}] ${pri.title}`;
-    document.getElementById('critical-hazard-share').textContent = `과거 1년 통계 점유율: ${pri.sharePercent}%`;
-    document.getElementById('critical-hazard-law').textContent = `⚖️ ${pri.legalBasis.lawName} ${pri.legalBasis.articleNo} (${pri.legalBasis.articleTitle})`;
-    document.getElementById('critical-hazard-penalty').textContent = `처벌 규정: ${pri.legalBasis.punishment}`;
+  // 최다 위험 위반 / 핵심 위험 요약 하이라이트
+  if (isRailway) {
+    const isCritical = report.summary.minTtcSeconds <= 15.0;
+    document.getElementById('critical-hazard-title').innerHTML = `
+      <span class="${isCritical ? 'text-rose-600' : 'text-amber-600'}">
+        🚅 열차 최대 접근속도: ${report.summary.maxTrainSpeedKmh} km/h · 최소 대피시간(TTC): ${report.summary.minTtcSeconds}초
+      </span>
+    `;
+    document.getElementById('critical-hazard-share').textContent = `
+      선로 건축한계(2.0m) 침범: ${report.summary.clearanceViolationCount}건 | 고시인성 조끼 미착용: ${report.summary.noHivisCount}건
+    `;
+    document.getElementById('critical-hazard-law').textContent = `⚖️ 철도안전관리체계 기술기준 제7조 및 철도건설규칙 제14조 (건축한계)`;
+    document.getElementById('critical-hazard-penalty').textContent = `조치수준: ${isCritical ? '🚨 비상 대피 즉시 발령 (TTC 15초 이내)' : '⚠️ 대피 준비 및 감시원 신호 전달'}`;
+  } else {
+    const pri = report.primaryCriticalViolation;
+    if (pri) {
+      document.getElementById('critical-hazard-title').textContent = `[${pri.rank}위 ${pri.accidentType}] ${pri.title}`;
+      document.getElementById('critical-hazard-share').textContent = `과거 1년 통계 점유율: ${pri.sharePercent}%`;
+      document.getElementById('critical-hazard-law').textContent = `⚖️ ${pri.legalBasis.lawName} ${pri.legalBasis.articleNo} (${pri.legalBasis.articleTitle})`;
+      document.getElementById('critical-hazard-penalty').textContent = `처벌 규정: ${pri.legalBasis.punishment}`;
+    }
   }
 
   // 타임라인 마커 및 이벤트 목록 렌더링
-  renderTimelineEvents(report.timelineEvents);
+  renderTimelineEvents(report.timelineEvents, isRailway);
 
-  // 10대 재해 매트릭스 그리드 렌더링
-  renderTop10MatrixGrid(report.top10MatrixStatus);
+  // 매트릭스 그리드 렌더링
+  if (isRailway) {
+    renderRailwayMatrixGrid(report);
+  } else {
+    renderTop10MatrixGrid(report.top10MatrixStatus);
+  }
 
-  // 3단계 공학적 대책 렌더링
-  renderActionRecommendations(report.recommendations);
+  // 공학적 대책 렌더링
+  if (isRailway && Array.isArray(report.krsEngineeringMeasures)) {
+    renderRailwayKrsMeasures(report.krsEngineeringMeasures);
+  } else {
+    renderActionRecommendations(report.recommendations);
+  }
+
+  // 현재 뷰 모드(분석용 vs 대외배포용) 배너 갱신
+  setReportDisplayMode(videoState.reportDisplayMode);
 }
 
 /**
  * 타임라인 이벤트 목록 & 비디오 연동
  */
-function renderTimelineEvents(events) {
+function renderTimelineEvents(events, isRailway = false) {
   const listContainer = document.getElementById('timeline-events-list');
   const timelineMarkersBar = document.getElementById('video-timeline-markers-bar');
   if (!listContainer) return;
 
   const totalDuration = videoState.duration || 1;
 
-  // 비디오 프로그레스 바 위 마커 배치
   if (timelineMarkersBar) {
     timelineMarkersBar.innerHTML = events.map(evt => {
       const leftPct = Math.min(98, Math.max(2, (evt.timestamp / totalDuration) * 100));
       return `
-        <div onclick="seekVideoTo(${evt.timestamp}, '${evt.id}')" 
-             title="[${evt.timeStr}] ${evt.title}"
-             class="absolute top-0 transform -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-rose-500 hover:scale-150 transition cursor-pointer border-2 border-white shadow-md z-10"
+        <div onclick="seekVideoTo(${evt.timestamp}, '${evt.id || evt.frameIndex}')" 
+             title="[${evt.timeFormatted || evt.timeStr}] ${evt.title || (evt.telemetry ? evt.telemetry.trainId : '이벤트')}"
+             class="absolute top-0 transform -translate-x-1/2 w-3.5 h-3.5 rounded-full ${isRailway && evt.telemetry?.warningLevel === 'CRITICAL' ? 'bg-rose-600 animate-ping' : 'bg-rose-500'} hover:scale-150 transition cursor-pointer border-2 border-white shadow-md z-10"
              style="left: ${leftPct}%;">
         </div>
       `;
     }).join('');
   }
 
-  // 카드 목록 렌더링
-  listContainer.innerHTML = events.map((evt, idx) => `
-    <div id="event-card-${evt.id}" onclick="seekVideoTo(${evt.timestamp}, '${evt.id}')" 
-         class="p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-500 transition shadow-sm cursor-pointer space-y-2.5">
-      <div class="flex items-start justify-between gap-3">
+  listContainer.innerHTML = events.map((evt, idx) => {
+    const timeStr = evt.timeFormatted || evt.timeStr;
+    const isCritical = isRailway ? (evt.telemetry?.warningLevel === 'CRITICAL') : (evt.riskScore >= 75);
+
+    return `
+    <div id="event-card-${evt.id || idx}" onclick="seekVideoTo(${evt.timestamp}, '${evt.id || idx}')" 
+         class="p-4 bg-white rounded-xl border ${isCritical ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'} hover:border-blue-500 transition shadow-sm cursor-pointer space-y-2.5">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="px-2 py-0.5 rounded text-xs font-black bg-slate-900 text-amber-300 font-mono">
-            ⏱️ ${evt.timeStr}
+            ⏱️ ${timeStr}
           </span>
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${evt.rank <= 3 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'}">
-            Rank ${evt.rank}위 (${evt.accidentType})
-          </span>
-          ${evt.trackedWorker ? `
-            <span class="bg-indigo-900/90 text-indigo-200 border border-indigo-400/50 text-[10px] px-2 py-0.5 rounded font-black font-mono">
-              👤 ${escapeHtml(evt.trackedWorker.id)} (${evt.trackedWorker.durationSec}초 지속)
+          ${isRailway ? `
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold ${evt.telemetry?.warningLevel === 'CRITICAL' ? 'bg-rose-600 text-white animate-pulse' : 'bg-amber-100 text-amber-900'}">
+              ${evt.telemetry?.warningMessage || '선로 감시 중'}
             </span>
-          ` : ''}
-          ${evt.trackedWorker && evt.trackedWorker.insideGeofence ? `
-            <span class="bg-rose-900/90 text-rose-200 border border-rose-400/50 text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">
-              🚨 ${escapeHtml(evt.trackedWorker.insideGeofence)}
+            <span class="bg-blue-900 text-blue-200 border border-blue-400/50 text-[10px] px-2 py-0.5 rounded font-black font-mono">
+              🚅 ${evt.telemetry?.speedKmh || 75} km/h (거리: ${evt.telemetry?.distanceMeter || 120}m)
             </span>
-          ` : ''}
+            <span class="bg-indigo-900 text-amber-300 border border-amber-400/50 text-[10px] px-2 py-0.5 rounded font-black font-mono">
+              ⏱️ TTC: ${evt.telemetry?.ttcSeconds || 15}초
+            </span>
+          ` : `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${evt.rank <= 3 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'}">
+              Rank ${evt.rank}위 (${evt.accidentType})
+            </span>
+            ${evt.trackedWorker ? `
+              <span class="bg-indigo-900/90 text-indigo-200 border border-indigo-400/50 text-[10px] px-2 py-0.5 rounded font-black font-mono">
+                👤 ${escapeHtml(evt.trackedWorker.id)} (${evt.trackedWorker.durationSec}초 지속)
+              </span>
+            ` : ''}
+            ${evt.trackedWorker && evt.trackedWorker.insideGeofence ? `
+              <span class="bg-rose-900/90 text-rose-200 border border-rose-400/50 text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">
+                🚨 ${escapeHtml(evt.trackedWorker.insideGeofence)}
+              </span>
+            ` : ''}
+          `}
         </div>
-        <span class="text-xs font-black px-2 py-0.5 rounded ${evt.riskScore >= 75 ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'}">
-          위험지수 ${evt.riskScore}점
+        <span class="text-xs font-black px-2.5 py-0.5 rounded ${isCritical ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'}">
+          ${isRailway ? (evt.telemetry?.warningLevel || 'NORMAL') : `위험지수 ${evt.riskScore}점`}
         </span>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
-        <!-- 캡처 스냅샷 (위반사항 마킹 및 얼굴/신체 모자이크 처리) -->
+        <!-- 캡처 스냅샷 -->
         <div class="relative rounded-lg overflow-hidden border border-slate-300 bg-slate-950 aspect-video flex items-center justify-center group">
-          ${evt.snapshotDataUrl ? `<img src="${evt.snapshotDataUrl}" class="w-full h-full object-cover">` : '<span class="text-xs text-slate-500">스냅샷 없음</span>'}
-          <div class="absolute bottom-1 right-1 bg-black/75 text-[9px] text-white px-1.5 py-0.2 rounded font-mono">
-            신뢰도 ${evt.confidence}%
-          </div>
-          <div class="absolute bottom-1 left-1 bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 text-[9px] px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5">
-            <span>🛡️</span> 비식별화
+          <img id="event-snapshot-img-${idx}" src="${evt.snapshotDataUrl || ''}" class="w-full h-full object-cover">
+          <div id="event-privacy-badge-${idx}" class="absolute bottom-1 left-1 bg-blue-950/80 text-blue-300 border border-blue-500/50 text-[9px] px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5">
+            <span>📋</span> 무손실 원본
           </div>
         </div>
 
-        <!-- 위반 내용 및 법적 근거 -->
+        <!-- 상세 내용 -->
         <div class="md:col-span-3 space-y-1.5">
-          <h4 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-            <span class="text-rose-600">⚠️</span> ${escapeHtml(evt.title)}
-          </h4>
-          <p class="text-[11px] text-slate-600 leading-snug">
-            <b>판정기준:</b> ${escapeHtml(evt.criteria)}
-          </p>
-          <div class="text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 flex flex-wrap gap-x-3 gap-y-1">
-            <span>⚖️ <b>법조항:</b> ${escapeHtml(evt.legalBasis.lawName)} ${escapeHtml(evt.legalBasis.articleNo)}</span>
-            <span>🚨 <b>조치수준:</b> <span class="text-rose-600 font-bold">${escapeHtml(evt.dangerLevel)}</span></span>
-            <span class="text-emerald-700 font-bold">🛡️ <b>프라이버시:</b> 얼굴·노출부위 모자이크 완료</span>
-          </div>
-          <div class="text-[11px] text-blue-900 bg-blue-50/70 p-2 rounded border border-blue-200">
-            <b>🛡️ 즉시 시정 권고사항:</b> ${escapeHtml(evt.immediateAction)}
-          </div>
+          ${isRailway ? `
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+              <span class="text-blue-600">🚅</span> ${escapeHtml(evt.safetyNotes || '열차 접근 및 궤도 작업자 감시')}
+            </h4>
+            <div class="text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-200 space-y-1">
+              ${Array.isArray(evt.workers) ? evt.workers.map(w => `
+                <div class="flex items-center justify-between">
+                  <span><b>${escapeHtml(w.id)} (${escapeHtml(w.role)}):</b> ${escapeHtml(w.clearanceMsg)} (레일 중심 ${w.distFromCenterMeter}m)</span>
+                  <span class="font-bold ${w.isHiVisWorn ? 'text-emerald-700' : 'text-rose-600'}">
+                    ${w.isHiVisWorn ? '✓ 고시인성 조끼 착용' : '⚠️ 형광조끼 미착용'}
+                  </span>
+                </div>
+              `).join('') : ''}
+            </div>
+            <div class="text-[11px] ${evt.telemetry?.warningLevel === 'CRITICAL' ? 'text-rose-900 bg-rose-50 border-rose-300' : 'text-blue-900 bg-blue-50'} p-2 rounded border font-medium">
+              <b>🛡️ 대피 지침:</b> ${evt.telemetry?.warningLevel === 'CRITICAL' ? '열차가 15초 이내 도달합니다. 모든 공구 휴대 중지하고 즉시 선로 밖 안전 대피소로 이동하십시오!' : '열차감시원의 신호 깃발을 주시하며 대피 준비를 유지하십시오.'}
+            </div>
+          ` : `
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+              <span class="text-rose-600">⚠️</span> ${escapeHtml(evt.title)}
+            </h4>
+            <p class="text-[11px] text-slate-600 leading-snug">
+              <b>판정기준:</b> ${escapeHtml(evt.criteria)}
+            </p>
+            <div class="text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 flex flex-wrap gap-x-3 gap-y-1">
+              <span>⚖️ <b>법조항:</b> ${escapeHtml(evt.legalBasis?.lawName || '산안법')} ${escapeHtml(evt.legalBasis?.articleNo || '')}</span>
+              <span>🚨 <b>조치수준:</b> <span class="text-rose-600 font-bold">${escapeHtml(evt.dangerLevel || '위험')}</span></span>
+            </div>
+            <div class="text-[11px] text-blue-900 bg-blue-50/70 p-2 rounded border border-blue-200">
+              <b>🛡️ 즉시 시정 권고사항:</b> ${escapeHtml(evt.immediateAction)}
+            </div>
+          `}
         </div>
       </div>
+    </div>
+    `;
+  }).join('');
+}
+
+/**
+ * 철도 5대 핵심 안전수칙 매트릭스 그리드
+ */
+function renderRailwayMatrixGrid(report) {
+  const container = document.getElementById('top10-matrix-grid');
+  if (!container) return;
+
+  const items = [
+    { title: '열차접근 속도 감지', val: `${report.summary.maxTrainSpeedKmh} km/h`, status: 'OK', desc: '표준궤간(1,435mm) 호모그래피 측정' },
+    { title: '골든타임(TTC)', val: `${report.summary.minTtcSeconds} 초`, status: report.summary.minTtcSeconds <= 15 ? 'CRITICAL' : 'WARNING', desc: '15초 이내 비상대피 임계치' },
+    { title: '선로 건축한계 침범', val: `${report.summary.clearanceViolationCount} 회`, status: report.summary.clearanceViolationCount > 0 ? 'VIOLATION' : 'OK', desc: '레일 중심 2.0m 한계 영역' },
+    { title: '고시인성 의복(Hi-Vis)', val: `${report.summary.noHivisCount === 0 ? '100% 준수' : '미착용 ' + report.summary.noHivisCount + '건'}`, status: report.summary.noHivisCount > 0 ? 'WARNING' : 'OK', desc: 'KRS 0001 형광안전의복' },
+    { title: '열차감시원 배치', val: '배치 확인됨', status: 'OK', desc: '선로 외측 100m 전방 상시 감시' }
+  ];
+
+  container.innerHTML = items.map(item => `
+    <div class="p-3.5 rounded-xl border ${item.status === 'CRITICAL' ? 'bg-rose-50 border-rose-300 text-rose-900' : item.status === 'VIOLATION' ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-800'} space-y-1">
+      <div class="text-[11px] font-bold text-slate-500">${item.title}</div>
+      <div class="text-base font-black">${item.val}</div>
+      <div class="text-[10px] text-slate-400">${item.desc}</div>
     </div>
   `).join('');
 }
 
 /**
- * [핵심 기능 1 & 2] 캔버스 기반 안전위반 사항 시각적 마킹(Bounding Box) & 개인 프라이버시(얼굴/신체부위 모자이크) 처리
+ * 철도 KRS 엔지니어링 대책 렌더링
  */
-async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], privacyRegions = []) {
+function renderRailwayKrsMeasures(measures) {
+  const immContainer = document.getElementById('immediate-actions-list');
+  const engContainer = document.getElementById('engineering-controls-list');
+  const admContainer = document.getElementById('administrative-plans-list');
+
+  if (immContainer) {
+    immContainer.innerHTML = measures.filter(m => m.priority.includes('P1')).map(m => `
+      <li class="text-xs text-rose-900 font-bold bg-white/80 p-2.5 rounded-lg border border-rose-200">
+        <div><b>${escapeHtml(m.title)}</b></div>
+        <div class="text-[11px] text-slate-600 font-normal mt-0.5">${escapeHtml(m.measure)}</div>
+        <div class="text-[10px] text-rose-700 mt-1 font-mono">${escapeHtml(m.krsStandard)}</div>
+      </li>
+    `).join('') || '<li class="text-xs text-slate-500">조치 사항 없음</li>';
+  }
+  if (engContainer) {
+    engContainer.innerHTML = measures.filter(m => m.priority.includes('P2')).map(m => `
+      <li class="text-xs text-blue-900 font-bold bg-white/80 p-2.5 rounded-lg border border-blue-200">
+        <div><b>${escapeHtml(m.title)}</b></div>
+        <div class="text-[11px] text-slate-600 font-normal mt-0.5">${escapeHtml(m.measure)}</div>
+        <div class="text-[10px] text-blue-700 mt-1 font-mono">${escapeHtml(m.krsStandard)}</div>
+      </li>
+    `).join('') || '<li class="text-xs text-slate-500">공학적 대책 없음</li>';
+  }
+  if (admContainer) {
+    admContainer.innerHTML = measures.filter(m => m.priority.includes('P3')).map(m => `
+      <li class="text-xs text-emerald-900 font-bold bg-white/80 p-2.5 rounded-lg border border-emerald-200">
+        <div><b>${escapeHtml(m.title)}</b></div>
+        <div class="text-[11px] text-slate-600 font-normal mt-0.5">${escapeHtml(m.measure)}</div>
+        <div class="text-[10px] text-emerald-700 mt-1 font-mono">${escapeHtml(m.krsStandard)}</div>
+      </li>
+    `).join('') || '<li class="text-xs text-slate-500">관리적 계획 없음</li>';
+  }
+}
+
+/**
+ * [핵심 기능 1 & 2] 캔버스 기반 안전위반 사항 시각적 마킹(Bounding Box) & 개인 프라이버시(얼굴/신체부위 모자이크) 이원화 처리
+ * @param {string} dataUrl 원본 스냅샷 이미지
+ * @param {Array} hazardMarkings 위반 사항 바운딩 박스
+ * @param {Array} privacyRegions 프라이버시 보호 영역
+ * @param {Object} options { applyPrivacy: boolean, mode: string, telemetry: Object, workers: Array }
+ */
+async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], privacyRegions = [], options = {}) {
   if (!dataUrl) return null;
+  const applyPrivacy = !!options.applyPrivacy;
+  const isRailway = options.mode === 'RAILWAY_TRACK_SAFETY' || options.mode === 'RAILWAY' || videoState.analysisMode === 'RAILWAY';
+  const telemetry = options.telemetry || null;
+  const workers = options.workers || [];
 
   return new Promise((resolve) => {
     const img = new Image();
@@ -705,18 +1001,16 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
       // 1. 원본 스냅샷 프레임 렌더링
       ctx.drawImage(img, 0, 0, w, h);
 
-      // 2. [요구사항 2] 개인 프라이버시 보호: 얼굴 및 특정 신체(노출부위) 픽셀 모자이크 처리
-      if (Array.isArray(privacyRegions) && privacyRegions.length > 0) {
+      // 2. [대외 배포용 모드에서만 실행] 개인 프라이버시 및 민감 부위(안면, 신체 노출부위, 사고 부위) 픽셀 모자이크 처리
+      if (applyPrivacy && Array.isArray(privacyRegions) && privacyRegions.length > 0) {
         privacyRegions.forEach(region => {
           const rx = Math.max(0, Math.floor(region.box.x * w));
           const ry = Math.max(0, Math.floor(region.box.y * h));
           const rw = Math.min(w - rx, Math.floor(region.box.w * w));
           const rh = Math.min(h - ry, Math.floor(region.box.h * h));
           if (rw > 0 && rh > 0) {
-            // 픽셀 모자이크 적용
             applyMosaicFilter(ctx, rx, ry, rw, rh, 9);
 
-            // 비식별화 영역 녹색 점선 테두리
             ctx.save();
             ctx.strokeStyle = 'rgba(16, 185, 129, 0.85)';
             ctx.lineWidth = 1.5;
@@ -727,7 +1021,79 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
         });
       }
 
-      // 3. [요구사항 1] 안전 위반 사항 바운딩 박스 & 마킹 오버레이
+      // 3. 철도 주행선로 모드 오버레이 (선로 궤도, 건축한계 2.0m 가상 지오펜스, 속도 HUD)
+      if (isRailway) {
+        // (A) 선로 레일 2선 & 건축한계(선로 중심 2.0m) 원근 투영 렌더링
+        ctx.save();
+        // 레일 궤도 (표준궤 1,435mm)
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        // 좌측 레일
+        ctx.moveTo(w * 0.44, h * 0.25); ctx.lineTo(w * 0.28, h * 0.95);
+        // 우측 레일
+        ctx.moveTo(w * 0.56, h * 0.25); ctx.lineTo(w * 0.72, h * 0.95);
+        ctx.stroke();
+
+        // 침목 표시
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+        ctx.lineWidth = 2;
+        for (let step = 0.35; step < 0.95; step += 0.08) {
+          const lx = w * (0.5 - (0.5 - 0.28) * ((step - 0.25) / 0.7));
+          const rx = w * (0.5 + (0.72 - 0.5) * ((step - 0.25) / 0.7));
+          ctx.beginPath();
+          ctx.moveTo(lx, h * step);
+          ctx.lineTo(rx, h * step);
+          ctx.stroke();
+        }
+
+        // 선로 건축한계선 (좌우 2.0m 폴리곤 가상 지오펜스)
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(w * 0.38, h * 0.25);
+        ctx.lineTo(w * 0.62, h * 0.25);
+        ctx.lineTo(w * 0.82, h * 0.95);
+        ctx.lineTo(w * 0.18, h * 0.95);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // (B) 상단 접근 열차 속도 및 TTC HUD 바
+        if (telemetry) {
+          ctx.save();
+          const hudW = 340;
+          const hudH = 54;
+          const hudX = w - hudW - 10;
+          const hudY = 10;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+          ctx.fillRect(hudX, hudY, hudW, hudH);
+          ctx.strokeStyle = telemetry.warningLevel === 'CRITICAL' ? '#ef4444' : '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(hudX, hudY, hudW, hudH);
+
+          // 열차 속도
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px Pretendard, sans-serif';
+          ctx.fillText(`🚅 ${telemetry.trainId || '접근열차'} · ${telemetry.speedKmh} km/h`, hudX + 12, hudY + 20);
+
+          // TTC 대피 시간
+          ctx.font = 'bold 13px Pretendard, sans-serif';
+          ctx.fillStyle = telemetry.badgeColor || '#ef4444';
+          ctx.fillText(`⏱️ 잔여 대피시간(TTC): ${telemetry.ttcSeconds}초`, hudX + 12, hudY + 42);
+
+          // 상태 배지
+          ctx.font = 'bold 10px Pretendard, sans-serif';
+          ctx.fillStyle = telemetry.badgeColor || '#ef4444';
+          ctx.fillText(telemetry.warningLevel === 'CRITICAL' ? '🚨 즉시 대피!' : '⚠️ 대피 준비', hudX + 245, hudY + 42);
+          ctx.restore();
+        }
+      }
+
+      // 4. 안전 위반 사항 바운딩 박스 & 마킹 오버레이
       if (Array.isArray(hazardMarkings) && hazardMarkings.length > 0) {
         hazardMarkings.forEach(hazard => {
           const hx = Math.max(0, Math.floor(hazard.box.x * w));
@@ -737,37 +1103,31 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
           if (hw > 0 && hh > 0) {
             const color = hazard.color || '#ef4444';
 
-            // 반투명 위험 강조 배경
             ctx.fillStyle = color === '#ef4444' ? 'rgba(239, 68, 68, 0.16)' : 'rgba(249, 115, 22, 0.16)';
             ctx.fillRect(hx, hy, hw, hh);
 
-            // 주 테두리
             ctx.strokeStyle = color;
             ctx.lineWidth = 2.5;
             ctx.strokeRect(hx, hy, hw, hh);
 
-            // 4개 코너 브래킷 강조 (┏ ┓ ┗ ┛)
+            // 코너 브래킷
             const bLen = Math.min(18, Math.floor(Math.min(hw, hh) / 4));
             ctx.lineWidth = 3.5;
             ctx.strokeStyle = '#ffffff';
-
             ctx.beginPath();
             ctx.moveTo(hx, hy + bLen); ctx.lineTo(hx, hy); ctx.lineTo(hx + bLen, hy);
             ctx.stroke();
-
             ctx.beginPath();
             ctx.moveTo(hx + hw - bLen, hy); ctx.lineTo(hx + hw, hy); ctx.lineTo(hx + hw, hy + bLen);
             ctx.stroke();
-
             ctx.beginPath();
             ctx.moveTo(hx, hy + hh - bLen); ctx.lineTo(hx, hy + hh); ctx.lineTo(hx + bLen, hy + hh);
             ctx.stroke();
-
             ctx.beginPath();
             ctx.moveTo(hx + hw - bLen, hy + hh); ctx.lineTo(hx + hw, hy + hh); ctx.lineTo(hx + hw, hy + hh - bLen);
             ctx.stroke();
 
-            // [추천 2] 굴착기 선회반경 및 슬래브 단부 가상 세이프티존 (Polygon Geofence) 시각화
+            // 굴착기 선회반경 및 슬래브 단부 가상 세이프티존
             if (hazard.label && (hazard.label.includes('굴착기') || hazard.label.includes('선회반경'))) {
               ctx.save();
               ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
@@ -775,7 +1135,6 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
               ctx.lineWidth = 2;
               ctx.setLineDash([6, 4]);
 
-              // 굴착기 중심 기준 5m 원형 세이프티존
               const centerX = hx + hw * 0.4;
               const centerY = hy + hh * 0.55;
               const radius = Math.max(hw, hh) * 0.78;
@@ -785,7 +1144,6 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
               ctx.fill();
               ctx.stroke();
 
-              // 세이프티존 배지 태그
               ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
               ctx.fillRect(centerX - 100, centerY - radius - 16, 200, 18);
               ctx.fillStyle = '#ffffff';
@@ -794,7 +1152,7 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
               ctx.restore();
             }
 
-            // 위반 텍스트 라벨 태그 배지
+            // 위반 텍스트 라벨
             ctx.font = 'bold 12px Pretendard, sans-serif';
             const labelText = hazard.label || '⚠️ 안전 위반 검출';
             const textWidth = ctx.measureText(labelText).width;
@@ -810,17 +1168,32 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
         });
       }
 
-      // 4. 스냅샷 상단 워터마크 태그 (개인정보보호법 제25조 비식별화 + ByteTrack 다중객체 추적)
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-      ctx.fillRect(8, 8, 295, 22);
-      ctx.strokeStyle = 'rgba(52, 211, 153, 0.8)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(8, 8, 295, 22);
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 10px Pretendard, sans-serif';
-      ctx.fillText('🛡️ [하이브리드 AI] 비식별화 + ByteTrack 다중객체 추적', 13, 23);
+      // 5. 스냅샷 상단 워터마크 태그 (분석용 무손실 원본 vs 대외 배포용 비식별화)
+      ctx.save();
+      if (applyPrivacy) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillRect(8, 8, 310, 24);
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.9)';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(8, 8, 310, 24);
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 11px Pretendard, sans-serif';
+        ctx.fillText('🛡️ [대외 배포용] 안면·민감부위 비식별화 보호 완료', 14, 24);
+      } else {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillRect(8, 8, 310, 24);
+        ctx.strokeStyle = 'rgba(96, 165, 250, 0.9)';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(8, 8, 310, 24);
+        ctx.fillStyle = '#60a5fa';
+        ctx.font = 'bold 11px Pretendard, sans-serif';
+        ctx.fillText(isRailway 
+          ? '🚅 [정밀 분석용 원본] 철도 주행선로 기하학 & 속도/TTC' 
+          : '⚡ [정밀 분석용 원본] 공공데이터 10대 재해 무손실 검증', 14, 24);
+      }
+      ctx.restore();
 
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      resolve(canvas.toDataURL('image/jpeg', 0.90));
     };
 
     img.onerror = () => resolve(dataUrl);

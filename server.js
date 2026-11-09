@@ -11,6 +11,7 @@ const safetyKnowledgeBase = require('./services/safetyKnowledgeBaseService');
 const mobileSyncService = require('./services/mobileSyncService');
 const publicDataTop10RulesService = require('./services/publicDataTop10RulesService');
 const videoSafetyAnalysisService = require('./services/videoSafetyAnalysisService');
+const railwaySafetyAnalysisService = require('./services/railwaySafetyAnalysisService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1228,6 +1229,36 @@ app.post('/api/technical-guidance/top10-video-analysis', requirePaidOrAdmin, asy
     res.status(500).json({
       success: false,
       message: err.message || '동영상 안전 분석 처리 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+// 철도 주행선로 작업자 안전 감시 & 속도/TTC 분석
+app.post('/api/technical-guidance/railway-video-analysis', requirePaidOrAdmin, async (req, res) => {
+  try {
+    const { siteName, fileName, frames, customNotes } = req.body;
+    if (!frames || !Array.isArray(frames) || frames.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '분석할 철도 동영상 프레임이 전달되지 않았습니다.'
+      });
+    }
+
+    const userName = req.session.user ? (req.session.user.name || req.session.user.username) : '철도안전관리자';
+    const analysisReport = await railwaySafetyAnalysisService.analyzeRailwaySafety({
+      siteName: siteName || '경부선 궤도유지보수 제3공구',
+      fileName: fileName || 'railway_video.mp4',
+      frames,
+      userName,
+      customNotes: customNotes || ''
+    });
+
+    res.json(analysisReport);
+  } catch (err) {
+    console.error('Railway video analysis error:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || '철도 안전 분석 처리 중 오류가 발생했습니다.'
     });
   }
 });

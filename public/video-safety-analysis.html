@@ -186,6 +186,26 @@
         </div>
       </div>
 
+      <!-- 작업 모드 선택: 건설현장 10대 재해 vs 철도 주행선로 작업자 안전 -->
+      <div class="flex items-center justify-between flex-wrap gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs font-black text-slate-700">🔍 분석 모드:</span>
+          <div class="inline-flex rounded-lg border border-slate-300 p-0.5 bg-white">
+            <button type="button" id="mode-btn-construction" onclick="switchAnalysisMode('CONSTRUCTION')"
+                    class="px-3 py-1.5 rounded-md text-xs font-black transition bg-blue-700 text-white shadow-sm">
+              🏗️ 건설현장 10대 재해 모드
+            </button>
+            <button type="button" id="mode-btn-railway" onclick="switchAnalysisMode('RAILWAY')"
+                    class="px-3 py-1.5 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900">
+              🚅 철도 주행선로 작업자 안전 모드
+            </button>
+          </div>
+        </div>
+        <div id="active-mode-badge" class="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+          ⚡ [하이브리드 AI] Roboflow 산업안전 PPE + ByteTrack 지오펜싱
+        </div>
+      </div>
+
       <!-- 상단 메타 입력 (현장명, 샘플링 간격, 메모) -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
@@ -319,15 +339,33 @@
           </p>
         </div>
 
-        <!-- 인쇄 및 다운로드 버튼 (화면에서만 노출) -->
-        <div id="btn-print-panel" class="flex items-center gap-2 no-print">
-          <button onclick="printSafetyReport()" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md transition">
-            <span>🖨️</span> 보고서 인쇄 / PDF 저장
+        <!-- 인쇄 및 다운로드 버튼 (화면에서만 노출) - 이원화 보고서 지원 -->
+        <div id="btn-print-panel" class="flex flex-wrap items-center gap-2 no-print">
+          <button id="btn-switch-analysis-view" onclick="setReportDisplayMode('ANALYSIS')" 
+                  class="inline-flex items-center gap-1.5 bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition">
+            <span>📋</span> 정밀 분석용 (무손실 원본)
           </button>
-          <button onclick="exportReportJson()" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold transition">
-            <span>💾</span> JSON 데이터
+          <button id="btn-switch-external-view" onclick="setReportDisplayMode('EXTERNAL')" 
+                  class="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition">
+            <span>🛡️</span> 대외 배포용 (비식별화 보호)
+          </button>
+          <button onclick="printSafetyReport()" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition">
+            <span>🖨️</span> 인쇄 / PDF
+          </button>
+          <button onclick="exportReportJson()" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition">
+            <span>💾</span> JSON
           </button>
         </div>
+      </div>
+
+      <!-- 보고서 모드 안내 배지 -->
+      <div id="report-view-mode-banner" class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span id="report-mode-icon">📋</span>
+          <span id="report-mode-title" class="font-bold text-blue-900">정밀 내부 분석용 보고서 (원본 무손실 고화질)</span>
+          <span id="report-mode-desc" class="text-slate-500 text-[11px]">— 모자이크/블러 미적용, 정밀 수치 및 위험 Bounding Box 원본 출력</span>
+        </div>
+        <span id="report-mode-pill" class="px-2 py-0.5 rounded text-[10px] font-black bg-blue-700 text-white">내부 검증용</span>
       </div>
 
       <!-- 종합 안전 지수 & 긴급 경보 요약 -->
