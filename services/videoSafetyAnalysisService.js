@@ -8,6 +8,8 @@
  */
 
 const { TOP10_SAFETY_ACCIDENT_RULES, matchTop10HazardRule, getRuleByRank } = require('./publicDataTop10RulesService');
+const { detectSafetyObjectsInFrame } = require('./roboflowSafetyModelService');
+const { SafetyTrackingEngine } = require('./safetyTrackingEngine');
 
 /**
  * 프레임 단위 시각적 특징 / 라벨 분석 (Computer Vision / YOLO 추론 레이어)
@@ -246,12 +248,25 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
   });
 
   let totalHazardScore = 0;
+  const tracker = new SafetyTrackingEngine();
 
-  // 1. 프레임별 정밀 분석 실행
-  frames.forEach((frame, idx) => {
+  // 1. 프레임별 정밀 분석 실행 (Roboflow 산업안전 탐지 + Supervision ByteTrack 다중객체 추적 & 지오펜싱)
+  for (let idx = 0; idx < frames.length; idx++) {
+    const frame = frames[idx];
     const timestamp = typeof frame.timestamp === 'number' ? frame.timestamp : idx * 1.5;
     const timeStr = frame.timeStr || formatTime(timestamp);
+
+    // [추천 1] Roboflow 산업안전 특화 모델 객체 탐지
+    const safetyDetections = await detectSafetyObjectsInFrame(frame, idx, frames.length);
+
+    // [추천 2] Supervision / ByteTrack 다중 객체 추적 & 지오펜싱 업데이트
+    const trackEvents = tracker.update(safetyDetections, timestamp, idx);
+
+    // 라벨 목록 통합
     const labels = detectFrameVisualEntities(frame, idx, frames.length);
+    safetyDetections.forEach(d => {
+      if (!labels.includes(d.class)) labels.push(d.class);
+    });
 
     // 공공데이터 10대 재해 규칙 대조 매칭
     const matchResult = matchTop10HazardRule({
@@ -260,7 +275,7 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
     });
 
     const rule = matchResult.matchedRule;
-    const matchConfidence = Math.min(0.98, Math.max(0.65, 0.70 + (matchResult.matchScore * 0.05)));
+    const matchConfidence = Math.min(0.98, Math.max(0.70, 0.75 + (matchResult.matchScore * 0.05)));
 
     // 위험도 산정 (0~100) : 공공데이터 통계 비중 가중치 결합
     let frameRisk = Math.round(55 + (rule.sharePercent * 0.8) + (matchResult.matchScore * 4));
@@ -277,6 +292,15 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
 
     // 위험 위반 마킹 및 프라이버시(얼굴/신체 비식별화) 좌표 생성
     const visualMeta = getVisualMarkingMetadata(rule.rank, idx);
+
+    // 추적된 작업자 정보가 있는 경우 마킹에 추적 ID 및 지속시간 주입
+    const primaryTrack = trackEvents[0] || null;
+    if (primaryTrack && visualMeta.hazardMarkings[0]) {
+      const geofenceText = primaryTrack.insideGeofence ? ` [${primaryTrack.insideGeofence.title}]` : '';
+      visualMeta.hazardMarkings[0].trackId = primaryTrack.trackId;
+      visualMeta.hazardMarkings[0].durationSec = primaryTrack.durationSec;
+      visualMeta.hazardMarkings[0].label = `${visualMeta.hazardMarkings[0].label} (${primaryTrack.trackId}, ${primaryTrack.durationSec}초 지속${geofenceText})`;
+    }
 
     // 타임라인 이벤트 등록
     timelineEvents.push({
@@ -299,9 +323,14 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
       hazardMarkings: visualMeta.hazardMarkings,
       privacyRegions: visualMeta.privacyRegions,
       privacyAnonymized: true,
+      trackedWorker: primaryTrack ? {
+        id: primaryTrack.trackId,
+        durationSec: primaryTrack.durationSec,
+        insideGeofence: primaryTrack.insideGeofence ? primaryTrack.insideGeofence.title : null
+      } : null,
       snapshotDataUrl: frame.dataUrl || null
     });
-  });
+  }
 
   // 2. 전체 통계 및 종합 안전 지수 산출
   const frameCount = frames.length;

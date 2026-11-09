@@ -628,13 +628,23 @@ function renderTimelineEvents(events) {
     <div id="event-card-${evt.id}" onclick="seekVideoTo(${evt.timestamp}, '${evt.id}')" 
          class="p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-500 transition shadow-sm cursor-pointer space-y-2.5">
       <div class="flex items-start justify-between gap-3">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <span class="px-2 py-0.5 rounded text-xs font-black bg-slate-900 text-amber-300 font-mono">
             ⏱️ ${evt.timeStr}
           </span>
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${evt.rank <= 3 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'}">
             Rank ${evt.rank}위 (${evt.accidentType})
           </span>
+          ${evt.trackedWorker ? `
+            <span class="bg-indigo-900/90 text-indigo-200 border border-indigo-400/50 text-[10px] px-2 py-0.5 rounded font-black font-mono">
+              👤 ${escapeHtml(evt.trackedWorker.id)} (${evt.trackedWorker.durationSec}초 지속)
+            </span>
+          ` : ''}
+          ${evt.trackedWorker && evt.trackedWorker.insideGeofence ? `
+            <span class="bg-rose-900/90 text-rose-200 border border-rose-400/50 text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">
+              🚨 ${escapeHtml(evt.trackedWorker.insideGeofence)}
+            </span>
+          ` : ''}
         </div>
         <span class="text-xs font-black px-2 py-0.5 rounded ${evt.riskScore >= 75 ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'}">
           위험지수 ${evt.riskScore}점
@@ -757,6 +767,33 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
             ctx.moveTo(hx + hw - bLen, hy + hh); ctx.lineTo(hx + hw, hy + hh); ctx.lineTo(hx + hw, hy + hh - bLen);
             ctx.stroke();
 
+            // [추천 2] 굴착기 선회반경 및 슬래브 단부 가상 세이프티존 (Polygon Geofence) 시각화
+            if (hazard.label && (hazard.label.includes('굴착기') || hazard.label.includes('선회반경'))) {
+              ctx.save();
+              ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+              ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+              ctx.lineWidth = 2;
+              ctx.setLineDash([6, 4]);
+
+              // 굴착기 중심 기준 5m 원형 세이프티존
+              const centerX = hx + hw * 0.4;
+              const centerY = hy + hh * 0.55;
+              const radius = Math.max(hw, hh) * 0.78;
+
+              ctx.beginPath();
+              ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+
+              // 세이프티존 배지 태그
+              ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+              ctx.fillRect(centerX - 100, centerY - radius - 16, 200, 18);
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 10px Pretendard, sans-serif';
+              ctx.fillText('🚨 [가상 세이프티존] 선회반경 5m 통제구역', centerX - 92, centerY - radius - 3);
+              ctx.restore();
+            }
+
             // 위반 텍스트 라벨 태그 배지
             ctx.font = 'bold 12px Pretendard, sans-serif';
             const labelText = hazard.label || '⚠️ 안전 위반 검출';
@@ -773,15 +810,15 @@ async function processSnapshotMarkingAndPrivacy(dataUrl, hazardMarkings = [], pr
         });
       }
 
-      // 4. 스냅샷 상단 워터마크 태그 (개인정보보호법 제25조 비식별화 준수)
+      // 4. 스냅샷 상단 워터마크 태그 (개인정보보호법 제25조 비식별화 + ByteTrack 다중객체 추적)
       ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-      ctx.fillRect(8, 8, 230, 22);
+      ctx.fillRect(8, 8, 295, 22);
       ctx.strokeStyle = 'rgba(52, 211, 153, 0.8)';
       ctx.lineWidth = 1;
-      ctx.strokeRect(8, 8, 230, 22);
+      ctx.strokeRect(8, 8, 295, 22);
       ctx.fillStyle = '#34d399';
       ctx.font = 'bold 10px Pretendard, sans-serif';
-      ctx.fillText('🛡️ 개인정보 비식별화(얼굴·신체 모자이크 완료)', 13, 23);
+      ctx.fillText('🛡️ [하이브리드 AI] 비식별화 + ByteTrack 다중객체 추적', 13, 23);
 
       resolve(canvas.toDataURL('image/jpeg', 0.85));
     };

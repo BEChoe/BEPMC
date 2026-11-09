@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "computer-vision-opencv": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "computer-vision-opencv/SKILL.md",
+      "computedHash": "d50ff99f520cf6bfb44971f1e915b61a6a4971ee0fcccdd1986d6522a31b61fc"
+    },
+    "draw-vision": {
+      "source": "roboflow/computer-vision-skills",
+      "sourceType": "github",
+      "skillPath": "skills/draw-vision/SKILL.md",
+      "computedHash": "f7369bb108ab177b2a87aa9885e1726f2be1db7ffc99f36e1996a33817ccd10f"
+    },
     "ffmpeg": {
       "source": "digitalsamba/claude-code-video-toolkit",
       "sourceType": "github",
@@ -12,6 +24,18 @@
       "sourceType": "github",
       "skillPath": "skills/find-skills/SKILL.md",
       "computedHash": "913b9d37d0d54047dd65222bb8c67b2bf04e3cb87dcad1729068d7a8b2c8c396"
+    },
+    "roboflow-inference": {
+      "source": "roboflow/computer-vision-skills",
+      "sourceType": "github",
+      "skillPath": "skills/roboflow-inference/SKILL.md",
+      "computedHash": "a74f8262ca11e867f507fb1c74e37e533c526a6f167b501b06b7b8451b078911"
+    },
+    "roboflow-universe": {
+      "source": "roboflow/computer-vision-skills",
+      "sourceType": "github",
+      "skillPath": "skills/roboflow-universe/SKILL.md",
+      "computedHash": "14c65404baed876ee7791f5f6c539faa228c9620235094c83ac60b37483c1fb8"
     },
     "yolo-inference": {
       "source": "ultralytics/skills",
