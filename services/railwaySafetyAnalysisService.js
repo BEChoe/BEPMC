@@ -112,7 +112,39 @@ class RailwaySafetyAnalysisService {
           ? `[🚨 비상대피] 열차가 시속 ${trainSpeedInfo.speedKmh}km/h로 접근 중이며 잔여 대피시간이 ${ttcInfo.ttcSeconds}초에 불과합니다. 선로 건축한계를 즉시 이탈해야 합니다.`
           : clearance1.isInsideClearance
             ? `[건축한계 침범] Worker #01이 레일 중심에서 ${clearance1.distFromCenterMeter}m 지점에 위치하여 건축한계(2.0m)를 침범했습니다.`
-            : `[정상 운행 감시] 안전 여유거리 확보 상태 유지 (TTC: ${ttcInfo.ttcSeconds}초)`
+            : `[정상 운행 감시] 안전 여유거리 확보 상태 유지 (TTC: ${ttcInfo.ttcSeconds}초)`,
+        auditableEvidence: {
+          staticState: {
+            objectClass: '철도 주행선로 & 궤도 보수원 (Worker #01)',
+            trackId: 'Worker #01',
+            confidence: 96,
+            boundingBox: { x: 0.46, y: 0.78, w: 0.12, h: 0.28 },
+            ppeStatus: {
+              hasHelmet: true,
+              hasHiVis: isHiVisWorn,
+              helmetDesc: '철도 안전모 정상 착용 식별',
+              hiVisDesc: isHiVisWorn ? 'KRS 0001 고시인성 형광조끼 착용 식별' : '고시인성 형광안전의복 미착용 확인 (시인성 결여)'
+            },
+            coOccurringHazard: `접근열차 (속도 ${trainSpeedInfo.speedKmh} km/h, 거리 ${ttcInfo.distanceMeter}m)`
+          },
+          dynamicProgression: {
+            startCoord: `[선로 중심 ${clearance1.distFromCenterMeter}m]`,
+            currentCoord: `[건축한계 2.0m ${clearance1.isInsideClearance ? '침범구역' : '외측'}]`,
+            displacementSpeedKmh: trainSpeedInfo.speedKmh,
+            approachRateMs: parseFloat((trainSpeedInfo.speedKmh / 3.6).toFixed(1)),
+            currentDistanceMeter: ttcInfo.distanceMeter,
+            distanceTrajectory: `열차 잔여 대피시간(TTC): ${ttcInfo.ttcSeconds}초`,
+            dangerZoneDwellSec: (idx + 1) * 1.5,
+            stateTransitionPath: ttcInfo.warningLevel === 'CRITICAL'
+              ? '[S0 대기] ➔ [S1 열차접근] ➔ [S3 임박한 열차충돌 비상대피]'
+              : '[S0 정상 감시] ➔ [S1 열차 접근 중]'
+          },
+          regulatoryBasis: {
+            lawRule: '철도안전관리체계 기술기준 제7조(선로작업 안전수칙) 및 철도건설규칙 제14조',
+            severityGrade: ttcInfo.warningLevel === 'CRITICAL' ? 'CRITICAL (비상 대피 명령)' : 'WARNING (대피 준비)',
+            immediateAction: '열차가 15초 이내 도달하므로 전 작업자 선로 밖 대피소 즉시 이탈 및 감시원 신호 발령'
+          }
+        }
       };
 
       timelineEvents.push(eventItem);

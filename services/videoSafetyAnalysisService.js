@@ -16,6 +16,21 @@ const { SafetyTrackingEngine } = require('./safetyTrackingEngine');
  * 실제 영상 프레임 데이터(Base64)와 메타정보를 분석하여 위험 감지 객체 도출
  */
 function detectFrameVisualEntities(frame, index, totalFrames) {
+  // 클라이언트 실체적 AI(COCO-SSD / 픽셀 분석기)에서 전달된 실제 탐지 객체가 있는 경우 최우선 활용
+  if (Array.isArray(frame.detectedObjects) && frame.detectedObjects.length > 0) {
+    const list = [];
+    frame.detectedObjects.forEach(d => {
+      list.push(d.class);
+      if (d.ppe && !d.ppe.hasHelmet) list.push('no_helmet', 'no_hard_hat', 'worker_unprotected');
+      if (d.ppe && !d.ppe.hasHiVis) list.push('no_vest');
+      if (d.class === 'person' || d.class === 'worker') list.push('person', 'worker');
+      if (d.class === 'truck' || d.class === 'car' || d.class === 'excavator') {
+        list.push('excavator', 'machinery', 'worker_in_danger_zone');
+      }
+    });
+    return Array.from(new Set(list));
+  }
+
   // 클라이언트나 외부 모델에서 전달된 감지 라벨이 있는 경우 우선 활용
   if (Array.isArray(frame.detectedLabels) && frame.detectedLabels.length > 0) {
     return frame.detectedLabels;
@@ -290,19 +305,66 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
 
     totalHazardScore += frameRisk;
 
-    // 위험 위반 마킹 및 프라이버시(얼굴/신체 비식별화) 좌표 생성
-    const visualMeta = getVisualMarkingMetadata(rule.rank, idx);
-
-    // 추적된 작업자 정보가 있는 경우 마킹에 추적 ID 및 지속시간 주입
+    // [핵심 개선] 실제 추적 객체 기반 위반 마킹 및 프라이버시(얼굴/신체 비식별화) 좌표 동적 산출
     const primaryTrack = trackEvents[0] || null;
-    if (primaryTrack && visualMeta.hazardMarkings[0]) {
-      const geofenceText = primaryTrack.insideGeofence ? ` [${primaryTrack.insideGeofence.title}]` : '';
-      visualMeta.hazardMarkings[0].trackId = primaryTrack.trackId;
-      visualMeta.hazardMarkings[0].durationSec = primaryTrack.durationSec;
-      visualMeta.hazardMarkings[0].label = `${visualMeta.hazardMarkings[0].label} (${primaryTrack.trackId}, ${primaryTrack.durationSec}초 지속${geofenceText})`;
+    let hazardMarkings = [];
+    let privacyRegions = [];
+
+    if (primaryTrack && primaryTrack.box) {
+      const box = primaryTrack.box;
+      const isCritical = primaryTrack.state === 'S3_CRITICAL';
+      const labelText = `⚠️ [${primaryTrack.trackId}] ${rule.accidentType} 위험 (${primaryTrack.stateLabel}, 거리 ${primaryTrack.minDistanceMeter}m)`;
+
+      // 1. 작업자 본인 바운딩 마킹
+      hazardMarkings.push({
+        box: { x: box.x, y: box.y, w: box.w, h: box.h },
+        label: labelText,
+        color: isCritical ? '#ef4444' : '#f59e0b',
+        severity: isCritical ? 'CRITICAL' : 'WARNING',
+        trackId: primaryTrack.trackId,
+        state: primaryTrack.state
+      });
+
+      // 2. 위험원(단부 또는 굴착기) 박스 마킹
+      if (primaryTrack.closestHazard && primaryTrack.closestHazard.box) {
+        hazardMarkings.push({
+          box: primaryTrack.closestHazard.box,
+          label: `🚨 [위험원] ${primaryTrack.closestHazard.label}`,
+          color: '#ef4444',
+          severity: 'HIGH'
+        });
+      }
+
+      // 3. 작업자 안면 비식별화 영역 (두부 상단 22%)
+      privacyRegions.push({
+        type: 'face',
+        box: {
+          x: Math.max(0, box.x + box.w * 0.15),
+          y: Math.max(0, box.y),
+          w: Math.min(1.0, box.w * 0.70),
+          h: Math.min(1.0, box.h * 0.22)
+        },
+        label: '작업자 안면 비식별화'
+      });
+
+      // 4. 신체 노출부위 보호 (상하체)
+      privacyRegions.push({
+        type: 'body',
+        box: {
+          x: Math.max(0, box.x + box.w * 0.10),
+          y: Math.max(0, box.y + box.h * 0.25),
+          w: Math.min(1.0, box.w * 0.80),
+          h: Math.min(1.0, box.h * 0.50)
+        },
+        label: '신체 부위 보호 모자이크'
+      });
+    } else {
+      const visualMeta = getVisualMarkingMetadata(rule.rank, idx);
+      hazardMarkings = visualMeta.hazardMarkings;
+      privacyRegions = visualMeta.privacyRegions;
     }
 
-    // 타임라인 이벤트 등록
+    // 타임라인 이벤트 등록 (정량적 3단 판단 근거 포함)
     timelineEvents.push({
       id: `evt-${idx + 1}`,
       frameIndex: idx,
@@ -313,21 +375,22 @@ async function analyzeVideoSafety({ siteName = "미지정 건설현장", fileNam
       accidentType: rule.accidentType,
       sharePercent: rule.sharePercent,
       dangerLevel: rule.dangerLevel,
-      riskScore: frameRisk,
+      riskScore: primaryTrack?.riskScore || frameRisk,
       confidence: Math.round(matchConfidence * 100),
       detectedLabels: labels,
       criteria: rule.criteria,
       legalBasis: rule.legalBasis,
       immediateAction: rule.immediateAction,
       engineeringCountermeasures: rule.engineeringCountermeasures,
-      hazardMarkings: visualMeta.hazardMarkings,
-      privacyRegions: visualMeta.privacyRegions,
+      hazardMarkings,
+      privacyRegions,
       privacyAnonymized: true,
       trackedWorker: primaryTrack ? {
         id: primaryTrack.trackId,
-        durationSec: primaryTrack.durationSec,
-        insideGeofence: primaryTrack.insideGeofence ? primaryTrack.insideGeofence.title : null
+        durationSec: primaryTrack.auditableEvidence?.dynamicProgression?.dangerZoneDwellSec || 1.5,
+        insideGeofence: primaryTrack.closestHazard ? primaryTrack.closestHazard.label : null
       } : null,
+      auditableEvidence: primaryTrack?.auditableEvidence || null,
       snapshotDataUrl: frame.dataUrl || null
     });
   }
