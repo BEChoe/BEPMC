@@ -186,23 +186,27 @@
         </div>
       </div>
 
-      <!-- 작업 모드 선택: 건설현장 10대 재해 vs 철도 주행선로 작업자 안전 -->
-      <div class="flex items-center justify-between flex-wrap gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
-        <div class="flex items-center gap-1.5">
-          <span class="text-xs font-black text-slate-700">🔍 분석 모드:</span>
-          <div class="inline-flex rounded-lg border border-slate-300 p-0.5 bg-white">
-            <button type="button" id="mode-btn-construction" onclick="switchAnalysisMode('CONSTRUCTION')"
-                    class="px-3 py-1.5 rounded-md text-xs font-black transition bg-blue-700 text-white shadow-sm">
-              🏗️ 건설현장 10대 재해 모드
+      <!-- 🔍 최상위 분석 모드 설정 네비게이션: 기본 모드(전방위 통합) vs 수동 설정 모드(사용자 정의) -->
+      <div class="flex items-center justify-between flex-wrap gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 shadow-xs">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs font-black text-slate-800 flex items-center gap-1">
+            <span>⚙️</span> 분석 모드 설정:
+          </span>
+          <div class="inline-flex rounded-xl border border-slate-300 p-0.5 bg-white shadow-xs">
+            <button type="button" id="main-mode-btn-universal" onclick="switchMainMode('UNIVERSAL')"
+                    class="px-4 py-2 rounded-lg text-xs font-black transition bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-sm flex items-center gap-1.5">
+              <span>🌟</span> [기본 모드] 전방위 통합 안전 AI 진단 (권장)
             </button>
-            <button type="button" id="mode-btn-railway" onclick="switchAnalysisMode('RAILWAY')"
-                    class="px-3 py-1.5 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900">
-              🚅 철도 주행선로 작업자 안전 모드
+            <button type="button" id="main-mode-btn-manual" onclick="switchMainMode('MANUAL')"
+                    class="px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+              <span>🛠️</span> [수동 설정 모드] 사용자 정의 맞춤 분석
             </button>
           </div>
         </div>
-        <div id="active-mode-badge" class="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
-          ⚡ [하이브리드 AI] Roboflow 산업안전 PPE + ByteTrack 지오펜싱
+
+        <!-- 모드 상태 뱃지 -->
+        <div id="active-mode-badge" class="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 flex items-center gap-1.5">
+          <span>🌟</span> [통합 비전 AI] 일상 생활 · 건설 현장 · 철도 운송 전 영역 자동 종합 진단
         </div>
       </div>
 
@@ -304,22 +308,22 @@
 
       </div>
 
-      <!-- 🎯 [신규] 판정 매트릭스 조건 선택(삭제/제외) 및 커스텀 관리 섹션 -->
-      <div id="rule-selection-panel" class="pt-4 border-t border-slate-200 space-y-3">
+      <!-- 🛠️ [수동 설정 모드 전용 하위 메뉴] 사용자 정의 맞춤 설정 패널 (기본 모드에서는 자동 접힘) -->
+      <div id="manual-custom-config-panel" class="hidden pt-4 border-t border-slate-200 space-y-4 bg-slate-50/80 p-5 rounded-2xl border border-slate-200">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-wrap">
           <div class="flex items-center gap-2">
-            <span class="text-sm font-black text-slate-900 flex items-center gap-1.5">
-              <span>🎯</span> AI 안전 진단 판정 조건 설정
+            <span class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+              <span>🛠️</span> 수동 설정 하위 메뉴: 도메인 &amp; 판정 조건 필터링
             </span>
-            <span id="active-rules-count-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-100 text-blue-800 border border-blue-200">
+            <span id="active-rules-count-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">
               10개 중 10개 활성화
             </span>
           </div>
 
           <!-- 빠른 선택 프리셋 버튼군 -->
           <div class="flex items-center flex-wrap gap-1.5 text-xs">
-            <button type="button" onclick="setRulePreset('ALL')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">전체 선택</button>
-            <button type="button" onclick="setRulePreset('NONE')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">전체 해제</button>
+            <button type="button" onclick="setRulePreset('ALL')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-200 transition">전체 선택</button>
+            <button type="button" onclick="setRulePreset('NONE')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-200 transition">전체 해제</button>
             <button type="button" onclick="setRulePreset('TOP3')" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold border border-rose-200 transition">TOP 3 집중</button>
             <button type="button" onclick="setRulePreset('FALL')" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 transition">추락·전도</button>
             <button type="button" onclick="setRulePreset('MACHINERY')" class="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 transition">장비·기계</button>
@@ -329,8 +333,29 @@
           </div>
         </div>
 
+        <!-- 분석 대상 도메인 선택 (다중 선택) -->
+        <div class="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+          <div class="text-[11px] font-black text-slate-700 flex items-center gap-1">
+            <span>🌐</span> 분석 대상 도메인 활성화 (선택한 도메인의 위협만 집중 분석):
+          </div>
+          <div class="flex items-center flex-wrap gap-4 text-xs font-bold text-slate-700">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="domain-check-daily" checked onchange="toggleManualDomain('DAILY_LIFE')" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+              <span>🏠 일상 생활 안전 (실족·낙상·차량충돌·화재)</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="domain-check-construction" checked onchange="toggleManualDomain('CONSTRUCTION')" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+              <span>🏗️ 건설·산업 현장 안전 (공공데이터 10대 재해)</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="domain-check-railway" checked onchange="toggleManualDomain('RAILWAY')" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+              <span>🚅 철도 운송 현장 안전 (선로 침범·건축한계·TTC)</span>
+            </label>
+          </div>
+        </div>
+
         <p class="text-[11px] text-slate-500">
-          현장에 해당하지 않는 위험 항목은 체크를 해제(삭제)하여 분석에서 제외하고, 특수 공종 위험은 새 규칙으로 추가할 수 있습니다.
+          특정 위험 항목을 체크 해제(삭제)하여 맞춤형으로 분석하고, 현장 고유 위험은 [➕ 맞춤 규칙 추가]로 등록할 수 있습니다.
         </p>
 
         <!-- 10대 기본 규칙 체크박스 그리드 -->
@@ -339,7 +364,7 @@
         </div>
 
         <!-- 커스텀 추가된 규칙 목록 컨테이너 -->
-        <div id="custom-rules-container" class="hidden space-y-1.5 pt-2 border-t border-slate-100">
+        <div id="custom-rules-container" class="hidden space-y-1.5 pt-2 border-t border-slate-200">
           <div class="text-[11px] font-bold text-slate-700 flex items-center gap-1">
             <span>⭐</span> 현장 맞춤형 추가 규칙:
           </div>
@@ -374,11 +399,11 @@
               문서번호: <span id="report-id-badge" class="font-mono text-slate-800 font-black"></span>
             </span>
           </div>
-          <h2 class="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
-            공공데이터 10대 다발재해 기반 동영상 안전위험성평가 결과보고서
+          <h2 id="report-main-title" class="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
+            전방위 통합 안전 AI 진단 및 위험성평가 종합 결과보고서
           </h2>
           <p class="text-xs text-slate-500 mt-1">
-            현장명: <b id="report-site-name" class="text-slate-800"></b> · 분석 파일: <span id="report-file-name" class="font-mono text-slate-700"></span> · 발행일: <span id="report-date-badge"></span>
+            현장/대상지: <b id="report-site-name" class="text-slate-800"></b> · 분석 파일: <span id="report-file-name" class="font-mono text-slate-700"></span> · 발행일: <span id="report-date-badge"></span>
           </p>
         </div>
 
@@ -411,57 +436,105 @@
         <span id="report-mode-pill" class="px-2 py-0.5 rounded text-[10px] font-black bg-blue-700 text-white">내부 검증용</span>
       </div>
 
-      <!-- 종합 안전 지수 & 긴급 경보 요약 -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 종합 안전 지수 & 3대 도메인 평가 요약 -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         
         <!-- 종합 안전 지수 게이지 카드 -->
-        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-md space-y-4">
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md space-y-3">
           <div class="flex items-center justify-between text-xs text-slate-300 font-semibold">
             <span>종합 안전 진단 지수</span>
-            <span class="text-amber-400">100점 만점 기준</span>
+            <span class="text-amber-400">100점 만점</span>
           </div>
           <div class="flex items-baseline gap-2">
-            <span id="overall-score-display" class="text-5xl font-black tracking-tight text-white">--</span>
-            <span class="text-sm font-bold text-slate-400">/ 100 점</span>
+            <span id="overall-score-display" class="text-4xl font-black tracking-tight text-white">--</span>
+            <span class="text-xs font-bold text-slate-400">/ 100 점</span>
           </div>
-          <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="w-full h-2.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="overall-score-bar" class="h-full w-0 transition-all duration-500"></div>
           </div>
           <div class="pt-1 flex items-center justify-between">
-            <span class="text-xs text-slate-400">종합 판정 등급:</span>
-            <span id="overall-grade-display" class="px-2.5 py-0.5 rounded-full text-xs font-black">--</span>
+            <span class="text-[11px] text-slate-400">종합 판정:</span>
+            <span id="overall-grade-display" class="px-2.5 py-0.5 rounded-full text-[11px] font-black">--</span>
           </div>
         </div>
 
-        <!-- 최다 빈도 핵심 위험 항목 (1위 단부추락 등) -->
-        <div class="md:col-span-2 bg-rose-50 border-2 border-rose-300 rounded-2xl p-6 space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="inline-flex items-center gap-1.5 bg-rose-600 text-white text-xs font-black px-2.5 py-0.5 rounded">
-              🚨 최우선 중점 관리 대상 (최대 위험 위반)
-            </span>
-            <span id="critical-hazard-share" class="text-xs font-black text-rose-700"></span>
+        <!-- 3대 도메인별 미니 상태 카드 3종 -->
+        <div class="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- 도메인 1: 일상 생활 안전 -->
+          <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-amber-900 flex items-center gap-1">
+                <span>🏠</span> 일상 생활 안전
+              </span>
+              <span id="domain-score-badge-daily" class="text-[10px] font-black px-2 py-0.5 rounded bg-amber-200 text-amber-900">진단 완료</span>
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span id="domain-score-daily" class="text-2xl font-black text-amber-950">--</span>
+              <span class="text-xs text-slate-500">점</span>
+            </div>
+            <p id="domain-desc-daily" class="text-[11px] text-slate-600 leading-snug">보행자 전도, 계단 낙상, 사각지대 차량 충돌 감시</p>
           </div>
-          <h3 id="critical-hazard-title" class="text-base sm:text-lg font-black text-rose-950"></h3>
-          <div class="text-xs text-slate-700 space-y-1">
-            <p id="critical-hazard-law" class="font-bold text-slate-900"></p>
-            <p id="critical-hazard-penalty" class="text-rose-700 font-semibold"></p>
+
+          <!-- 도메인 2: 건설 현장 안전 -->
+          <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-blue-900 flex items-center gap-1">
+                <span>🏗️</span> 건설 현장 안전
+              </span>
+              <span id="domain-score-badge-const" class="text-[10px] font-black px-2 py-0.5 rounded bg-blue-200 text-blue-900">진단 완료</span>
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span id="domain-score-const" class="text-2xl font-black text-blue-950">--</span>
+              <span class="text-xs text-slate-500">점</span>
+            </div>
+            <p id="domain-desc-const" class="text-[11px] text-slate-600 leading-snug">10대 다발재해, PPE 보호구, 중장비 선회반경 감시</p>
           </div>
-          <p class="text-[11px] text-slate-500 bg-white/80 p-2.5 rounded-lg border border-rose-200">
-            💡 본 항목은 고용노동부 불시 기획감독 시 <b>시정명령 및 즉시 과태료·작업중지</b>가 부과되는 핵심 위반 유형입니다.
-          </p>
+
+          <!-- 도메인 3: 철도 운송 안전 -->
+          <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-indigo-900 flex items-center gap-1">
+                <span>🚅</span> 철도 운송 안전
+              </span>
+              <span id="domain-score-badge-rail" class="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-200 text-indigo-900">진단 완료</span>
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span id="domain-score-rail" class="text-2xl font-black text-indigo-950">--</span>
+              <span class="text-xs text-slate-500">점</span>
+            </div>
+            <p id="domain-desc-rail" class="text-[11px] text-slate-600 leading-snug">주행 선로 침범, 2.0m 건축한계, 열차 속도/TTC 감시</p>
+          </div>
         </div>
 
       </div>
 
-      <!-- 10대 재해 유형별 탐지 현황 매트릭스 그리드 -->
+      <!-- 긴급 시정 하이라이트 배너 -->
+      <div id="urgent-highlights-container" class="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="bg-rose-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded">🚨 최우선 긴급 개선 권고</span>
+          <span class="text-xs font-bold text-rose-800">모든 도메인 통틀어 가장 시급한 즉각 안전조치 사항</span>
+        </div>
+        <ul id="urgent-highlights-list" class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs font-medium text-slate-800"></ul>
+      </div>
+
+      <!-- 도메인별 안전 진단 매트릭스 그리드 (탭 필터 지원) -->
       <div class="space-y-3">
-        <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
-          <span>📊</span> 공공데이터 과거 1년 10대 재해 유형별 검출 매트릭스
-        </h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+          <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+            <span>📊</span> 안전 위협 요인별 검출 매트릭스 현황
+          </h3>
+          <!-- 매트릭스 필터 탭 -->
+          <div class="inline-flex rounded-xl border border-slate-300 p-0.5 bg-slate-100 text-xs font-bold">
+            <button type="button" onclick="filterMatrixView('ALL')" id="tab-matrix-all" class="px-3 py-1 rounded-lg bg-white shadow-xs text-blue-700 font-black">전체 보기</button>
+            <button type="button" onclick="filterMatrixView('DAILY_LIFE')" id="tab-matrix-daily" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">🏠 일상 생활</button>
+            <button type="button" onclick="filterMatrixView('CONSTRUCTION')" id="tab-matrix-const" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">🏗️ 건설 현장</button>
+            <button type="button" onclick="filterMatrixView('RAILWAY')" id="tab-matrix-rail" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">🚅 철도 운송</button>
+          </div>
+        </div>
         <div id="top10-matrix-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"></div>
       </div>
 
-      <!-- 타임라인별 검출 이벤트 로그 (동영상 스냅샷 + 법조항 + 개인정보 비식별화) -->
+      <!-- 타임라인별 검출 이벤트 로그 (동영상 스냅샷 + 도메인 배지 + 법조항 + 개인정보 비식별화) -->
       <div class="space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
           <div>
@@ -482,38 +555,91 @@
         <div id="timeline-events-list" class="space-y-3"></div>
       </div>
 
-      <!-- 3단계 공학적·관리적 개선 대책 보고서 섹션 -->
+      <!-- 3대 영역별 계층형 예방 조치 권고안 (Action Plan) -->
       <div class="space-y-4 pt-6 border-t border-slate-200">
-        <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
-          <span>🛡️</span> BEPMC 공학적 안전 개선 대책 (Action Plan)
-        </h3>
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+            <span>🛡️</span> 영역별 맞춤 예방 조치 및 공학적 권고사항 (Comprehensive Action Plan)
+          </h3>
+          <span class="text-xs text-blue-700 font-bold bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">
+            즉시 시정 · 공학적 설비 · 관리 계획 3단계
+          </span>
+        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- 1단계: 즉시 조치 -->
-          <div class="bg-rose-50/70 p-5 rounded-2xl border border-rose-200 space-y-3">
-            <div class="flex items-center gap-2 font-black text-xs text-rose-800">
-              <span class="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs">1</span>
-              <span>즉시 시정 조치 (현장 즉각 대응)</span>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- 영역 1: 일상 생활 안전 예방 권고 -->
+          <div class="bg-amber-50/50 p-5 rounded-2xl border border-amber-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-amber-200 pb-2">
+              <div class="flex items-center gap-2 font-black text-xs text-amber-900">
+                <span class="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">🏠</span>
+                <span>일상 생활 안전 예방 대책</span>
+              </div>
+              <span class="text-[10px] font-bold text-amber-700">보행·시설·화재</span>
             </div>
-            <ul id="immediate-actions-list" class="space-y-2"></ul>
+            <div class="space-y-2 text-xs">
+              <div>
+                <b class="text-rose-700">[즉시 조치]</b>
+                <ul id="rec-daily-immediate" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+              <div>
+                <b class="text-blue-700">[공학 설비]</b>
+                <ul id="rec-daily-engineering" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+              <div>
+                <b class="text-emerald-700">[관리 계획]</b>
+                <ul id="rec-daily-admin" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+            </div>
           </div>
 
-          <!-- 2단계: 공학적 방호대책 -->
-          <div class="bg-blue-50/70 p-5 rounded-2xl border border-blue-200 space-y-3">
-            <div class="flex items-center gap-2 font-black text-xs text-blue-800">
-              <span class="w-6 h-6 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs">2</span>
-              <span>공학적 방호대책 (KOSHA GUIDE 기준)</span>
+          <!-- 영역 2: 건설 현장 안전 예방 권고 -->
+          <div class="bg-blue-50/50 p-5 rounded-2xl border border-blue-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-blue-200 pb-2">
+              <div class="flex items-center gap-2 font-black text-xs text-blue-900">
+                <span class="w-6 h-6 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs">🏗️</span>
+                <span>건설 현장 안전 예방 대책</span>
+              </div>
+              <span class="text-[10px] font-bold text-blue-700">10대재해·KOSHA</span>
             </div>
-            <ul id="engineering-controls-list" class="space-y-2"></ul>
+            <div class="space-y-2 text-xs">
+              <div>
+                <b class="text-rose-700">[즉시 조치]</b>
+                <ul id="rec-const-immediate" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+              <div>
+                <b class="text-blue-700">[공학 설비]</b>
+                <ul id="rec-const-engineering" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+              <div>
+                <b class="text-emerald-700">[관리 계획]</b>
+                <ul id="rec-const-admin" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+            </div>
           </div>
 
-          <!-- 3단계: 관리적 이행계획 -->
-          <div class="bg-emerald-50/70 p-5 rounded-2xl border border-emerald-200 space-y-3">
-            <div class="flex items-center gap-2 font-black text-xs text-emerald-800">
-              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">3</span>
-              <span>관리적 안전계획 (법정 서류·교육)</span>
+          <!-- 영역 3: 철도 운송 안전 예방 권고 -->
+          <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-indigo-200 pb-2">
+              <div class="flex items-center gap-2 font-black text-xs text-indigo-900">
+                <span class="w-6 h-6 rounded-full bg-indigo-700 text-white flex items-center justify-center text-xs">🚅</span>
+                <span>철도 운송 안전 예방 대책</span>
+              </div>
+              <span class="text-[10px] font-bold text-indigo-700">선로침범·KRS규격</span>
             </div>
-            <ul id="administrative-plans-list" class="space-y-2"></ul>
+            <div class="space-y-2 text-xs">
+              <div>
+                <b class="text-rose-700">[즉시 조치]</b>
+                <ul id="rec-rail-immediate" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+              <div>
+                <b class="text-blue-700">[공학 설비]</b>
+                <ul id="rec-rail-engineering" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+              <div>
+                <b class="text-emerald-700">[관리 계획]</b>
+                <ul id="rec-rail-admin" class="mt-1 space-y-1 text-slate-700 list-disc list-inside"></ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>

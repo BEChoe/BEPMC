@@ -12,6 +12,7 @@ const mobileSyncService = require('./services/mobileSyncService');
 const publicDataTop10RulesService = require('./services/publicDataTop10RulesService');
 const videoSafetyAnalysisService = require('./services/videoSafetyAnalysisService');
 const railwaySafetyAnalysisService = require('./services/railwaySafetyAnalysisService');
+const universalSafetyAnalysisService = require('./services/universalSafetyAnalysisService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1231,6 +1232,38 @@ app.post('/api/technical-guidance/top10-video-analysis', requirePaidOrAdmin, asy
     res.status(500).json({
       success: false,
       message: err.message || '동영상 안전 분석 처리 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+// 전방위 통합 안전 AI 진단 (기본 모드 & 수동 모드 통합 엔드포인트)
+app.post('/api/technical-guidance/universal-video-analysis', requirePaidOrAdmin, async (req, res) => {
+  try {
+    const { siteName, fileName, frames, customNotes, analysisMode, manualConfig } = req.body;
+    if (!frames || !Array.isArray(frames) || frames.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '분석할 동영상 프레임이 전달되지 않았습니다.'
+      });
+    }
+
+    const userName = req.session.user ? (req.session.user.name || req.session.user.username) : '안전총괄책임자';
+    const analysisReport = await universalSafetyAnalysisService.analyzeUniversalSafety({
+      siteName: siteName || '스마트 통합 안전 관리 구역',
+      fileName: fileName || 'video.mp4',
+      frames,
+      userName,
+      customNotes: customNotes || '',
+      analysisMode: analysisMode || 'UNIVERSAL',
+      manualConfig: manualConfig || {}
+    });
+
+    res.json(analysisReport);
+  } catch (err) {
+    console.error('Universal safety video analysis error:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || '전방위 안전 분석 처리 중 오류가 발생했습니다.'
     });
   }
 });

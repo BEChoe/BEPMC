@@ -16,7 +16,9 @@ let videoState = {
   analysisReport: null,
   isAnalyzing: false,
   selectedEventId: null,
-  analysisMode: 'CONSTRUCTION', // 'CONSTRUCTION' | 'RAILWAY'
+  mainMode: 'UNIVERSAL', // 'UNIVERSAL' (기본 전방위 모드) | 'MANUAL' (수동 맞춤 모드)
+  activeDomains: ['DAILY_LIFE', 'CONSTRUCTION', 'RAILWAY'], // 활성 도메인
+  currentMatrixFilter: 'ALL', // 'ALL' | 'DAILY_LIFE' | 'CONSTRUCTION' | 'RAILWAY'
   reportDisplayMode: 'ANALYSIS', // 'ANALYSIS' (무손실 원본) | 'EXTERNAL' (비식별화 보호)
   selectedRuleRanks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // 활성화된 공공데이터 10대 규칙
   customRules: [], // 사용자 정의 현장 맞춤 규칙
@@ -24,57 +26,87 @@ let videoState = {
 };
 
 /**
- * 분석 모드 전환 (건설현장 10대 재해 vs 철도 주행선로 작업자 안전)
+ * 🌟 최상위 분석 모드 전환 (기본 모드: 전방위 통합 진단 vs 수동 모드: 사용자 정의 맞춤 설정)
  */
-function switchAnalysisMode(mode) {
-  videoState.analysisMode = mode;
-  const btnConst = document.getElementById('mode-btn-construction');
-  const btnRail = document.getElementById('mode-btn-railway');
+function switchMainMode(mode) {
+  videoState.mainMode = mode;
+  const btnUniv = document.getElementById('main-mode-btn-universal');
+  const btnManual = document.getElementById('main-mode-btn-manual');
   const badge = document.getElementById('active-mode-badge');
-  const siteInput = document.getElementById('site-name-input');
-  const notesInput = document.getElementById('custom-notes-input');
+  const panel = document.getElementById('manual-custom-config-panel');
   const btnStart = document.getElementById('btn-start-analysis');
 
-  if (mode === 'RAILWAY') {
-    if (btnRail) {
-      btnRail.className = 'px-3 py-1.5 rounded-md text-xs font-black transition bg-blue-700 text-white shadow-sm';
+  if (mode === 'UNIVERSAL') {
+    if (btnUniv) {
+      btnUniv.className = 'px-4 py-2 rounded-lg text-xs font-black transition bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-sm flex items-center gap-1.5';
     }
-    if (btnConst) {
-      btnConst.className = 'px-3 py-1.5 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    if (btnManual) {
+      btnManual.className = 'px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
     }
     if (badge) {
-      badge.textContent = '🚅 [철도 특화 AI] 표준궤간(1,435mm) 호모그래피 + 열차 속도/TTC + 건축한계 지오펜싱';
-      badge.className = 'text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200';
+      badge.innerHTML = '<span>🌟</span> [통합 비전 AI] 일상 생활 · 건설 현장 · 철도 운송 전 영역 자동 종합 진단';
+      badge.className = 'text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 flex items-center gap-1.5';
     }
-    if (siteInput && (siteInput.value === '판교 제2테크노밸리 복합시설 신축공사' || !siteInput.value)) {
-      siteInput.value = '경부선 궤도유지보수 제3공구 (수원-평택 구간)';
+    if (panel) {
+      panel.classList.add('hidden');
     }
-    if (notesInput) {
-      notesInput.placeholder = '예: 3선 상하행 궤도 체결구 점검 및 레일 용접 보수 작업';
-    }
-    if (btnStart) {
-      btnStart.innerHTML = '<span>🚅</span> 철도 주행선로 작업자 안전 &amp; 속도/TTC 정밀 분석 실행';
+    videoState.activeDomains = ['DAILY_LIFE', 'CONSTRUCTION', 'RAILWAY'];
+    if (btnStart && !videoState.isAnalyzing) {
+      btnStart.innerHTML = '<span>🌟</span> 전방위 통합 안전 AI 정밀 분석 실행 (일상·건설·철도 종합)';
     }
   } else {
-    if (btnConst) {
-      btnConst.className = 'px-3 py-1.5 rounded-md text-xs font-black transition bg-blue-700 text-white shadow-sm';
+    if (btnManual) {
+      btnManual.className = 'px-4 py-2 rounded-lg text-xs font-black transition bg-blue-700 text-white shadow-sm flex items-center gap-1.5';
     }
-    if (btnRail) {
-      btnRail.className = 'px-3 py-1.5 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    if (btnUniv) {
+      btnUniv.className = 'px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
     }
     if (badge) {
-      badge.textContent = '⚡ [하이브리드 AI] Roboflow 산업안전 PPE + ByteTrack 지오펜싱';
-      badge.className = 'text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200';
+      badge.innerHTML = '<span>🛠️</span> [수동 맞춤 설정] 도메인 및 10대 재해 규칙 사용자 정의 적용';
+      badge.className = 'text-[11px] font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 flex items-center gap-1.5';
     }
-    if (siteInput && siteInput.value === '경부선 궤도유지보수 제3공구 (수원-평택 구간)') {
-      siteInput.value = '판교 제2테크노밸리 복합시설 신축공사';
+    if (panel) {
+      panel.classList.remove('hidden');
     }
-    if (notesInput) {
-      notesInput.placeholder = '예: 3층 슬래브 거푸집 조립 및 단부 작업 중';
+    updateRuleSelectionUI();
+  }
+}
+
+/**
+ * 수동 설정 시 대상 도메인 On/Off 토글
+ */
+function toggleManualDomain(domain) {
+  if (videoState.activeDomains.includes(domain)) {
+    videoState.activeDomains = videoState.activeDomains.filter(d => d !== domain);
+  } else {
+    videoState.activeDomains.push(domain);
+  }
+  updateRuleSelectionUI();
+}
+
+/**
+ * 매트릭스 필터 탭 전환 (전체, 일상, 건설, 철도)
+ */
+function filterMatrixView(domain) {
+  videoState.currentMatrixFilter = domain;
+  ['all', 'daily', 'const', 'rail'].forEach(key => {
+    const el = document.getElementById(`tab-matrix-${key}`);
+    if (el) {
+      el.className = 'px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900';
     }
-    if (btnStart) {
-      btnStart.innerHTML = '<span>⚡</span> 공공데이터 10대 재해 동영상 정밀 분석 실행';
-    }
+  });
+
+  const activeTab = document.getElementById(
+    domain === 'ALL' ? 'tab-matrix-all' :
+    domain === 'DAILY_LIFE' ? 'tab-matrix-daily' :
+    domain === 'CONSTRUCTION' ? 'tab-matrix-const' : 'tab-matrix-rail'
+  );
+  if (activeTab) {
+    activeTab.className = 'px-3 py-1 rounded-lg bg-white shadow-xs text-blue-700 font-black';
+  }
+
+  if (videoState.analysisReport) {
+    renderFilteredMatrixGrid(videoState.analysisReport);
   }
 }
 
@@ -431,27 +463,31 @@ function updateRuleSelectionUI() {
   const standardCount = videoState.selectedRuleRanks.length;
   const customCount = videoState.customRules.length;
   const totalCount = standardCount + customCount;
+  const domainCount = videoState.activeDomains.length;
 
   if (countBadge) {
-    if (totalCount === 0) {
-      countBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse';
-      countBadge.textContent = '선택 조건 없음 (진단 불가)';
+    if (domainCount === 0) {
+      countBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse';
+      countBadge.textContent = '선택 도메인 없음 (진단 불가)';
+    } else if (totalCount === 0) {
+      countBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse';
+      countBadge.textContent = '선택 조건 없음';
     } else {
-      countBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-100 text-blue-800 border border-blue-200';
-      countBadge.textContent = customCount > 0 
-        ? `10개 중 ${standardCount}개 + 맞춤 ${customCount}개 활성` 
-        : `10개 중 ${standardCount}개 조건 활성화`;
+      countBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200';
+      countBadge.textContent = `${domainCount}개 도메인 / ${standardCount + customCount}개 조건 활성`;
     }
   }
 
   if (btnStart && !videoState.isAnalyzing) {
-    if (videoState.analysisMode === 'RAILWAY') {
-      btnStart.innerHTML = '<span>🚅</span> 철도 주행선로 작업자 안전 &amp; 속도/TTC 정밀 분석 실행';
+    if (videoState.mainMode === 'UNIVERSAL') {
+      btnStart.innerHTML = '<span>🌟</span> 전방위 통합 안전 AI 정밀 분석 실행 (일상·건설·철도 종합)';
     } else {
-      if (totalCount === 0) {
+      if (domainCount === 0) {
+        btnStart.innerHTML = '<span>⚠️</span> 최소 1개 이상의 분석 도메인을 선택해주세요';
+      } else if (totalCount === 0) {
         btnStart.innerHTML = '<span>⚠️</span> 최소 1개 이상의 진단 조건을 선택해주세요';
       } else {
-        btnStart.innerHTML = `<span>⚡</span> 선택된 ${totalCount}개 조건으로 동영상 AI 정밀 분석 실행`;
+        btnStart.innerHTML = `<span>⚡</span> 맞춤 설정(${domainCount}개 도메인 · ${totalCount}개 조건)으로 분석 실행`;
       }
     }
   }
@@ -1032,10 +1068,17 @@ async function startVideoSafetyAnalysis() {
     return;
   }
 
+  const isUniversal = videoState.mainMode === 'UNIVERSAL';
   const totalConditions = videoState.selectedRuleRanks.length + videoState.customRules.length;
-  if (videoState.analysisMode !== 'RAILWAY' && totalConditions === 0) {
-    alert('최소 1개 이상의 AI 안전 진단 판정 조건을 선택해주세요.\n상단의 체크박스를 활성화하거나 [➕ 맞춤 규칙 추가]를 진행할 수 있습니다.');
-    return;
+  if (!isUniversal) {
+    if (videoState.activeDomains.length === 0) {
+      alert('최소 1개 이상의 분석 대상 도메인(일상 생활, 건설 현장, 철도 운송)을 선택해주세요.');
+      return;
+    }
+    if (totalConditions === 0) {
+      alert('최소 1개 이상의 AI 안전 진단 판정 조건을 선택해주세요.\n상단의 체크박스를 활성화하거나 [➕ 맞춤 규칙 추가]를 진행할 수 있습니다.');
+      return;
+    }
   }
 
   const videoPlayer = document.getElementById('source-video-player');
@@ -1060,19 +1103,15 @@ async function startVideoSafetyAnalysis() {
     const frames = await extractVideoKeyframes(videoPlayer, sampleInterval, 20);
     videoState.extractedFrames = frames;
 
-    const isRailway = videoState.analysisMode === 'RAILWAY';
-    const apiUrl = isRailway
-      ? '/api/technical-guidance/railway-video-analysis'
-      : '/api/technical-guidance/top10-video-analysis';
-
-    const defaultSite = isRailway
-      ? '경부선 궤도유지보수 제3공구 (수원-평택 구간)'
-      : '판교 제2테크노밸리 복합시설 신축공사';
+    const apiUrl = '/api/technical-guidance/universal-video-analysis';
+    const defaultSite = isUniversal
+      ? '스마트 통합 안전 관리 구역 (판교 복합시설 및 철도 연계망)'
+      : '맞춤형 지정 현장';
 
     if (progressText) {
-      progressText.textContent = isRailway
-        ? `철도 표준궤간(1,435mm) 호모그래피 및 열차 속도/TTC 엔진 분석 중...`
-        : `선택된 ${totalConditions}개 안전 규칙 엔진 & CV 심층 판정 실행 중...`;
+      progressText.textContent = isUniversal
+        ? `전방위 비전 AI (OpenCV·YOLO·Roboflow·철도기하학) 3대 영역 융합 진단 중...`
+        : `사용자 정의 맞춤 설정 (${videoState.activeDomains.length}개 도메인, ${totalConditions}개 조건) 심층 판정 실행 중...`;
     }
 
     // 2단계: 백엔드 판정 API 전송
@@ -1084,8 +1123,12 @@ async function startVideoSafetyAnalysis() {
         fileName: videoState.file.name,
         customNotes: customNotesInput ? customNotesInput.value.trim() : '',
         frames: frames,
-        selectedRuleRanks: videoState.selectedRuleRanks,
-        customRules: videoState.customRules
+        analysisMode: videoState.mainMode,
+        manualConfig: {
+          activeDomains: videoState.activeDomains,
+          selectedRuleRanks: videoState.selectedRuleRanks,
+          customRules: videoState.customRules
+        }
       })
     });
 
@@ -1097,7 +1140,7 @@ async function startVideoSafetyAnalysis() {
     videoState.analysisReport = report;
 
     if (progressText) {
-      progressText.textContent = `프라이버시 비식별화(얼굴·신체 모자이크) & 안전 위반 마킹 처리 중...`;
+      progressText.textContent = `프라이버시 비식별화(얼굴·신체 모자이크) & 영역별 예방 대책 도출 중...`;
     }
 
     // 3단계: 화면 렌더링 (비동기 스냅샷 마킹 및 비식별화 처리)
@@ -1110,13 +1153,14 @@ async function startVideoSafetyAnalysis() {
     videoState.isAnalyzing = false;
     if (btnStart) {
       btnStart.disabled = false;
-      if (videoState.analysisMode === 'RAILWAY') {
-        btnStart.innerHTML = `<span>🚅</span> 철도 주행선로 작업자 안전 &amp; 속도/TTC 정밀 분석 실행`;
+      if (videoState.mainMode === 'UNIVERSAL') {
+        btnStart.innerHTML = `<span>🌟</span> 전방위 통합 안전 AI 정밀 분석 실행 (일상·건설·철도 종합)`;
       } else {
         const total = videoState.selectedRuleRanks.length + videoState.customRules.length;
-        btnStart.innerHTML = total === 0
-          ? `<span>⚠️</span> 최소 1개 이상의 진단 조건을 선택해주세요`
-          : `<span>⚡</span> 선택된 ${total}개 조건으로 동영상 AI 정밀 분석 실행`;
+        const domCount = videoState.activeDomains.length;
+        btnStart.innerHTML = (domCount === 0 || total === 0)
+          ? `<span>⚠️</span> 조건 및 도메인을 선택해주세요`
+          : `<span>⚡</span> 맞춤 설정(${domCount}개 도메인 · ${total}개 조건)으로 분석 실행`;
       }
     }
     if (progressContainer) progressContainer.classList.add('hidden');
@@ -1124,7 +1168,7 @@ async function startVideoSafetyAnalysis() {
 }
 
 /**
- * 5. 종합 분석 결과 UI 렌더링
+ * 5. 종합 분석 결과 UI 렌더링 (전방위 3대 도메인 및 권고사항 지원)
  */
 async function renderAnalysisResults(report) {
   const resultContainer = document.getElementById('analysis-result-container');
@@ -1134,33 +1178,18 @@ async function renderAnalysisResults(report) {
   // 스크롤 이동
   resultContainer.scrollIntoView({ behavior: 'smooth' });
 
-  const isRailway = report.mode === 'RAILWAY_TRACK_SAFETY' || videoState.analysisMode === 'RAILWAY';
-
   // 상단 메타데이터
-  document.getElementById('report-id-badge').textContent = isRailway 
-    ? (report.reportId || `RAIL-KRS-${Date.now().toString().slice(-6)}`) 
-    : report.reportId;
-  document.getElementById('report-date-badge').textContent = isRailway
-    ? (report.metadata?.analyzedAt?.split('T')[0] || new Date().toISOString().split('T')[0])
-    : report.reportDate;
-  document.getElementById('report-site-name').textContent = isRailway
-    ? (report.metadata?.siteName || '경부선 궤도유지보수 제3공구')
-    : report.siteName;
-  document.getElementById('report-file-name').textContent = isRailway
-    ? (report.metadata?.fileName || 'railway_video.mp4')
-    : report.fileName;
+  document.getElementById('report-id-badge').textContent = report.reportId || `BEPMC-USR-${Date.now().toString().slice(-6)}`;
+  document.getElementById('report-date-badge').textContent = report.reportDate || new Date().toISOString().split('T')[0];
+  document.getElementById('report-site-name').textContent = report.siteName || '스마트 통합 안전 관리 구역';
+  document.getElementById('report-file-name').textContent = report.fileName || 'safety_video.mp4';
 
-  // 보고서 타이틀 동적 전환
-  const titleEl = document.querySelector('#analysis-result-container h2');
+  const titleEl = document.getElementById('report-main-title') || document.querySelector('#analysis-result-container h2');
   if (titleEl) {
-    titleEl.textContent = isRailway
-      ? '한국철도표준규격(KRS) 기반 주행선로 작업자 안전 & 속도/TTC 결과보고서'
-      : '공공데이터 10대 다발재해 기반 동영상 안전위험성평가 결과보고서';
+    titleEl.textContent = '전방위 통합 안전 AI 진단 및 위험성평가 종합 결과보고서 (일상·건설·철도)';
   }
 
   // [이원화 스냅샷 일괄 생성]
-  // 1) 분석용 보고서: applyPrivacy = false (100% 무손실 원본, 모자이크 없음)
-  // 2) 대외 배포용 보고서: applyPrivacy = true (안면/민감부위 모자이크 적용)
   if (Array.isArray(report.timelineEvents)) {
     for (const evt of report.timelineEvents) {
       const baseDataUrl = evt.snapshotDataUrl || evt.imageSnapshot;
@@ -1189,9 +1218,9 @@ async function renderAnalysisResults(report) {
   const gradeEl = document.getElementById('overall-grade-display');
   const scoreBar = document.getElementById('overall-score-bar');
 
-  const score = isRailway ? report.summary.safetyScore : report.videoSummary.overallSafetyScore;
-  const grade = isRailway ? report.summary.safetyGrade : report.videoSummary.overallGrade;
-  const gradeColor = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
+  const score = report.videoSummary ? report.videoSummary.overallSafetyScore : 75;
+  const grade = report.videoSummary ? report.videoSummary.overallGrade : '보통';
+  const gradeColor = score >= 85 ? '#10b981' : score >= 70 ? '#3b82f6' : score >= 50 ? '#f59e0b' : '#ef4444';
 
   if (scoreEl) scoreEl.textContent = score;
   if (gradeEl) {
@@ -1204,48 +1233,167 @@ async function renderAnalysisResults(report) {
     scoreBar.style.backgroundColor = gradeColor;
   }
 
-  // 최다 위험 위반 / 핵심 위험 요약 하이라이트
-  if (isRailway) {
-    const isCritical = report.summary.minTtcSeconds <= 15.0;
-    document.getElementById('critical-hazard-title').innerHTML = `
-      <span class="${isCritical ? 'text-rose-600' : 'text-amber-600'}">
-        🚅 열차 최대 접근속도: ${report.summary.maxTrainSpeedKmh} km/h · 최소 대피시간(TTC): ${report.summary.minTtcSeconds}초
-      </span>
-    `;
-    document.getElementById('critical-hazard-share').textContent = `
-      선로 건축한계(2.0m) 침범: ${report.summary.clearanceViolationCount}건 | 고시인성 조끼 미착용: ${report.summary.noHivisCount}건
-    `;
-    document.getElementById('critical-hazard-law').textContent = `⚖️ 철도안전관리체계 기술기준 제7조 및 철도건설규칙 제14조 (건축한계)`;
-    document.getElementById('critical-hazard-penalty').textContent = `조치수준: ${isCritical ? '🚨 비상 대피 즉시 발령 (TTC 15초 이내)' : '⚠️ 대피 준비 및 감시원 신호 전달'}`;
-  } else {
-    const pri = report.primaryCriticalViolation;
-    if (pri) {
-      document.getElementById('critical-hazard-title').textContent = `[${pri.rank}위 ${pri.accidentType}] ${pri.title}`;
-      document.getElementById('critical-hazard-share').textContent = `과거 1년 통계 점유율: ${pri.sharePercent}%`;
-      document.getElementById('critical-hazard-law').textContent = `⚖️ ${pri.legalBasis.lawName} ${pri.legalBasis.articleNo} (${pri.legalBasis.articleTitle})`;
-      document.getElementById('critical-hazard-penalty').textContent = `처벌 규정: ${pri.legalBasis.punishment}`;
+  // 3대 도메인 미니 카드 갱신
+  if (report.videoSummary?.domainScores) {
+    const ds = report.videoSummary.domainScores;
+    if (ds.DAILY_LIFE) {
+      const elS = document.getElementById('domain-score-daily');
+      const elB = document.getElementById('domain-score-badge-daily');
+      if (elS) elS.textContent = ds.DAILY_LIFE.score;
+      if (elB) {
+        elB.textContent = `${ds.DAILY_LIFE.grade} (${ds.DAILY_LIFE.threatsCount}건)`;
+        elB.style.backgroundColor = ds.DAILY_LIFE.color;
+        elB.style.color = '#fff';
+      }
+    }
+    if (ds.CONSTRUCTION) {
+      const elS = document.getElementById('domain-score-const');
+      const elB = document.getElementById('domain-score-badge-const');
+      if (elS) elS.textContent = ds.CONSTRUCTION.score;
+      if (elB) {
+        elB.textContent = `${ds.CONSTRUCTION.grade} (${ds.CONSTRUCTION.threatsCount}건)`;
+        elB.style.backgroundColor = ds.CONSTRUCTION.color;
+        elB.style.color = '#fff';
+      }
+    }
+    if (ds.RAILWAY) {
+      const elS = document.getElementById('domain-score-rail');
+      const elB = document.getElementById('domain-score-badge-rail');
+      if (elS) elS.textContent = ds.RAILWAY.score;
+      if (elB) {
+        elB.textContent = `${ds.RAILWAY.grade} (${ds.RAILWAY.threatsCount}건)`;
+        elB.style.backgroundColor = ds.RAILWAY.color;
+        elB.style.color = '#fff';
+      }
     }
   }
 
+  // 최우선 긴급 개선 권고 렌더링
+  const urgentList = document.getElementById('urgent-highlights-list');
+  if (urgentList && report.recommendations?.integratedHighlights) {
+    urgentList.innerHTML = report.recommendations.integratedHighlights.map(h => `
+      <li class="bg-white/90 p-2.5 rounded-xl border border-rose-200 font-bold text-slate-800 shadow-xs flex items-center gap-1.5">
+        ${escapeHtml(h)}
+      </li>
+    `).join('');
+  }
+
   // 타임라인 마커 및 이벤트 목록 렌더링
-  renderTimelineEvents(report.timelineEvents, isRailway);
+  renderTimelineEvents(report.timelineEvents);
 
-  // 매트릭스 그리드 렌더링
-  if (isRailway) {
-    renderRailwayMatrixGrid(report);
-  } else {
-    renderTop10MatrixGrid(report.top10MatrixStatus);
-  }
+  // 도메인 필터 매트릭스 그리드 렌더링
+  renderFilteredMatrixGrid(report);
 
-  // 공학적 대책 렌더링
-  if (isRailway && Array.isArray(report.krsEngineeringMeasures)) {
-    renderRailwayKrsMeasures(report.krsEngineeringMeasures);
-  } else {
-    renderActionRecommendations(report.recommendations);
-  }
+  // 3대 영역별 계층형 예방 조치 권고안 렌더링
+  renderUniversalRecommendations(report.recommendations);
 
   // 현재 뷰 모드(분석용 vs 대외배포용) 배너 갱신
   setReportDisplayMode(videoState.reportDisplayMode);
+}
+
+/**
+ * 도메인 필터링 지원 안전 위협 매트릭스 그리드 렌더링
+ */
+function renderFilteredMatrixGrid(report) {
+  const container = document.getElementById('top10-matrix-grid');
+  if (!container) return;
+
+  let items = [];
+  const filter = videoState.currentMatrixFilter || 'ALL';
+
+  if (report.domainMatrices) {
+    if (filter === 'ALL') {
+      const dl = (report.domainMatrices.dailyLife || []).slice(0, 3);
+      const cn = (report.domainMatrices.construction || []).slice(0, 4);
+      const rw = (report.domainMatrices.railway || []).slice(0, 3);
+      items = [...dl, ...cn, ...rw];
+    } else if (filter === 'DAILY_LIFE') {
+      items = report.domainMatrices.dailyLife || [];
+    } else if (filter === 'CONSTRUCTION') {
+      items = report.domainMatrices.construction || report.top10MatrixStatus || [];
+    } else if (filter === 'RAILWAY') {
+      items = report.domainMatrices.railway || [];
+    }
+  } else {
+    items = report.top10MatrixStatus || [];
+  }
+
+  container.innerHTML = items.map(item => {
+    const isExcluded = !!item.isExcluded;
+    const isCustom = !!item.isCustom;
+    const isDetected = !isExcluded && (item.violationCount > 0);
+    const codeOrRank = item.code || (isCustom ? '⭐' : item.rank);
+
+    let cardClass = 'border-slate-200 bg-white opacity-70';
+    if (isExcluded) cardClass = 'border-dashed border-slate-300 bg-slate-50/70 opacity-50';
+    else if (isDetected) cardClass = 'border-rose-400 bg-rose-50/30 shadow-sm';
+    else if (isCustom) cardClass = 'border-emerald-300 bg-emerald-50/30';
+
+    let badgeHtml = '';
+    if (isExcluded) badgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded bg-slate-200 text-slate-500">분석 제외</span>';
+    else if (isDetected) badgeHtml = `<span class="text-[10px] font-black px-2 py-0.5 rounded bg-rose-600 text-white animate-pulse">검출 ${item.violationCount}건</span>`;
+    else if (isCustom) badgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">맞춤 규칙</span>';
+    else badgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded bg-slate-200 text-slate-600">정상 (미검출)</span>';
+
+    return `
+      <div class="p-3.5 rounded-xl border ${cardClass} space-y-1.5 transition">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="w-5 h-5 rounded-full ${isDetected ? 'bg-rose-600 text-white' : 'bg-slate-700 text-white'} flex items-center justify-center text-[10px] font-black shrink-0">
+              ${codeOrRank}
+            </span>
+            <span class="text-xs font-black text-slate-900 truncate" title="${escapeHtml(item.title)}">
+              ${escapeHtml(item.title)}
+            </span>
+          </div>
+          ${badgeHtml}
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+          <span>유형: <b>${escapeHtml(item.accidentType || item.category || '안전')}</b></span>
+          ${isExcluded 
+            ? '<span class="text-slate-400 font-medium">제외됨</span>'
+            : (isDetected ? `<span class="text-rose-700 font-bold">최대 ${item.maxSeverityScore}점</span>` : '<span class="text-emerald-600 font-medium">안전</span>')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * 3대 영역별 계층형 예방 조치 권고안 렌더링
+ */
+function renderUniversalRecommendations(recs) {
+  if (!recs) return;
+
+  // Daily Life
+  if (recs.dailyLife) {
+    const elImm = document.getElementById('rec-daily-immediate');
+    const elEng = document.getElementById('rec-daily-engineering');
+    const elAdm = document.getElementById('rec-daily-admin');
+    if (elImm) elImm.innerHTML = recs.dailyLife.immediateActions.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+    if (elEng) elEng.innerHTML = recs.dailyLife.engineeringControls.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+    if (elAdm) elAdm.innerHTML = recs.dailyLife.administrativePlans.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+  }
+
+  // Construction
+  if (recs.construction) {
+    const elImm = document.getElementById('rec-const-immediate');
+    const elEng = document.getElementById('rec-const-engineering');
+    const elAdm = document.getElementById('rec-const-admin');
+    if (elImm) elImm.innerHTML = recs.construction.immediateActions.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+    if (elEng) elEng.innerHTML = recs.construction.engineeringControls.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+    if (elAdm) elAdm.innerHTML = recs.construction.administrativePlans.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+  }
+
+  // Railway
+  if (recs.railway) {
+    const elImm = document.getElementById('rec-rail-immediate');
+    const elEng = document.getElementById('rec-rail-engineering');
+    const elAdm = document.getElementById('rec-rail-admin');
+    if (elImm) elImm.innerHTML = recs.railway.immediateActions.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+    if (elEng) elEng.innerHTML = recs.railway.engineeringControls.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+    if (elAdm) elAdm.innerHTML = recs.railway.administrativePlans.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+  }
 }
 
 /**
@@ -1283,6 +1431,11 @@ function renderTimelineEvents(events, isRailway = false) {
           <span class="px-2 py-0.5 rounded text-xs font-black bg-slate-900 text-amber-300 font-mono">
             ⏱️ ${timeStr}
           </span>
+          ${evt.domainLabel ? `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold ${evt.domainBadgeColor || 'bg-slate-700 text-white'}">
+              ${escapeHtml(evt.domainLabel)}
+            </span>
+          ` : ''}
           ${isRailway ? `
             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold ${evt.telemetry?.warningLevel === 'CRITICAL' ? 'bg-rose-600 text-white animate-pulse' : 'bg-amber-100 text-amber-900'}">
               ${evt.telemetry?.warningMessage || '선로 감시 중'}
@@ -1294,8 +1447,8 @@ function renderTimelineEvents(events, isRailway = false) {
               ⏱️ TTC: ${evt.telemetry?.ttcSeconds || 15}초
             </span>
           ` : `
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${evt.rank <= 3 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'}">
-              Rank ${evt.rank}위 (${evt.accidentType})
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold ${typeof evt.rank === 'number' && evt.rank <= 3 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-800 border border-slate-200'}">
+              ${typeof evt.rank === 'number' ? `Rank ${evt.rank}위 (${evt.accidentType})` : `${evt.rank} (${evt.accidentType || evt.title})`}
             </span>
             ${evt.trackedWorker ? `
               <span class="bg-indigo-900/90 text-indigo-200 border border-indigo-400/50 text-[10px] px-2 py-0.5 rounded font-black font-mono">
