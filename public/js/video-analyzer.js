@@ -212,109 +212,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * 유료 회원 전용 접근 제어 게이트키퍼
+ * 유료 회원 전용 접근 제어 게이트키퍼 (검증 단계: 로그인 차단 우회 및 오픈 모드 적용)
+ * ※ 향후 전체 홈페이지 포털 연동 시 기존 인증 분기문으로 재복원 가능하도록 설계
  */
 function checkPaidUserAccess() {
-  const isPaid = (currentAuth.mode === 'admin' || currentAuth.membership === 'paid' || (currentAuth.user && currentAuth.user.role === 'paid_member'));
   const gatekeeper = document.getElementById('gatekeeper-section');
   const mainStudio = document.getElementById('studio-main-section');
   const badge = document.getElementById('user-tier-badge');
 
-  if (!currentAuth.isLoggedIn) {
-    if (gatekeeper) gatekeeper.classList.remove('hidden');
-    if (mainStudio) mainStudio.classList.add('hidden');
-    const unauthBox = document.getElementById('gate-unauth');
-    if (unauthBox) unauthBox.classList.remove('hidden');
-    const freeBox = document.getElementById('gate-free');
-    if (freeBox) freeBox.classList.add('hidden');
-    if (badge) badge.innerHTML = '<span class="bg-slate-700 text-slate-300 px-2 py-0.5 rounded text-[10px]">미로그인</span>';
-    return false;
+  // 오픈 검증 모드: 로그인 없이 메인 스튜디오 상시 노출
+  if (gatekeeper) {
+    gatekeeper.classList.add('hidden');
+    gatekeeper.style.display = 'none';
+  }
+  if (mainStudio) {
+    mainStudio.classList.remove('hidden');
+    mainStudio.style.display = 'block';
   }
 
-  if (!isPaid) {
-    if (gatekeeper) gatekeeper.classList.remove('hidden');
-    if (mainStudio) mainStudio.classList.add('hidden');
-    const unauthBox = document.getElementById('gate-unauth');
-    if (unauthBox) unauthBox.classList.add('hidden');
-    const freeBox = document.getElementById('gate-free');
-    if (freeBox) freeBox.classList.remove('hidden');
-    if (badge) badge.innerHTML = '<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px] font-bold">일반 회원 (유료 전환 필요)</span>';
-    return false;
+  // 기본 검증용 인증 세션 객체 보장
+  if (typeof currentAuth === 'undefined' || !currentAuth) {
+    window.currentAuth = {
+      isLoggedIn: true,
+      mode: 'open_verification',
+      membership: 'paid',
+      user: { name: '안전총괄책임자', role: 'paid_member' }
+    };
+  } else {
+    currentAuth.isLoggedIn = true;
+    currentAuth.membership = 'paid';
+    if (!currentAuth.user) {
+      currentAuth.user = { name: '안전총괄책임자', role: 'paid_member' };
+    }
   }
 
-  // 승인된 유료회원 또는 관리자
-  if (gatekeeper) gatekeeper.classList.add('hidden');
-  if (mainStudio) mainStudio.classList.remove('hidden');
   if (badge) {
-    badge.innerHTML = currentAuth.mode === 'admin' 
-      ? '<span class="bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded font-black text-[11px]">👑 최고관리자 모드</span>'
-      : '<span class="bg-emerald-500 text-white px-2.5 py-0.5 rounded font-black text-[11px]">💎 유료 플랜 활성화</span>';
+    badge.innerHTML = '<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-2.5 py-0.5 rounded text-[11px] font-bold flex items-center gap-1"><span>⚡</span> 실증·검증 오픈 모드</span>';
   }
+
   return true;
 }
 
 /**
- * 대시보드 화면 내 즉시 로그인 핸들러 (전체 화면으로 튕기지 않고 본 동영상 분석 보드로 바로 입장)
+ * 대시보드 화면 내 즉시 로그인 핸들러 (오픈 모드에서는 바이패스 및 상시 스튜디오 활성화)
  */
 async function handleDirectStudioLogin(e) {
   if (e && e.preventDefault) e.preventDefault();
-  const usernameInput = document.getElementById('studio-login-username');
-  const passwordInput = document.getElementById('studio-login-password');
-  const btnLogin = document.getElementById('btn-studio-login');
-  const errorMsg = document.getElementById('studio-login-error');
-
-  const username = usernameInput ? usernameInput.value.trim() : '';
-  const password = passwordInput ? passwordInput.value.trim() : '';
-
-  if (!username || !password) {
-    alert('아이디와 비밀번호를 모두 입력해주세요.');
-    return;
-  }
-
-  try {
-    if (btnLogin) {
-      btnLogin.disabled = true;
-      btnLogin.innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> 인증 확인 중...';
-    }
-    if (errorMsg) errorMsg.classList.add('hidden');
-
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-    const result = await res.json();
-
-    if (result.success) {
-      // 1. 공통 세션 상태 즉시 갱신
-      if (typeof checkAuth === 'function') {
-        await checkAuth();
-      }
-      // 2. 상단 글로벌 헤더 회원/관리자 배지 재렌더링
-      if (typeof initLayout === 'function') {
-        await initLayout('technical-guidance');
-      }
-      // 3. 전체 화면으로 튕기지 않고 본 동영상 분석 대시보드 영역 즉시 오픈
-      checkPaidUserAccess();
-      // 4. 공공데이터 기준표 재로드
-      loadTop10RulesReference();
-    } else {
-      if (errorMsg) {
-        errorMsg.textContent = result.message || '아이디 또는 비밀번호가 올바르지 않습니다.';
-        errorMsg.classList.remove('hidden');
-      } else {
-        alert(result.message || '로그인 실패');
-      }
-    }
-  } catch (err) {
-    console.error('Direct login error:', err);
-    alert('로그인 처리 중 오류 발생: ' + err.message);
-  } finally {
-    if (btnLogin) {
-      btnLogin.disabled = false;
-      btnLogin.innerHTML = '<span>🔓</span> 동영상 분석 대시보드 바로 입장';
-    }
-  }
+  checkPaidUserAccess();
+  return true;
 }
 
 /**

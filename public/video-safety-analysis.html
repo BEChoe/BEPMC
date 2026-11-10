@@ -51,7 +51,11 @@
         </a>
         <span>&gt;</span>
         <span class="text-white font-bold">10대 다발재해 동영상 AI 안전분석 센터</span>
-        <span id="user-tier-badge" class="ml-2 inline-flex items-center"></span>
+        <span id="user-tier-badge" class="ml-2 inline-flex items-center">
+          <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-2 py-0.5 rounded text-[11px] font-bold flex items-center gap-1">
+            <span>⚡</span> 실증·검증 오픈 모드
+          </span>
+        </span>
       </nav>
 
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-1">
@@ -84,87 +88,14 @@
   </section>
 
   <!-- ======================================================== -->
-  <!-- 권한 제어 게이트키퍼 (비회원 / 무료회원 차단 안내) -->
+  <!-- 권한 제어 게이트키퍼 (오픈 검증 모드로 일시 비활성화: 향후 홈페이지 통합 시 재연동) -->
   <!-- ======================================================== -->
-  <div id="gatekeeper-section" class="hidden max-w-4xl mx-auto px-4 py-16 flex-1 w-full no-print">
-    
-    <!-- 비회원용 안내 & 대시보드 즉시 로그인 폼 -->
-    <div id="gate-unauth" class="hidden bg-white rounded-3xl shadow-xl border-2 border-slate-200 p-6 sm:p-10 text-center space-y-6 max-w-lg mx-auto">
-      <div class="w-16 h-16 bg-blue-50 text-blue-700 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-inner border border-blue-200">
-        🔒
-      </div>
-      <div class="space-y-1.5">
-        <span class="inline-flex items-center gap-1.5 bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full">
-          유료 회원사 / 관리자 전용 인증
-        </span>
-        <h2 class="text-xl sm:text-2xl font-black text-slate-900">동영상 AI 분석 대시보드 로그인</h2>
-        <p class="text-xs text-slate-500 max-w-md mx-auto">
-          계정 정보를 입력하시면 <b>전체 화면으로 튕기지 않고 본 동영상 분석 보드로 즉시 입장</b>합니다.
-        </p>
-      </div>
-
-      <!-- 대시보드 다이렉트 로그인 폼 (화면 유지) -->
-      <form onsubmit="handleDirectStudioLogin(event)" class="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-left space-y-3.5">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">아이디</label>
-          <input type="text" id="studio-login-username" required placeholder="아이디 입력 (예: admin)" autocomplete="username"
-                 class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">비밀번호</label>
-          <input type="password" id="studio-login-password" required placeholder="비밀번호 입력" autocomplete="current-password"
-                 class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
-        </div>
-
-        <div id="studio-login-error" class="hidden p-2 rounded bg-rose-50 border border-rose-200 text-xs text-rose-700 font-bold"></div>
-
-        <button type="submit" id="btn-studio-login" class="w-full py-3 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white font-black text-xs rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center gap-1.5">
-          <span>🔓</span> 동영상 분석 대시보드 바로 입장
-        </button>
-      </form>
-
-      <div class="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-        <a href="/login.html?redirect=/video-safety-analysis.html" class="text-blue-700 font-bold hover:underline">통합 로그인 페이지 &rarr;</a>
-        <a href="/register.html" class="text-slate-600 hover:underline">회원가입 신청</a>
-      </div>
-    </div>
-
-    <!-- 무료회원용 안내 (유료 업그레이드 유도) -->
-    <div id="gate-free" class="hidden bg-white rounded-3xl shadow-xl border-2 border-amber-300 p-8 sm:p-12 text-center space-y-6">
-      <div class="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl mx-auto flex items-center justify-center text-4xl shadow-inner border border-amber-200">
-        💎
-      </div>
-      <div class="space-y-2">
-        <span class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full">
-          유료 회원 전용 플랜
-        </span>
-        <h2 class="text-2xl font-black text-slate-900">유료 회원사 전용 AI 분석 센터입니다</h2>
-        <p class="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
-          현재 일반 무료 회원으로 로그인되어 있습니다. 본 기능은 <b>고용노동부 10대 재해 빅데이터 기반 동영상 무제한 정밀 분석 및 공학적 대책 보고서 출력</b>을 지원하는 유료 전용 서비스입니다.
-        </p>
-      </div>
-      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 max-w-lg mx-auto text-left space-y-2 text-xs">
-        <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
-          <span>🛡️</span> 유료 회원 혜택:
-        </div>
-        <p class="text-slate-600">✔ 로컬/외부 건설현장 동영상(MP4/WebM) 고속 프레임 AI 판정</p>
-        <p class="text-slate-600">✔ 과거 1년 공공데이터 10대 중대재해 원인 및 산안법 조항 자동 매칭</p>
-        <p class="text-slate-600">✔ KOSHA GUIDE 기준 공학적 방호대책 및 A4 정식 기술자문 보고서 출력</p>
-      </div>
-      <div class="flex justify-center gap-3">
-        <a href="/qna.html" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition">
-          📞 유료 기술지도 플랜 도입 문의
-        </a>
-        <a href="/index.html" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
-          홈으로 이동
-        </a>
-      </div>
-    </div>
-
+  <div id="gatekeeper-section" class="hidden" style="display: none !important;">
+    <!-- 향후 전체 홈페이지 연동 시 재사용할 로그인 및 유료 안내 템플릿 보존 -->
   </div>
 
   <!-- ======================================================== -->
-  <!-- 유료 회원 전용 메인 스튜디오 섹션 -->
+  <!-- 메인 스튜디오 섹션 (오픈 검증 모드 상시 활성화) -->
   <!-- ======================================================== -->
   <main id="studio-main-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-1 w-full">
 

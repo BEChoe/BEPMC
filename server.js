@@ -1205,7 +1205,8 @@ app.get('/api/technical-guidance/top10-rules', requirePaidOrAdmin, (req, res) =>
 });
 
 // 동영상 프레임 안전 분석 & 종합 엔지니어링 대책 보고서 생성
-app.post('/api/technical-guidance/top10-video-analysis', requirePaidOrAdmin, async (req, res) => {
+// NOTE: 현재 실증 검증 모드로 로그인 차단 미들웨어(requirePaidOrAdmin) 임시 해제. 향후 전체 홈페이지 연동 시 requirePaidOrAdmin 복원 예정.
+app.post('/api/technical-guidance/top10-video-analysis', async (req, res) => {
   try {
     const { siteName, fileName, frames, customNotes, selectedRuleRanks, customRules } = req.body;
     if (!frames || !Array.isArray(frames) || frames.length === 0) {
@@ -1215,7 +1216,7 @@ app.post('/api/technical-guidance/top10-video-analysis', requirePaidOrAdmin, asy
       });
     }
 
-    const userName = req.session.user ? (req.session.user.name || req.session.user.username) : '유료회원';
+    const userName = (req.session && req.session.user) ? (req.session.user.name || req.session.user.username) : '안전총괄책임자 / 현장검증단';
     const analysisReport = await videoSafetyAnalysisService.analyzeVideoSafety({
       siteName: siteName || '미지정 건설현장',
       fileName: fileName || 'video.mp4',
@@ -1237,7 +1238,8 @@ app.post('/api/technical-guidance/top10-video-analysis', requirePaidOrAdmin, asy
 });
 
 // 전방위 통합 안전 AI 진단 (기본 모드 & 수동 모드 통합 엔드포인트)
-app.post('/api/technical-guidance/universal-video-analysis', requirePaidOrAdmin, async (req, res) => {
+// NOTE: 현재 실증 검증 모드로 로그인 차단 미들웨어(requirePaidOrAdmin) 임시 해제. 향후 전체 홈페이지 연동 시 requirePaidOrAdmin 복원 예정.
+app.post('/api/technical-guidance/universal-video-analysis', async (req, res) => {
   try {
     const { siteName, fileName, frames, customNotes, analysisMode, manualConfig } = req.body;
     if (!frames || !Array.isArray(frames) || frames.length === 0) {
@@ -1247,7 +1249,7 @@ app.post('/api/technical-guidance/universal-video-analysis', requirePaidOrAdmin,
       });
     }
 
-    const userName = req.session.user ? (req.session.user.name || req.session.user.username) : '안전총괄책임자';
+    const userName = (req.session && req.session.user) ? (req.session.user.name || req.session.user.username) : '안전총괄책임자 / 현장검증단';
     const analysisReport = await universalSafetyAnalysisService.analyzeUniversalSafety({
       siteName: siteName || '스마트 통합 안전 관리 구역',
       fileName: fileName || 'video.mp4',
