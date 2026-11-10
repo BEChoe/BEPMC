@@ -13,6 +13,8 @@ const publicDataTop10RulesService = require('./services/publicDataTop10RulesServ
 const videoSafetyAnalysisService = require('./services/videoSafetyAnalysisService');
 const railwaySafetyAnalysisService = require('./services/railwaySafetyAnalysisService');
 const universalSafetyAnalysisService = require('./services/universalSafetyAnalysisService');
+const geminiQuotaService = require('./services/geminiQuotaService');
+const geminiVideoAnalysisService = require('./services/geminiVideoAnalysisService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1267,6 +1269,30 @@ app.post('/api/technical-guidance/universal-video-analysis', async (req, res) =>
       success: false,
       message: err.message || '전방위 안전 분석 처리 중 오류가 발생했습니다.'
     });
+  }
+});
+
+// Google Gemini 무료 API 쿼터 실시간 조회
+app.get('/api/technical-guidance/gemini-quota', (req, res) => {
+  try {
+    const quotaInfo = geminiQuotaService.getQuotaStatus();
+    res.json(quotaInfo);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 사용자 정의 Gemini API Key 설정 (선택 사항)
+app.post('/api/technical-guidance/gemini-key', (req, res) => {
+  try {
+    const { apiKey } = req.body;
+    if (apiKey) {
+      geminiVideoAnalysisService.setApiKey(apiKey);
+      return res.json({ success: true, message: 'Gemini API Key가 성공적으로 등록되었습니다.' });
+    }
+    res.status(400).json({ success: false, message: '유효한 API Key를 전달해주세요.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

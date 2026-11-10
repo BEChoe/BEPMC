@@ -209,6 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initVideoDropzone();
   loadTop10RulesReference();
   initVisionModel();
+  fetchGeminiQuota();
 });
 
 /**
@@ -1072,7 +1073,8 @@ async function startVideoSafetyAnalysis() {
         manualConfig: {
           activeDomains: videoState.activeDomains,
           selectedRuleRanks: videoState.selectedRuleRanks,
-          customRules: videoState.customRules
+          customRules: videoState.customRules,
+          customApiKey: localStorage.getItem('bepmc_gemini_key') || ''
         }
       })
     });
@@ -1222,6 +1224,13 @@ async function renderAnalysisResults(report) {
       </li>
     `).join('');
   }
+
+  // Gemini AI 멀티모달 비디오 서사 & 인물 행동 요약 렌더링
+  if (report.geminiNarrative) {
+    renderGeminiNarrative(report.geminiNarrative);
+  }
+  // 실시간 무료 쿼터 잔량 갱신
+  fetchGeminiQuota();
 
   // 타임라인 마커 및 이벤트 목록 렌더링
   renderTimelineEvents(report.timelineEvents);
@@ -2004,4 +2013,142 @@ function formatTime(seconds) {
   const mm = String(m).padStart(2, '0');
   const ss = String(s).padStart(2, '0');
   return `${mm}:${ss}`;
+}
+
+/**
+ * 🌟 Gemini 멀티모달 비디오 서사 및 인물 행동 요약 카드 렌더링
+ */
+function renderGeminiNarrative(narrative) {
+  if (!narrative) return;
+  const card = document.getElementById('gemini-multimodal-narrative-card');
+  if (card) card.classList.remove('hidden');
+
+  // 1. 환경 판정 배지
+  const sceneBadge = document.getElementById('gemini-scene-badge');
+  if (sceneBadge && narrative.sceneContext) {
+    const isSafe = !narrative.sceneContext.hasRailway && !narrative.sceneContext.hasConstruction;
+    sceneBadge.textContent = narrative.sceneContext.environmentLabel || '환경 판정 완료';
+    sceneBadge.className = isSafe
+      ? 'px-3 py-1 rounded-xl text-xs font-black bg-emerald-900/80 text-emerald-300 border border-emerald-500/50 shrink-0'
+      : 'px-3 py-1 rounded-xl text-xs font-black bg-amber-900/80 text-amber-300 border border-amber-500/50 shrink-0';
+  }
+
+  // 2. 등장인물 식별 및 구체적 행동 (Who & What)
+  const personsList = document.getElementById('gemini-persons-list');
+  if (personsList && Array.isArray(narrative.identifiedPersons)) {
+    personsList.innerHTML = narrative.identifiedPersons.map(p => `
+      <div class="p-2.5 rounded-xl bg-slate-900/80 border border-indigo-900/60 flex items-start gap-2.5">
+        <span class="w-6 h-6 rounded-lg bg-indigo-600/40 text-indigo-300 font-black text-[11px] flex items-center justify-center shrink-0">
+          ${escapeHtml(p.id?.replace(/[^0-9]/g, '') || '1')}
+        </span>
+        <div class="space-y-0.5 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-black text-white text-xs">${escapeHtml(p.id || '인물')}</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-700/50 font-bold">${escapeHtml(p.gender || '성별')}</span>
+            <span class="text-[10px] text-slate-400 font-medium">${escapeHtml(p.clothing || '')}</span>
+          </div>
+          <div class="text-[11px] text-indigo-100 font-medium">
+            • 외모/역할: <span class="text-slate-300">${escapeHtml(p.appearance || '')} (${escapeHtml(p.role || '')})</span>
+          </div>
+          <div class="text-[11px] text-emerald-300 font-bold">
+            • 행동 인식: <span>${escapeHtml(p.action || '상태 유지')}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 3. 시간대별 서사 진행 요약 (When & How)
+  const timelineNarrativeList = document.getElementById('gemini-timeline-narrative-list');
+  if (timelineNarrativeList && Array.isArray(narrative.timelineNarrative)) {
+    timelineNarrativeList.innerHTML = narrative.timelineNarrative.map(item => `
+      <div class="p-2.5 rounded-xl bg-slate-900/80 border border-indigo-900/60 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[11px] font-black text-amber-300 px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
+            ⏱️ ${escapeHtml(item.timeRange || '00:00')}
+          </span>
+          <span class="text-[10px] font-bold px-2 py-0.2 rounded ${item.isHazardous ? 'bg-rose-900/80 text-rose-300 border border-rose-500/50' : 'bg-emerald-950 text-emerald-300 border border-emerald-700/50'}">
+            ${item.isHazardous ? '위험 감지' : '안전 상태'}
+          </span>
+        </div>
+        <div class="text-[11px] text-slate-200 pl-1 leading-relaxed">
+          ${escapeHtml(item.narrativeSummary || '')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 4. 검증 판정 문구
+  const verdictText = document.getElementById('gemini-verdict-text');
+  if (verdictText && narrative.safetyVerdict) {
+    verdictText.textContent = narrative.safetyVerdict.summary || '정상 검증 완료';
+  }
+}
+
+/**
+ * 🌟 Gemini 무료 API 쿼터 실시간 조회 및 헤더 표시
+ */
+async function fetchGeminiQuota() {
+  try {
+    const res = await fetch('/api/technical-guidance/gemini-quota');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success) return;
+
+    const elRemaining = document.getElementById('gemini-quota-remaining');
+    const elPct = document.getElementById('gemini-quota-pct');
+    const elModalUsed = document.getElementById('modal-quota-used');
+    const elModalRemaining = document.getElementById('modal-quota-remaining');
+    const elModalBar = document.getElementById('modal-quota-bar');
+
+    if (elRemaining) elRemaining.textContent = data.remainingToday.toLocaleString();
+    if (elPct) {
+      const pct = Math.max(0, 100 - data.usagePercent).toFixed(1);
+      elPct.textContent = `${pct}%`;
+    }
+    if (elModalUsed) elModalUsed.textContent = `${data.usedToday} 회`;
+    if (elModalRemaining) elModalRemaining.textContent = `${data.remainingToday.toLocaleString()} 회`;
+    if (elModalBar) {
+      const barPct = Math.max(0, 100 - data.usagePercent);
+      elModalBar.style.width = `${barPct}%`;
+    }
+  } catch (err) {
+    console.warn('[Gemini Quota] 쿼터 조회 오류:', err.message);
+  }
+}
+
+function openGeminiQuotaModal() {
+  const modal = document.getElementById('gemini-quota-modal');
+  if (modal) modal.classList.remove('hidden');
+  const customKeyInput = document.getElementById('input-gemini-custom-key');
+  if (customKeyInput) {
+    customKeyInput.value = localStorage.getItem('bepmc_gemini_key') || '';
+  }
+  fetchGeminiQuota();
+}
+
+function closeGeminiQuotaModal() {
+  const modal = document.getElementById('gemini-quota-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function saveCustomGeminiKey() {
+  const customKeyInput = document.getElementById('input-gemini-custom-key');
+  const key = customKeyInput ? customKeyInput.value.trim() : '';
+
+  if (key) {
+    localStorage.setItem('bepmc_gemini_key', key);
+    try {
+      await fetch('/api/technical-guidance/gemini-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: key })
+      });
+      alert('Gemini API Key가 성공적으로 저장 및 적용되었습니다.');
+    } catch(e) {}
+  } else {
+    localStorage.removeItem('bepmc_gemini_key');
+    alert('기본 무료 쿼터 모드로 초기화되었습니다.');
+  }
+  closeGeminiQuotaModal();
 }
