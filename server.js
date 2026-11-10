@@ -1243,23 +1243,25 @@ app.post('/api/technical-guidance/top10-video-analysis', async (req, res) => {
 // NOTE: 현재 실증 검증 모드로 로그인 차단 미들웨어(requirePaidOrAdmin) 임시 해제. 향후 전체 홈페이지 연동 시 requirePaidOrAdmin 복원 예정.
 app.post('/api/technical-guidance/universal-video-analysis', async (req, res) => {
   try {
-    const { siteName, fileName, frames, customNotes, analysisMode, manualConfig } = req.body;
-    if (!frames || !Array.isArray(frames) || frames.length === 0) {
+    const { siteName, fileName, frames, customNotes, analysisMode, manualConfig, youtubeUrl, videoDuration } = req.body;
+    if ((!frames || !Array.isArray(frames) || frames.length === 0) && !youtubeUrl) {
       return res.status(400).json({
         success: false,
-        message: '분석할 동영상 프레임이 전달되지 않았습니다.'
+        message: '분석할 동영상 프레임 또는 유튜브 링크가 전달되지 않았습니다.'
       });
     }
 
     const userName = (req.session && req.session.user) ? (req.session.user.name || req.session.user.username) : '안전총괄책임자 / 현장검증단';
     const analysisReport = await universalSafetyAnalysisService.analyzeUniversalSafety({
-      siteName: siteName || '스마트 통합 안전 관리 구역',
-      fileName: fileName || 'video.mp4',
-      frames,
+      siteName: siteName || (youtubeUrl ? '유튜브 온라인 안전 분석 영상' : '스마트 통합 안전 관리 구역'),
+      fileName: fileName || (youtubeUrl ? youtubeUrl : 'video.mp4'),
+      frames: frames || [],
       userName,
       customNotes: customNotes || '',
       analysisMode: analysisMode || 'UNIVERSAL',
-      manualConfig: manualConfig || {}
+      manualConfig: manualConfig || {},
+      videoDuration: videoDuration || 0,
+      youtubeUrl: youtubeUrl || ''
     });
 
     res.json(analysisReport);

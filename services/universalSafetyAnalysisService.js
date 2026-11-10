@@ -220,10 +220,21 @@ class UniversalSafetyAnalysisService {
     customNotes = "",
     analysisMode = "UNIVERSAL",
     manualConfig = {},
-    videoDuration = 0
+    videoDuration = 0,
+    youtubeUrl = ""
   }) {
-    if (!frames || !Array.isArray(frames) || frames.length === 0) {
-      throw new Error("분석할 동영상 프레임이 전달되지 않았습니다.");
+    if ((!frames || !Array.isArray(frames) || frames.length === 0) && !youtubeUrl) {
+      throw new Error("분석할 동영상 프레임 또는 유튜브 링크가 전달되지 않았습니다.");
+    }
+
+    // 유튜브 URL 단독 입력 시 시계열 타임라인 샘플 슬롯 생성
+    if ((!frames || frames.length === 0) && youtubeUrl) {
+      const dur = Number(videoDuration) || 30;
+      frames = [
+        { index: 0, timestamp: 2.0, timeStr: '00:02', detectedObjects: [] },
+        { index: 1, timestamp: Math.round(dur / 2), timeStr: formatTime(Math.round(dur / 2)), detectedObjects: [] },
+        { index: 2, timestamp: Math.max(5, dur - 2), timeStr: formatTime(Math.max(5, dur - 2)), detectedObjects: [] }
+      ];
     }
 
     const isUniversal = analysisMode === "UNIVERSAL";
@@ -325,6 +336,7 @@ class UniversalSafetyAnalysisService {
     const geminiNarrative = await geminiVideoAnalysisService.analyzeVideoStoryAndContext({
       frames,
       videoDuration,
+      youtubeUrl,
       customApiKey: manualConfig?.customApiKey || ''
     });
     const sceneContext = geminiNarrative.sceneContext || {
@@ -582,7 +594,7 @@ class UniversalSafetyAnalysisService {
           warningLevel: (railwayMatch?.ttcSeconds || 8.5) < 5.0 ? 'CRITICAL' : 'WARNING'
         } : null,
         auditableEvidence: eventEvidence,
-        snapshotDataUrl: frame.dataUrl || null
+        snapshotDataUrl: frame.dataUrl || geminiNarrative?.youtubeMetadata?.thumbnail_url || null
       });
     }
 

@@ -192,57 +192,137 @@
             <p class="text-xs text-slate-400">우측 파일 선택 영역에서 동영상을 업로드하세요.</p>
           </div>
 
-          <!-- 비디오 플레이어 태그 -->
+          <!-- 로컬 비디오 플레이어 태그 -->
           <video id="source-video-player" class="hidden w-full h-full object-contain" controls playsinline></video>
+
+          <!-- 유튜브 전용 반응형 IFrame 플레이어 래퍼 -->
+          <div id="youtube-player-wrapper" class="hidden w-full h-full relative flex items-center justify-center bg-black">
+            <div id="youtube-iframe-target" class="w-full h-full"></div>
+          </div>
 
           <!-- 비디오 상단 타임라인 마커 오버레이 바 -->
           <div id="video-timeline-markers-bar" class="absolute bottom-12 left-4 right-4 h-3 pointer-events-auto"></div>
         </div>
 
-        <!-- 우측: 윈도우 파일 탐색기 연동 드롭존 및 파일 정보 -->
+        <!-- 우측: 입력 방식 탭 (로컬 파일 탐색기 vs 유튜브 링크) -->
         <div class="lg:col-span-5 space-y-4">
-          <div id="video-dropzone" onclick="openWindowsFileExplorer()"
-               class="border-2 border-dashed border-blue-400 bg-blue-50/20 rounded-2xl p-6 text-center hover:border-blue-600 hover:bg-blue-50/50 transition cursor-pointer flex flex-col items-center justify-center space-y-3 min-h-[190px] group shadow-sm">
-            <input type="file" id="video-file-input" accept="video/*, .mp4, .webm, .mov, .avi, .mkv, .wmv, .m4v, .flv, .ts, .3gp, .asf" class="hidden">
-            <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-inner">
-              📂
-            </div>
-            <div>
-              <p class="text-sm font-black text-slate-800">로컬 동영상 파일 선택 (윈도우 탐색기)</p>
-              <p class="text-[11px] text-slate-500 mt-0.5">클릭하거나 윈도우 탐색기 폴더에서 파일을 직접 끌어다 놓으세요</p>
-            </div>
-            <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
-              <button type="button" onclick="event.stopPropagation(); openWindowsFileExplorer();" 
-                      class="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-black shadow-md transition flex items-center gap-1.5">
-                <span>📁</span> 윈도우 탐색기 열기
-              </button>
-              <button type="button" onclick="event.stopPropagation(); loadDemoSampleVideo();"
-                      class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1 border border-slate-300">
-                <span>🎥</span> 샘플 동영상 테스트
-              </button>
-            </div>
-            <p class="text-[10px] text-slate-400">지원 포맷: MP4, AVI, MOV, WebM, MKV, WMV, FLV, TS</p>
+          
+          <!-- 입력 방식 전환 탭 바 -->
+          <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+            <button type="button" id="tab-btn-local" onclick="switchVideoInputTab('LOCAL')"
+                    class="flex-1 py-2 rounded-lg bg-white text-blue-700 shadow-xs text-center transition flex items-center justify-center gap-1.5 font-black">
+              <span>📁</span> 로컬 파일 업로드
+            </button>
+            <button type="button" id="tab-btn-youtube" onclick="switchVideoInputTab('YOUTUBE')"
+                    class="flex-1 py-2 rounded-lg text-slate-600 hover:text-slate-900 text-center transition flex items-center justify-center gap-1.5 font-black">
+              <span>🔗</span> 유튜브(YouTube) 링크 분석
+            </button>
           </div>
 
-          <!-- 선택된 파일 상세 정보 박스 -->
-          <div id="selected-file-info" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
-            <div class="flex items-center justify-between">
-              <span class="text-slate-500 font-semibold">파일명:</span>
-              <span id="file-name-display" class="font-bold text-slate-800 truncate max-w-[200px]" title=""></span>
+          <!-- A. 로컬 파일 업로드 패널 -->
+          <div id="input-panel-local" class="space-y-4">
+            <div id="video-dropzone" onclick="openWindowsFileExplorer()"
+                 class="border-2 border-dashed border-blue-400 bg-blue-50/20 rounded-2xl p-6 text-center hover:border-blue-600 hover:bg-blue-50/50 transition cursor-pointer flex flex-col items-center justify-center space-y-3 min-h-[190px] group shadow-sm">
+              <input type="file" id="video-file-input" accept="video/*, .mp4, .webm, .mov, .avi, .mkv, .wmv, .m4v, .flv, .ts, .3gp, .asf" class="hidden">
+              <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-inner">
+                📂
+              </div>
+              <div>
+                <p class="text-sm font-black text-slate-800">로컬 동영상 파일 선택 (윈도우 탐색기)</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">클릭하거나 윈도우 탐색기 폴더에서 파일을 직접 끌어다 놓으세요</p>
+              </div>
+              <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <button type="button" onclick="event.stopPropagation(); openWindowsFileExplorer();" 
+                        class="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-black shadow-md transition flex items-center gap-1.5">
+                  <span>📁</span> 윈도우 탐색기 열기
+                </button>
+                <button type="button" onclick="event.stopPropagation(); loadDemoSampleVideo();"
+                        class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1 border border-slate-300">
+                  <span>🎥</span> 샘플 동영상 테스트
+                </button>
+              </div>
+              <p class="text-[10px] text-slate-400">지원 포맷: MP4, AVI, MOV, WebM, MKV, WMV, FLV, TS</p>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-slate-500 font-semibold">파일 크기:</span>
-              <span id="file-size-display" class="font-bold text-slate-800"></span>
+
+            <!-- 선택된 파일 상세 정보 박스 -->
+            <div id="selected-file-info" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 font-semibold">파일명:</span>
+                <span id="file-name-display" class="font-bold text-slate-800 truncate max-w-[200px]" title=""></span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 font-semibold">파일 크기:</span>
+                <span id="file-size-display" class="font-bold text-slate-800"></span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 font-semibold">재생 시간:</span>
+                <span id="file-duration-display" class="font-bold text-blue-700"></span>
+              </div>
+              <div class="pt-1 flex items-center justify-between border-t border-slate-200/60 mt-1">
+                <button type="button" onclick="openWindowsFileExplorer()" class="text-[11px] text-blue-700 font-bold hover:underline flex items-center gap-1">
+                  <span>🔄</span> 다른 동영상 선택 (윈도우 탐색기)
+                </button>
+                <span class="text-[10px] text-emerald-600 font-bold">✓ 파일 준비 완료</span>
+              </div>
             </div>
+          </div>
+
+          <!-- B. 유튜브(YouTube) 링크 분석 패널 -->
+          <div id="input-panel-youtube" class="hidden space-y-3.5 bg-gradient-to-br from-red-50/50 to-slate-50 p-5 rounded-2xl border-2 border-red-200 shadow-sm">
             <div class="flex items-center justify-between">
-              <span class="text-slate-500 font-semibold">재생 시간:</span>
-              <span id="file-duration-display" class="font-bold text-blue-700"></span>
+              <span class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                <span class="text-red-600 text-sm">▶️</span> 유튜브 동영상 링크 입력
+              </span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-700">
+                ⚡ 다운로드 없이 0초 분석
+              </span>
             </div>
-            <div class="pt-1 flex items-center justify-between border-t border-slate-200/60 mt-1">
-              <button type="button" onclick="openWindowsFileExplorer()" class="text-[11px] text-blue-700 font-bold hover:underline flex items-center gap-1">
-                <span>🔄</span> 다른 동영상 선택 (윈도우 탐색기)
-              </button>
-              <span class="text-[10px] text-emerald-600 font-bold">✓ 파일 준비 완료</span>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2">
+                <input type="text" id="youtube-url-input" placeholder="https://www.youtube.com/watch?v=..."
+                       class="flex-1 text-xs px-3 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none font-mono">
+                <button type="button" onclick="loadYouTubeVideoFromInput()"
+                        class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-md transition shrink-0 flex items-center gap-1">
+                  <span>🎬</span> 로드
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-500">
+                유튜브 주소창의 링크를 복사하여 붙여넣고 [로드]를 누르세요.
+              </p>
+            </div>
+
+            <!-- 추천 테스트 예시 클립 버튼 -->
+            <div class="space-y-1.5 pt-2 border-t border-red-100">
+              <span class="text-[11px] font-bold text-slate-600">🎯 원클릭 시험용 예시 영상:</span>
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" onclick="loadYouTubePreset('https://www.youtube.com/watch?v=jNQXAC9IVRw', '유튜브 표준 테스트 영상 (Me at the zoo)')"
+                        class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-red-50 border border-slate-200 text-[11px] font-bold text-slate-700 transition">
+                  📺 유튜브 표준 테스트 영상
+                </button>
+                <button type="button" onclick="loadYouTubePreset('https://www.youtube.com/watch?v=9hE5-98ZeCg', 'Google Gemini AI 데모 영상')"
+                        class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-red-50 border border-slate-200 text-[11px] font-bold text-slate-700 transition">
+                  ✨ Gemini 멀티모달 데모 영상
+                </button>
+              </div>
+            </div>
+
+            <!-- 로드된 유튜브 영상 메타 박스 -->
+            <div id="youtube-loaded-info" class="hidden p-3 rounded-xl bg-white border border-red-200 space-y-1.5 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 font-bold">영상 ID:</span>
+                <span id="youtube-id-display" class="font-mono font-black text-red-600"></span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 font-bold">제목:</span>
+                <span id="youtube-title-display" class="font-bold text-slate-800 truncate max-w-[200px]"></span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 font-bold">상태:</span>
+                <span class="text-emerald-600 font-bold flex items-center gap-1">
+                  <span>✓</span> 플레이어 연결 완료 (AI 분석 준비 완료)
+                </span>
+              </div>
             </div>
           </div>
 

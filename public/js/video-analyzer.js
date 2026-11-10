@@ -16,6 +16,9 @@ let videoState = {
   analysisReport: null,
   isAnalyzing: false,
   selectedEventId: null,
+  sourceType: 'LOCAL', // 'LOCAL' | 'YOUTUBE'
+  youtubeUrl: '',
+  youtubeId: '',
   mainMode: 'UNIVERSAL', // 'UNIVERSAL' (기본 전방위 모드) | 'MANUAL' (수동 맞춤 모드)
   activeDomains: ['DAILY_LIFE', 'CONSTRUCTION', 'RAILWAY'], // 활성 도메인
   currentMatrixFilter: 'ALL', // 'ALL' | 'DAILY_LIFE' | 'CONSTRUCTION' | 'RAILWAY'
@@ -541,6 +544,140 @@ function renderCustomRulesList() {
 }
 
 /**
+ * 🌟 입력 방식 탭 전환 (로컬 파일 업로드 vs 유튜브 링크)
+ */
+function switchVideoInputTab(tab) {
+  videoState.sourceType = tab;
+  const btnLocal = document.getElementById('tab-btn-local');
+  const btnYoutube = document.getElementById('tab-btn-youtube');
+  const panelLocal = document.getElementById('input-panel-local');
+  const panelYoutube = document.getElementById('input-panel-youtube');
+  const videoPlayer = document.getElementById('source-video-player');
+  const ytWrapper = document.getElementById('youtube-player-wrapper');
+  const emptyPlaceholder = document.getElementById('player-empty-placeholder');
+  const btnStartAnalysis = document.getElementById('btn-start-analysis');
+
+  if (tab === 'LOCAL') {
+    if (btnLocal) btnLocal.className = 'flex-1 py-2 rounded-lg bg-white text-blue-700 shadow-xs text-center transition flex items-center justify-center gap-1.5 font-black';
+    if (btnYoutube) btnYoutube.className = 'flex-1 py-2 rounded-lg text-slate-600 hover:text-slate-900 text-center transition flex items-center justify-center gap-1.5 font-black';
+    if (panelLocal) panelLocal.classList.remove('hidden');
+    if (panelYoutube) panelYoutube.classList.add('hidden');
+
+    if (ytWrapper) ytWrapper.classList.add('hidden');
+    if (videoState.file && videoPlayer) {
+      videoPlayer.classList.remove('hidden');
+      if (emptyPlaceholder) emptyPlaceholder.classList.add('hidden');
+      if (btnStartAnalysis) btnStartAnalysis.disabled = false;
+    } else {
+      if (videoPlayer) videoPlayer.classList.add('hidden');
+      if (emptyPlaceholder) emptyPlaceholder.classList.remove('hidden');
+      if (btnStartAnalysis) btnStartAnalysis.disabled = !videoState.file;
+    }
+  } else {
+    if (btnYoutube) btnYoutube.className = 'flex-1 py-2 rounded-lg bg-white text-red-600 shadow-xs text-center transition flex items-center justify-center gap-1.5 font-black';
+    if (btnLocal) btnLocal.className = 'flex-1 py-2 rounded-lg text-slate-600 hover:text-slate-900 text-center transition flex items-center justify-center gap-1.5 font-black';
+    if (panelYoutube) panelYoutube.classList.remove('hidden');
+    if (panelLocal) panelLocal.classList.add('hidden');
+
+    if (videoPlayer) videoPlayer.classList.add('hidden');
+    if (videoState.youtubeId && ytWrapper) {
+      ytWrapper.classList.remove('hidden');
+      if (emptyPlaceholder) emptyPlaceholder.classList.add('hidden');
+      if (btnStartAnalysis) btnStartAnalysis.disabled = false;
+    } else {
+      if (ytWrapper) ytWrapper.classList.add('hidden');
+      if (emptyPlaceholder) emptyPlaceholder.classList.remove('hidden');
+      if (btnStartAnalysis) btnStartAnalysis.disabled = !videoState.youtubeId;
+    }
+  }
+}
+
+/**
+ * 유튜브 URL에서 11자리 비디오 ID 추출
+ */
+function parseYouTubeId(url) {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  const regExp = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|live|shorts)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = trimmed.match(regExp);
+  return match ? match[1] : null;
+}
+
+/**
+ * 유튜브 URL 검증 및 IFrame 플레이어 로드
+ */
+function loadYouTubeVideo(url, presetTitle) {
+  const videoId = parseYouTubeId(url);
+  if (!videoId) {
+    alert('유효한 유튜브(YouTube) 영상 링크가 아닙니다.\n\n예시: https://www.youtube.com/watch?v=...\n또는 https://youtu.be/...');
+    return false;
+  }
+
+  videoState.youtubeUrl = url.trim();
+  videoState.youtubeId = videoId;
+
+  const ytWrapper = document.getElementById('youtube-player-wrapper');
+  const ytIframe = document.getElementById('youtube-iframe-target');
+  const videoPlayer = document.getElementById('source-video-player');
+  const emptyPlaceholder = document.getElementById('player-empty-placeholder');
+  const infoBox = document.getElementById('loaded-youtube-info');
+  const titleDisplay = document.getElementById('youtube-title-display');
+  const idDisplay = document.getElementById('youtube-id-display');
+  const btnStartAnalysis = document.getElementById('btn-start-analysis');
+
+  if (videoPlayer) {
+    videoPlayer.pause();
+    videoPlayer.classList.add('hidden');
+  }
+  if (emptyPlaceholder) emptyPlaceholder.classList.add('hidden');
+
+  if (ytIframe) {
+    const origin = window.location.origin;
+    ytIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(origin)}&autoplay=0`;
+  }
+  if (ytWrapper) ytWrapper.classList.remove('hidden');
+
+  if (titleDisplay) {
+    titleDisplay.textContent = presetTitle || '유튜브 스트리밍 비디오';
+  }
+  if (idDisplay) {
+    idDisplay.textContent = `ID: ${videoId}`;
+  }
+  if (infoBox) infoBox.classList.remove('hidden');
+
+  if (btnStartAnalysis) {
+    btnStartAnalysis.disabled = false;
+  }
+
+  // 기존 분석 결과 리셋
+  const resultContainer = document.getElementById('analysis-result-container');
+  if (resultContainer) resultContainer.classList.add('hidden');
+
+  return true;
+}
+
+/**
+ * 인풋 필드 입력값으로 유튜브 비디오 로드
+ */
+function loadYouTubeVideoFromInput() {
+  const input = document.getElementById('youtube-url-input');
+  if (!input || !input.value.trim()) {
+    alert('유튜브 동영상 링크(URL)를 입력해주세요.');
+    return;
+  }
+  loadYouTubeVideo(input.value.trim());
+}
+
+/**
+ * 프리셋 버튼 클릭 시 URL 설정 및 즉시 로드
+ */
+function loadYouTubePreset(url, title) {
+  const input = document.getElementById('youtube-url-input');
+  if (input) input.value = url;
+  loadYouTubeVideo(url, title);
+}
+
+/**
  * 2. 윈도우 탐색기 직접 열기 (Native File System Access API + Fallback)
  */
 async function openWindowsFileExplorer() {
@@ -1002,8 +1139,13 @@ function scanCanvasRealPixelSilhouettes(ctx, w, h) {
  * 4. 분석 시작 버튼 핸들러
  */
 async function startVideoSafetyAnalysis() {
-  if (!videoState.file) {
+  const isYouTube = videoState.sourceType === 'YOUTUBE';
+  if (!isYouTube && !videoState.file) {
     alert('먼저 분석할 동영상 파일을 선택해주세요.');
+    return;
+  }
+  if (isYouTube && (!videoState.youtubeUrl || !videoState.youtubeId)) {
+    alert('먼저 분석할 유튜브 동영상 링크를 입력하고 [로드]를 눌러주세요.');
     return;
   }
 
@@ -1045,9 +1187,17 @@ async function startVideoSafetyAnalysis() {
 
     const sampleInterval = parseFloat(sampleIntervalSelect ? sampleIntervalSelect.value : '1.5') || 1.5;
 
-    // 1단계: 비디오 프레임 추출
-    const frames = await extractVideoKeyframes(videoPlayer, sampleInterval, 20);
-    videoState.extractedFrames = frames;
+    // 1단계: 비디오 프레임 추출 (로컬 파일인 경우 Canvas 추출, 유튜브 링크인 경우 Gemini 네이티브 스트리밍 분석)
+    let frames = [];
+    if (!isYouTube) {
+      frames = await extractVideoKeyframes(videoPlayer, sampleInterval, 20);
+      videoState.extractedFrames = frames;
+    } else {
+      if (progressText) {
+        progressText.textContent = '유튜브 영상 스트리밍 연결 및 Gemini AI 멀티모달 분석 준비 중...';
+      }
+      videoState.extractedFrames = [];
+    }
 
     const apiUrl = '/api/technical-guidance/universal-video-analysis';
     const defaultSite = isUniversal
@@ -1055,9 +1205,13 @@ async function startVideoSafetyAnalysis() {
       : '맞춤형 지정 현장';
 
     if (progressText) {
-      progressText.textContent = isUniversal
-        ? `전방위 비전 AI (OpenCV·YOLO·Roboflow·철도기하학) 3대 영역 융합 진단 중...`
-        : `사용자 정의 맞춤 설정 (${videoState.activeDomains.length}개 도메인, ${totalConditions}개 조건) 심층 판정 실행 중...`;
+      if (isYouTube) {
+        progressText.textContent = `Google Gemini 멀티모달 AI가 유튜브 비디오를 직접 시청 및 분석 중 (인물·행동·위험요인 진단)...`;
+      } else {
+        progressText.textContent = isUniversal
+          ? `전방위 비전 AI (OpenCV·YOLO·Roboflow·철도기하학) 3대 영역 융합 진단 중...`
+          : `사용자 정의 맞춤 설정 (${videoState.activeDomains.length}개 도메인, ${totalConditions}개 조건) 심층 판정 실행 중...`;
+      }
     }
 
     // 2단계: 백엔드 판정 API 전송
@@ -1066,7 +1220,8 @@ async function startVideoSafetyAnalysis() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         siteName: siteNameInput ? (siteNameInput.value.trim() || defaultSite) : defaultSite,
-        fileName: videoState.file.name,
+        fileName: isYouTube ? videoState.youtubeUrl : videoState.file.name,
+        youtubeUrl: isYouTube ? videoState.youtubeUrl : undefined,
         customNotes: customNotesInput ? customNotesInput.value.trim() : '',
         frames: frames,
         analysisMode: videoState.mainMode,
@@ -1358,7 +1513,7 @@ function renderTimelineEvents(events, isRailway = false) {
   const timelineMarkersBar = document.getElementById('video-timeline-markers-bar');
   if (!listContainer) return;
 
-  const totalDuration = videoState.duration || 1;
+  const totalDuration = videoState.duration || Math.max(...events.map(e => e.timestamp || 0), 30);
 
   if (timelineMarkersBar) {
     timelineMarkersBar.innerHTML = events.map(evt => {
@@ -1859,13 +2014,29 @@ function applyMosaicFilter(ctx, x, y, w, h, blockSize = 9) {
 }
 
 /**
- * 특정 초로 비디오 점프 및 하이라이트
+ * 특정 초로 비디오 점프 및 하이라이트 (로컬 비디오 & 유튜브 IFrame 연동)
  */
 function seekVideoTo(seconds, eventId) {
-  const videoPlayer = document.getElementById('source-video-player');
-  if (videoPlayer) {
-    videoPlayer.currentTime = seconds;
-    videoPlayer.play().catch(() => {});
+  if (videoState.sourceType === 'YOUTUBE' && videoState.youtubeId) {
+    const iframe = document.getElementById('youtube-iframe-target');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(JSON.stringify({
+        event: 'command',
+        func: 'seekTo',
+        args: [seconds, true]
+      }), '*');
+      iframe.contentWindow.postMessage(JSON.stringify({
+        event: 'command',
+        func: 'playVideo',
+        args: []
+      }), '*');
+    }
+  } else {
+    const videoPlayer = document.getElementById('source-video-player');
+    if (videoPlayer) {
+      videoPlayer.currentTime = seconds;
+      videoPlayer.play().catch(() => {});
+    }
   }
 
   // 카드 하이라이트
