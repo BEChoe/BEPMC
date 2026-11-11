@@ -224,7 +224,34 @@ function checkPaidUserAccess() {
   const mainStudio = document.getElementById('studio-main-section');
   const badge = document.getElementById('user-tier-badge');
 
-  // 오픈 검증 모드: 로그인 없이 메인 스튜디오 상시 노출
+  // 실제 로그인된 사용자인 경우: 실제 4단계 등급 반영
+  if (typeof currentAuth !== 'undefined' && currentAuth && currentAuth.isLoggedIn && currentAuth.user) {
+    const tier = currentAuth.membershipTier || (currentAuth.membership === 'paid' ? 'PAID' : (currentAuth.membership === 'trial' ? 'TRIAL' : 'FREE'));
+    const canUse = (currentAuth.mode === 'admin' || tier === 'PAID' || tier === 'TRIAL');
+
+    if (canUse) {
+      if (gatekeeper) { gatekeeper.classList.add('hidden'); gatekeeper.style.display = 'none'; }
+      if (mainStudio) { mainStudio.classList.remove('hidden'); mainStudio.style.display = 'block'; }
+    } else {
+      if (gatekeeper) { gatekeeper.classList.remove('hidden'); gatekeeper.style.display = 'block'; }
+      if (mainStudio) { mainStudio.classList.add('hidden'); mainStudio.style.display = 'none'; }
+    }
+
+    if (badge) {
+      if (currentAuth.mode === 'admin' || tier === 'PAID') {
+        badge.innerHTML = '<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-2.5 py-0.5 rounded text-[11px] font-bold flex items-center gap-1"><span>💎</span> 정식 유료 회원 (PAID)</span>';
+      } else if (tier === 'TRIAL') {
+        const rem = currentAuth.user.trialInfo?.quotaRemaining ?? 30;
+        const days = currentAuth.user.trialInfo?.daysRemaining ?? 30;
+        badge.innerHTML = `<span class="bg-amber-500/20 text-amber-300 border border-amber-400/50 px-2.5 py-0.5 rounded text-[11px] font-bold flex items-center gap-1"><span>🎁</span> 1개월 유료 맛보기 (${rem}/30회 · ${days}일 남음)</span>`;
+      } else {
+        badge.innerHTML = '<span class="bg-slate-700 text-slate-300 px-2.5 py-0.5 rounded text-[11px] font-bold">무료 회원 (체험/결제 필요)</span>';
+      }
+    }
+    return canUse;
+  }
+
+  // 비로그인 실증 검증 오픈 모드 유지
   if (gatekeeper) {
     gatekeeper.classList.add('hidden');
     gatekeeper.style.display = 'none';
@@ -234,21 +261,13 @@ function checkPaidUserAccess() {
     mainStudio.style.display = 'block';
   }
 
-  // 기본 검증용 인증 세션 객체 보장
-  if (typeof currentAuth === 'undefined' || !currentAuth) {
-    window.currentAuth = {
-      isLoggedIn: true,
-      mode: 'open_verification',
-      membership: 'paid',
-      user: { name: '안전총괄책임자', role: 'paid_member' }
-    };
-  } else {
-    currentAuth.isLoggedIn = true;
-    currentAuth.membership = 'paid';
-    if (!currentAuth.user) {
-      currentAuth.user = { name: '안전총괄책임자', role: 'paid_member' };
-    }
-  }
+  window.currentAuth = {
+    isLoggedIn: false,
+    mode: 'open_verification',
+    membership: 'paid',
+    membershipTier: 'PAID',
+    user: { name: '현장검증 오픈모드', role: 'paid_member' }
+  };
 
   if (badge) {
     badge.innerHTML = '<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-2.5 py-0.5 rounded text-[11px] font-bold flex items-center gap-1"><span>⚡</span> 실증·검증 오픈 모드</span>';
@@ -1149,9 +1168,9 @@ async function startVideoSafetyAnalysis() {
     return;
   }
 
-  const isPaid = (currentAuth.mode === 'admin' || currentAuth.membership === 'paid' || (currentAuth.user && currentAuth.user.role === 'paid_member'));
-  if (!isPaid) {
-    alert('본 동영상 AI 안전진단은 유료 회원 전용 기능입니다.');
+  const isAllowed = (currentAuth.mode === 'admin' || currentAuth.mode === 'open_verification' || currentAuth.membership === 'paid' || currentAuth.membership === 'trial' || currentAuth.membershipTier === 'PAID' || currentAuth.membershipTier === 'TRIAL' || (currentAuth.user && currentAuth.user.role === 'paid_member'));
+  if (!isAllowed) {
+    alert('본 동영상 AI 안전진단은 유료 회원 또는 1개월 유료 맛보기(월 30회) 회원 전용 기능입니다.\n[내 정보·결재설정]에서 1개월 맛보기를 시작하거나 Payment Code를 등록해주세요.');
     checkPaidUserAccess();
     return;
   }
@@ -1398,6 +1417,28 @@ async function renderAnalysisResults(report) {
 
   // 현재 뷰 모드(분석용 vs 대외배포용) 배너 갱신
   setReportDisplayMode(videoState.reportDisplayMode);
+
+  // 1개월 유료 맛보기 워터마크 & 전자결재 초기화
+  const trialBanner = document.getElementById('trial-watermark-banner');
+  const trialText = document.getElementById('trial-watermark-text');
+  const signBtn = document.getElementById('btn-sign-official-report');
+  const sealBox = document.getElementById('official-signed-seal-box');
+  if (sealBox) sealBox.classList.add('hidden');
+
+  if (report.watermark && report.watermark.isTrial) {
+    if (trialBanner) trialBanner.classList.remove('hidden');
+    if (trialText) trialText.textContent = report.watermark.label || 'BEPMC 1개월 유료 맛보기 체험용 — 공식·관공서 제출 불가';
+    if (signBtn) signBtn.classList.add('opacity-60');
+  } else {
+    if (trialBanner) trialBanner.classList.add('hidden');
+    if (signBtn) signBtn.classList.remove('opacity-60');
+  }
+
+  // 로그인 세션 상태 최신화 (맛보기 잔여 횟수 갱신)
+  if (typeof checkAuth === 'function') {
+    await checkAuth();
+    checkPaidUserAccess();
+  }
 }
 
 /**
@@ -2322,4 +2363,102 @@ async function saveCustomGeminiKey() {
     alert('기본 무료 쿼터 모드로 초기화되었습니다.');
   }
   closeGeminiQuotaModal();
+}
+
+/**
+ * 공식 보고서 전자서명 · 직인 결재 모달
+ */
+function openReportSignModal() {
+  if (!videoState.analysisReport) {
+    alert('먼저 동영상 안전 분석을 실행해주세요.');
+    return;
+  }
+  if (!currentAuth || !currentAuth.isLoggedIn) {
+    if (confirm('공식 전자서명·직인 결재는 정식 유료 회원 로그인 후 이용할 수 있습니다.\n로그인 페이지로 이동하시겠습니까?')) {
+      window.location.href = '/login.html?redirect=/video-safety-analysis.html';
+    }
+    return;
+  }
+  const tier = currentAuth.membershipTier || (currentAuth.membership === 'paid' ? 'PAID' : 'FREE');
+  if (currentAuth.mode !== 'admin' && tier !== 'PAID') {
+    alert('현재 등급(' + tier + ')에서는 체험용 보고서만 열람 가능하며, 공식 전자서명·직인 결재는 정식 유료 회원(PAID)만 가능합니다.');
+    return;
+  }
+  const modal = document.getElementById('sign-approval-modal');
+  const pwInput = document.getElementById('modal-approval-password');
+  if (pwInput) pwInput.value = '';
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeReportSignModal() {
+  const modal = document.getElementById('sign-approval-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitReportSignApproval() {
+  const sealUsedType = document.getElementById('modal-seal-type')?.value || 'PERSONAL_SIGN';
+  const approvalPassword = document.getElementById('modal-approval-password')?.value || '';
+  if (!approvalPassword) {
+    alert('결재용 비밀번호를 입력해주세요.');
+    return;
+  }
+
+  const report = videoState.analysisReport;
+  try {
+    const res = await fetch('/api/reports/sign-approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reportId: report.reportId || 'BEPMC-VIDEO-RPT',
+        reportType: 'VIDEO_SAFETY',
+        sealUsedType,
+        approvalPassword,
+        reportPayload: {
+          reportId: report.reportId,
+          siteName: report.siteName,
+          fileName: report.fileName,
+          overallSafetyScore: report.videoSummary?.overallSafetyScore
+        }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      alert(data.message || '전자결재 인증에 실패했습니다.');
+      if (data.requirePaidSetup && confirm('유료 필수 정보 및 결재용 비밀번호 설정 페이지로 이동하시겠습니까?')) {
+        window.location.href = '/paid-onboarding.html';
+      }
+      return;
+    }
+
+    closeReportSignModal();
+    const sealBox = document.getElementById('official-signed-seal-box');
+    const detailsEl = document.getElementById('signed-issuer-details');
+    const hashEl = document.getElementById('signed-hash-details');
+    const signImg = document.getElementById('signed-signature-img');
+    const sealImg = document.getElementById('signed-seal-img');
+
+    const ss = data.signerSummary || {};
+    const corp = ss.corporateInfoSnapshot;
+    const corpStr = corp ? ` | 소속법인(상속): ${escapeHtml(corp.companyName)} (사업자 ${escapeHtml(corp.businessRegNo)})` : '';
+    const certStr = ss.nationalCertName ? ` | 자격: ${escapeHtml(ss.nationalCertName)} (${escapeHtml(ss.nationalCertNo || '-')})` : '';
+
+    if (detailsEl) {
+      detailsEl.innerHTML = `결재자: <b>${escapeHtml(ss.name)}</b> ${ss.jobTitle ? `(${escapeHtml(ss.jobTitle)})` : ''}${certStr}${corpStr}`;
+    }
+    if (hashEl) {
+      hashEl.textContent = `SHA-256: ${data.approvalLog.documentSha256} · 결재시각: ${String(data.approvalLog.signedAt).slice(0, 19).replace('T', ' ')}`;
+    }
+    if (signImg && ss.signatureImagePath) {
+      signImg.src = ss.signatureImagePath;
+      signImg.classList.remove('hidden');
+    }
+    if (sealImg && ss.corporateSealPath && (sealUsedType === 'CORPORATE_SEAL' || sealUsedType === 'BOTH')) {
+      sealImg.src = ss.corporateSealPath;
+      sealImg.classList.remove('hidden');
+    }
+    if (sealBox) sealBox.classList.remove('hidden');
+    alert(data.message);
+  } catch (err) {
+    alert('전자결재 처리 중 통신 오류가 발생했습니다.');
+  }
 }

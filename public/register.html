@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>회원가입 신청 | BEPMC (Project Management Consultancy)</title>
+  <title>법인·개인 회원가입 | BEPMC (Project Management Consultancy)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -12,51 +12,258 @@
   <div id="global-alert-banner"></div>
   <div id="global-header"></div>
 
-  <main class="max-w-md mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
+  <main class="max-w-2xl mx-auto px-4 py-10 w-full flex-1 flex flex-col justify-center">
 
-    <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
       <!-- 헤더 -->
       <div class="bg-[#0f172a] p-6 text-center text-white border-b-2 border-blue-600">
-        <h1 class="text-lg font-bold text-white">BEPMC 회원가입 신청</h1>
-        <p class="text-xs text-amber-300 mt-1">※ 안전포털은 관리자 승인 후 정식 회원이 됩니다.</p>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/80 border border-blue-500/40 text-[11px] font-bold text-blue-200 mb-2">
+          <span>🛡️</span> BEPMC 통합 안전 플랫폼 회원등록
+        </div>
+        <h1 class="text-xl font-black text-white">법인 · 개인 통합 회원가입</h1>
+        <p class="text-xs text-amber-300 mt-1">※ 일반 무료, 1개월 유료 맛보기(월 30회), 또는 법인 Payment Code 자동 유료 연동을 지원합니다.</p>
       </div>
 
-      <!-- 안내 배너 -->
-      <div class="p-4 bg-blue-50 border-b border-blue-100 text-xs text-blue-950 leading-relaxed">
-        <span class="font-bold text-blue-800">📋 가입 절차 안내:</span><br>
-        1. 가입 양식 제출 &rarr; 2. BEPMC 관리자 가입 자격 승인 &rarr; 3. 회원 전용 게시판 및 토론 권한 부여
+      <!-- 회원 구분 선택 탭 -->
+      <div class="p-4 bg-slate-100 border-b border-slate-200">
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="btn-type-corporate" onclick="setMemberType('CORPORATE')"
+                  class="py-3 px-4 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 bg-white text-slate-700 border-slate-200 hover:border-blue-400">
+            <span>🏢</span> 법인 / 기업 회원 (사업자)
+          </button>
+          <button type="button" id="btn-type-individual" onclick="setMemberType('INDIVIDUAL')"
+                  class="py-3 px-4 rounded-xl border text-xs font-black transition flex items-center justify-center gap-2 bg-blue-700 text-white border-blue-700 shadow-sm">
+            <span>👤</span> 개인 회원 (기술인 · 직원)
+          </button>
+        </div>
       </div>
 
       <!-- 폼 -->
-      <form onsubmit="handleRegister(event)" class="p-6 space-y-4">
+      <form onsubmit="handleRegister(event)" class="p-6 space-y-5">
+
+        <!-- 1. 아이디 (중복 및 탈퇴자 ID 점검) -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">아이디 (ID)</label>
-          <input type="text" id="reg-username" required placeholder="영문 또는 숫자 4자 이상" class="w-full text-xs p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <label class="block text-xs font-bold text-slate-800 mb-1">
+            아이디 (ID) <span class="text-rose-600">*</span>
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="reg-username" required placeholder="영문 소문자·숫자·_ 4~20자"
+                   oninput="resetIdCheckState()"
+                   class="flex-1 text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
+            <button type="button" onclick="checkIdAvailability()"
+                    class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shrink-0 transition">
+              중복·탈퇴자 확인
+            </button>
+          </div>
+          <p id="id-check-feedback" class="text-[11px] mt-1.5 text-slate-500">
+            ※ 사용 중이거나 탈퇴 처리된 이력이 있는 아이디는 보안 정책상 사용이 제한됩니다.
+          </p>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">비밀번호</label>
-          <input type="password" id="reg-password" required placeholder="비밀번호 입력" class="w-full text-xs p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        <!-- 2. 접속 비밀번호 (보안등급 실시간 체크) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">
+              접속 비밀번호 <span class="text-rose-600">*</span>
+            </label>
+            <input type="password" id="reg-password" required placeholder="10자 이상 (대/소/숫자/특수 3종+)"
+                   oninput="updatePasswordStrengthUI()"
+                   class="w-full text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <div class="mt-2 space-y-1">
+              <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div id="pw-strength-bar" class="h-full bg-slate-400 transition-all duration-300" style="width: 0%;"></div>
+              </div>
+              <div class="flex items-center justify-between text-[11px]">
+                <span id="pw-strength-label" class="font-bold text-slate-500">보안등급: 미입력</span>
+                <span class="text-slate-400">10자 이상 + 3종 조합 권장</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">
+              접속 비밀번호 확인 <span class="text-rose-600">*</span>
+            </label>
+            <input type="password" id="reg-password-confirm" required placeholder="비밀번호 재입력"
+                   oninput="checkPasswordMatch()"
+                   class="w-full text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <p id="pw-match-feedback" class="text-[11px] mt-1.5 text-slate-400"></p>
+          </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">성명 / 현장 담당자명</label>
-          <input type="text" id="reg-name" required placeholder="홍길동" class="w-full text-xs p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        <!-- 3. 법인명/성명 & 연락처 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label id="label-name" class="block text-xs font-bold text-slate-800 mb-1">
+              성명 (실명) <span class="text-rose-600">*</span>
+            </label>
+            <input type="text" id="reg-name" required placeholder="홍길동"
+                   class="w-full text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label id="label-phone" class="block text-xs font-bold text-slate-800 mb-1">
+              개인 휴대폰 번호 <span class="text-rose-600">*</span>
+            </label>
+            <input type="tel" id="reg-phone" required placeholder="010-1234-5678"
+                   class="w-full text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
+          </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">이메일 (승인 결과 안내용)</label>
-          <input type="email" id="reg-email" required placeholder="safety@company.com" class="w-full text-xs p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        <!-- 4. 사업자등록번호 (법인 필수) OR 국가공인자격증 번호 (개인 보유 시) -->
+        <div id="corp-fields-box" class="hidden p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-blue-900">🏢 법인 공식 등록 정보 (공식 문서 발행 연동)</span>
+            <span class="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">법인 필수</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">사업자등록번호 (10자리) <span class="text-rose-600">*</span></label>
+              <input type="text" id="reg-biz-no" placeholder="123-45-67890"
+                     class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">대표자 성명 (선택/유료 시 필수)</label>
+              <input type="text" id="reg-ceo-name" placeholder="대표이사 성명"
+                     class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
         </div>
+
+        <div id="indiv-cert-box" class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-slate-800">🪪 국가공인자격증 정보 (보유 시 입력 — 공식 문서 연동)</span>
+            <span class="text-[10px] font-semibold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded">자격 보유자</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">자격 종목명</label>
+              <input type="text" id="reg-cert-name" placeholder="예: 건설안전기술사 / 산업안전기사"
+                     class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">자격증 등록번호</label>
+              <input type="text" id="reg-cert-no" placeholder="예: 2024-1234567A"
+                     class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 이메일 유효성 확인 (공식 커뮤니케이션) -->
+        <div class="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-2.5">
+          <label class="block text-xs font-bold text-slate-800">
+            공식 이메일 (유효성 인증 필수 · 공식 보고/안내 수신용) <span class="text-rose-600">*</span>
+          </label>
+          <div class="flex gap-2">
+            <input type="email" id="reg-email" required placeholder="safety@company.co.kr"
+                   oninput="resetEmailVerifyState()"
+                   class="flex-1 text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500">
+            <button type="button" onclick="sendEmailCode()"
+                    class="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shrink-0 transition">
+              인증코드 발송
+            </button>
+          </div>
+          <div id="email-otp-row" class="hidden flex gap-2 items-center pt-1">
+            <input type="text" id="reg-email-code" maxlength="6" placeholder="인증코드 6자리 입력"
+                   class="flex-1 text-xs p-2.5 bg-white border border-slate-300 rounded-xl font-mono">
+            <button type="button" onclick="verifyEmailCodeBtn()"
+                    class="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold shrink-0 transition">
+              인증 확인
+            </button>
+          </div>
+          <p id="email-verify-feedback" class="text-[11px] text-slate-500"></p>
+        </div>
+
+        <!-- 6. 가입 등급 및 Payment Code 연동 -->
+        <div class="p-4 rounded-xl bg-indigo-50/60 border border-indigo-200 space-y-3">
+          <span class="block text-xs font-black text-indigo-950">💎 이용 등급 및 유료 코드(Payment Code) 선택</span>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <label class="flex items-start gap-2 p-2.5 rounded-xl border bg-white cursor-pointer hover:border-indigo-400">
+              <input type="radio" name="signup-tier-opt" value="FREE" onchange="toggleTierOption('FREE')" class="mt-0.5">
+              <div>
+                <div class="font-bold text-slate-800">일반 무료 회원</div>
+                <div class="text-[10px] text-slate-500">게시판·자료실·Q&amp;A</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-2 p-2.5 rounded-xl border border-amber-400 bg-amber-50/50 cursor-pointer">
+              <input type="radio" name="signup-tier-opt" value="TRIAL" checked onchange="toggleTierOption('TRIAL')" class="mt-0.5">
+              <div>
+                <div class="font-black text-amber-900">🎁 1개월 유료 맛보기</div>
+                <div class="text-[10px] text-amber-800">1개월 무료 · 월 30회 AI 분석</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-2 p-2.5 rounded-xl border bg-white cursor-pointer hover:border-indigo-400">
+              <input type="radio" name="signup-tier-opt" value="CODE" onchange="toggleTierOption('CODE')" class="mt-0.5">
+              <div>
+                <div class="font-black text-indigo-800">💳 Payment Code 입력</div>
+                <div class="text-[10px] text-indigo-600">법인 유료 자동 승계</div>
+              </div>
+            </label>
+          </div>
+
+          <div id="payment-code-box" class="hidden space-y-2 pt-1">
+            <label class="block text-[11px] font-bold text-indigo-900">
+              발급받은 Payment Code 입력 (법인 유료회원 소속 직원은 법인 코드 입력 시 자동 유료 부여)
+            </label>
+            <div class="flex gap-2">
+              <input type="text" id="reg-payment-code" placeholder="예: BEPMC-C-2026-DEMO01"
+                     class="flex-1 text-xs p-2.5 bg-white border border-indigo-300 rounded-xl font-mono uppercase">
+              <button type="button" onclick="checkPaymentCodeBtn()"
+                      class="px-3.5 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-bold shrink-0">
+                코드 확인
+              </button>
+            </div>
+            <p id="payment-code-feedback" class="text-[11px] text-indigo-700"></p>
+          </div>
+        </div>
+
+        <!-- 7. 선택 입력 사항 (추천 항목) -->
+        <details class="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+          <summary class="text-xs font-bold text-slate-700 cursor-pointer select-none flex items-center justify-between">
+            <span>➕ 선택 입력 사항 (AI 안전 분석 프리셋 &amp; 보고서 자동완성용 추천 항목)</span>
+            <span class="text-[10px] text-slate-400">펼치기</span>
+          </summary>
+          <div class="pt-3 mt-3 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">주력 업종 / AI 기본 분석 영역</label>
+              <select id="reg-primary-domain" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg">
+                <option value="UNIVERSAL">🌟 전방위 통합 (건설·철도·일상)</option>
+                <option value="CONSTRUCTION">🏗️ 건설 · 토목 · 플랜트</option>
+                <option value="RAILWAY">🚆 철도 · 궤도 · 차량기지</option>
+                <option value="PLANT">🏭 제조 · 중공업 · 에너지</option>
+                <option value="DAILY_LIFE">🏙️ 생활·시설물 안전관리</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">주 관리 현장명 / 소속 부서</label>
+              <input type="text" id="reg-site-name" placeholder="예: 판교 복합시설 신축공사 현장"
+                     class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">직위 / 직책 (보고서 표기용)</label>
+              <input type="text" id="reg-job-title" placeholder="예: 안전총괄팀장 / 현장소장 / 기술지도요원"
+                     class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">실무 담당자 비상 연락처</label>
+              <input type="tel" id="reg-manager-phone" placeholder="예: 010-0000-0000"
+                     class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-mono">
+            </div>
+            <div class="md:col-span-2">
+              <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer">
+                <input type="checkbox" id="reg-marketing" class="rounded border-slate-300">
+                <span>[선택] 산업안전보건법령 개정 알림 및 BEPMC 신규 AI 안전 기능 소식 수신에 동의합니다.</span>
+              </label>
+            </div>
+          </div>
+        </details>
 
         <div class="pt-2">
-          <button type="submit" class="w-full btn-safety-green py-3 rounded-lg text-xs font-bold tracking-wide shadow-sm hover:bg-emerald-700 transition">
-            가입 신청서 제출하기
+          <button type="submit" class="w-full btn-safety-green py-3.5 rounded-xl text-sm font-black tracking-wide shadow-md hover:bg-emerald-700 transition">
+            회원가입 신청 제출하기
           </button>
         </div>
 
-        <div class="text-center pt-2 text-xs">
-          <a href="/login.html" class="text-slate-500 hover:text-slate-900">이미 계정이 있으신가요? 로그인하기 &rarr;</a>
+        <div class="text-center pt-1 text-xs">
+          <a href="/login.html" class="text-slate-500 hover:text-slate-900 font-semibold">이미 계정이 있으신가요? 로그인하기 &rarr;</a>
         </div>
       </form>
     </div>
@@ -67,22 +274,272 @@
 
   <script src="/js/common.js"></script>
   <script>
+    let regState = {
+      memberType: 'INDIVIDUAL',
+      idChecked: false,
+      idAvailable: false,
+      emailVerified: false,
+      tierOption: 'TRIAL'
+    };
+
     document.addEventListener('DOMContentLoaded', async () => {
       await initLayout();
+      setMemberType('INDIVIDUAL');
     });
+
+    function setMemberType(type) {
+      regState.memberType = type;
+      const btnCorp = document.getElementById('btn-type-corporate');
+      const btnIndiv = document.getElementById('btn-type-individual');
+      const corpBox = document.getElementById('corp-fields-box');
+      const indivBox = document.getElementById('indiv-cert-box');
+      const labelName = document.getElementById('label-name');
+      const labelPhone = document.getElementById('label-phone');
+      const inputName = document.getElementById('reg-name');
+      const inputPhone = document.getElementById('reg-phone');
+      const bizInput = document.getElementById('reg-biz-no');
+
+      if (type === 'CORPORATE') {
+        btnCorp.className = 'py-3 px-4 rounded-xl border text-xs font-black transition flex items-center justify-center gap-2 bg-blue-700 text-white border-blue-700 shadow-sm';
+        btnIndiv.className = 'py-3 px-4 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 bg-white text-slate-700 border-slate-200 hover:border-blue-400';
+        corpBox.classList.remove('hidden');
+        indivBox.classList.add('hidden');
+        labelName.innerHTML = '법인명 / 상호 <span class="text-rose-600">*</span>';
+        labelPhone.innerHTML = '법인 대표 전화번호 <span class="text-rose-600">*</span>';
+        inputName.placeholder = '(주)한국안전건설';
+        inputPhone.placeholder = '02-1234-5678';
+        bizInput.required = true;
+      } else {
+        btnIndiv.className = 'py-3 px-4 rounded-xl border text-xs font-black transition flex items-center justify-center gap-2 bg-blue-700 text-white border-blue-700 shadow-sm';
+        btnCorp.className = 'py-3 px-4 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 bg-white text-slate-700 border-slate-200 hover:border-blue-400';
+        corpBox.classList.add('hidden');
+        indivBox.classList.remove('hidden');
+        labelName.innerHTML = '성명 (실명) <span class="text-rose-600">*</span>';
+        labelPhone.innerHTML = '개인 휴대폰 번호 <span class="text-rose-600">*</span>';
+        inputName.placeholder = '홍길동';
+        inputPhone.placeholder = '010-1234-5678';
+        bizInput.required = false;
+      }
+    }
+
+    function toggleTierOption(opt) {
+      regState.tierOption = opt;
+      const box = document.getElementById('payment-code-box');
+      if (opt === 'CODE') {
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    function resetIdCheckState() {
+      regState.idChecked = false;
+      regState.idAvailable = false;
+      const fb = document.getElementById('id-check-feedback');
+      fb.textContent = '※ [중복·탈퇴자 확인] 버튼을 눌러 사용 가능 여부를 확인해주세요.';
+      fb.className = 'text-[11px] mt-1.5 text-slate-500';
+    }
+
+    async function checkIdAvailability() {
+      const username = document.getElementById('reg-username').value.trim();
+      const fb = document.getElementById('id-check-feedback');
+      if (!username) {
+        alert('확인할 아이디를 입력해주세요.');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/auth/check-id?username=${encodeURIComponent(username)}`);
+        const data = await res.json();
+        regState.idChecked = true;
+        regState.idAvailable = Boolean(data.available);
+        fb.textContent = (data.available ? '✅ ' : '🚫 ') + (data.message || '');
+        fb.className = data.available
+          ? 'text-[11px] mt-1.5 font-bold text-emerald-700'
+          : 'text-[11px] mt-1.5 font-bold text-rose-600';
+      } catch (e) {
+        fb.textContent = '아이디 확인 중 통신 오류가 발생했습니다.';
+      }
+    }
+
+    function updatePasswordStrengthUI() {
+      const pw = document.getElementById('reg-password').value;
+      const bar = document.getElementById('pw-strength-bar');
+      const label = document.getElementById('pw-strength-label');
+
+      let score = 0;
+      const hasLower = /[a-z]/.test(pw);
+      const hasUpper = /[A-Z]/.test(pw);
+      const hasDigit = /[0-9]/.test(pw);
+      const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+      const types = [hasLower, hasUpper, hasDigit, hasSpecial].filter(Boolean).length;
+
+      if (pw.length >= 10) score += 40;
+      else if (pw.length >= 6) score += 20;
+      score += types * 15;
+      score = Math.min(100, score);
+
+      bar.style.width = `${score}%`;
+      if (!pw) {
+        bar.className = 'h-full bg-slate-400 transition-all duration-300';
+        label.textContent = '보안등급: 미입력';
+        label.className = 'font-bold text-slate-500';
+      } else if (pw.length < 10 || types < 3) {
+        bar.className = 'h-full bg-rose-500 transition-all duration-300';
+        label.textContent = '보안등급: 낮음 (10자 이상 + 3종 조합 필요)';
+        label.className = 'font-bold text-rose-600';
+      } else if (score >= 85) {
+        bar.className = 'h-full bg-emerald-600 transition-all duration-300';
+        label.textContent = '보안등급: 매우 높음 (안전)';
+        label.className = 'font-bold text-emerald-700';
+      } else {
+        bar.className = 'h-full bg-blue-600 transition-all duration-300';
+        label.textContent = '보안등급: 양호 (권장 수준 충족)';
+        label.className = 'font-bold text-blue-700';
+      }
+      checkPasswordMatch();
+    }
+
+    function checkPasswordMatch() {
+      const pw = document.getElementById('reg-password').value;
+      const pw2 = document.getElementById('reg-password-confirm').value;
+      const fb = document.getElementById('pw-match-feedback');
+      if (!pw2) {
+        fb.textContent = '';
+        return;
+      }
+      if (pw === pw2) {
+        fb.textContent = '✅ 비밀번호가 일치합니다.';
+        fb.className = 'text-[11px] mt-1.5 font-bold text-emerald-700';
+      } else {
+        fb.textContent = '⚠️ 비밀번호가 일치하지 않습니다.';
+        fb.className = 'text-[11px] mt-1.5 font-bold text-rose-600';
+      }
+    }
+
+    function resetEmailVerifyState() {
+      regState.emailVerified = false;
+      document.getElementById('email-verify-feedback').textContent = '';
+    }
+
+    async function sendEmailCode() {
+      const email = document.getElementById('reg-email').value.trim();
+      const fb = document.getElementById('email-verify-feedback');
+      const otpRow = document.getElementById('email-otp-row');
+      if (!email) {
+        alert('이메일 주소를 입력해주세요.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/auth/send-email-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          fb.textContent = '🚫 ' + (data.message || '인증코드 발송 실패');
+          fb.className = 'text-[11px] font-bold text-rose-600';
+          return;
+        }
+        otpRow.classList.remove('hidden');
+        fb.innerHTML = `✉️ 인증코드가 발송되었습니다. <span class="text-blue-700 font-bold">(테스트 환경 즉시확인 코드: <code class="bg-white px-1.5 py-0.5 rounded border">${data.previewCode}</code>)</span>`;
+        fb.className = 'text-[11px] text-emerald-800';
+      } catch (e) {
+        fb.textContent = '인증 요청 중 오류가 발생했습니다.';
+      }
+    }
+
+    async function verifyEmailCodeBtn() {
+      const email = document.getElementById('reg-email').value.trim();
+      const code = document.getElementById('reg-email-code').value.trim();
+      const fb = document.getElementById('email-verify-feedback');
+      try {
+        const res = await fetch('/api/auth/verify-email-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code })
+        });
+        const data = await res.json();
+        if (data.success) {
+          regState.emailVerified = true;
+          fb.textContent = '✅ 유효한 이메일 주소 인증이 완료되었습니다.';
+          fb.className = 'text-[11px] font-bold text-emerald-700';
+        } else {
+          regState.emailVerified = false;
+          fb.textContent = '🚫 ' + (data.message || '인증 실패');
+          fb.className = 'text-[11px] font-bold text-rose-600';
+        }
+      } catch (e) {
+        fb.textContent = '인증 확인 중 오류 발생';
+      }
+    }
+
+    async function checkPaymentCodeBtn() {
+      const code = document.getElementById('reg-payment-code').value.trim();
+      const fb = document.getElementById('payment-code-feedback');
+      if (!code) {
+        alert('Payment Code를 입력해주세요.');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/auth/check-payment-code?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        fb.textContent = (data.valid ? '✅ ' : '🚫 ') + (data.message || '');
+        fb.className = data.valid ? 'text-[11px] font-bold text-emerald-700' : 'text-[11px] font-bold text-rose-600';
+      } catch (e) {
+        fb.textContent = '코드 조회 오류';
+      }
+    }
 
     async function handleRegister(e) {
       e.preventDefault();
-      const username = document.getElementById('reg-username').value.trim();
-      const password = document.getElementById('reg-password').value.trim();
-      const name = document.getElementById('reg-name').value.trim();
-      const email = document.getElementById('reg-email').value.trim();
+      if (!regState.idChecked || !regState.idAvailable) {
+        await checkIdAvailability();
+        if (!regState.idAvailable) {
+          alert('사용 가능한 아이디인지 먼저 [중복·탈퇴자 확인]을 통과해야 합니다.');
+          return;
+        }
+      }
+
+      const password = document.getElementById('reg-password').value;
+      const passwordConfirm = document.getElementById('reg-password-confirm').value;
+      if (password !== passwordConfirm) {
+        alert('접속 비밀번호 확인이 일치하지 않습니다.');
+        return;
+      }
+
+      if (!regState.emailVerified) {
+        alert('이메일 유효성 확인을 위해 [인증코드 발송] 후 [인증 확인]을 완료해주세요.');
+        return;
+      }
+
+      const payload = {
+        username: document.getElementById('reg-username').value.trim(),
+        password,
+        memberType: regState.memberType,
+        name: document.getElementById('reg-name').value.trim(),
+        phone: document.getElementById('reg-phone').value.trim(),
+        email: document.getElementById('reg-email').value.trim(),
+        emailVerificationCode: document.getElementById('reg-email-code').value.trim(),
+        businessRegNo: document.getElementById('reg-biz-no').value.trim(),
+        companyName: regState.memberType === 'CORPORATE' ? document.getElementById('reg-name').value.trim() : '',
+        ceoName: document.getElementById('reg-ceo-name').value.trim(),
+        nationalCertName: document.getElementById('reg-cert-name').value.trim(),
+        nationalCertNo: document.getElementById('reg-cert-no').value.trim(),
+        startTrial: regState.tierOption === 'TRIAL',
+        paymentCode: regState.tierOption === 'CODE' ? document.getElementById('reg-payment-code').value.trim() : '',
+        primaryDomain: document.getElementById('reg-primary-domain').value,
+        defaultSiteName: document.getElementById('reg-site-name').value.trim(),
+        jobTitle: document.getElementById('reg-job-title').value.trim(),
+        managerPhone: document.getElementById('reg-manager-phone').value.trim(),
+        marketingAgreed: document.getElementById('reg-marketing').checked
+      };
 
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, name, email })
+          body: JSON.stringify(payload)
         });
         const result = await res.json();
 

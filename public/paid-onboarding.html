@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 정보 · 유료 세무 · 전자서명/결재 비밀번호 설정 | BEPMC</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen">
+
+  <div id="global-alert-banner"></div>
+  <div id="global-header"></div>
+
+  <main class="max-w-5xl mx-auto px-4 py-8 w-full flex-1 space-y-6">
+
+    <!-- 비로그인 안내 -->
+    <div id="not-logged-in-box" class="hidden bg-white rounded-2xl p-8 text-center border border-slate-200 shadow-sm space-y-3">
+      <h1 class="text-lg font-black text-slate-900">로그인이 필요한 페이지입니다</h1>
+      <p class="text-xs text-slate-500">회원 등급 확인, 1개월 유료 맛보기 시작, Payment Code 등록 및 세무·결재 비밀번호 설정은 로그인 후 이용하실 수 있습니다.</p>
+      <a href="/login.html?redirect=/paid-onboarding.html" class="inline-block btn-safety-black px-5 py-2.5 rounded-xl text-xs font-bold">로그인하러 가기</a>
+    </div>
+
+    <!-- 메인 계정 컨텐츠 -->
+    <div id="account-main-box" class="hidden space-y-6">
+
+      <!-- 1. 등급 및 구독 요약 헤더 카드 -->
+      <section class="bg-[#0f172a] text-white rounded-2xl p-6 shadow-lg border border-blue-900/70">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span id="acc-tier-badge" class="px-3 py-1 rounded-full text-xs font-black bg-slate-800 text-slate-200">로딩중</span>
+              <span id="acc-type-badge" class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-900/80 text-blue-200 border border-blue-700">-</span>
+              <span id="acc-paid-setup-badge" class="hidden px-2.5 py-0.5 rounded text-[11px] font-bold"></span>
+            </div>
+            <h1 id="acc-user-title" class="text-xl font-black">-</h1>
+            <p id="acc-user-sub" class="text-xs text-slate-300">-</p>
+          </div>
+
+          <!-- 1개월 맛보기 잔여 현황 또는 유료 코드 정보 -->
+          <div id="acc-status-widget" class="bg-slate-900/90 border border-slate-700 rounded-xl p-4 min-w-[260px] space-y-2 text-xs">
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 무료/맛보기 전환 액션 카드 (FREE 또는 TRIAL일 때 노출) -->
+      <section id="tier-upgrade-section" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="trial-start-card" class="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-black text-amber-900 flex items-center gap-1.5">
+              <span>🎁</span> 1개월 유료 맛보기 (월 30회 AI 분석)
+            </h2>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">최초 1회 무료</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            결제 없이 1개월 동안 동영상·유튜브 AI 전방위 안전 분석 및 철도안전 분석을 최대 30회 체험할 수 있습니다. *(체험용 보고서에는 공식 제출 불가 워터마크가 표시됩니다.)*
+          </p>
+          <button type="button" id="btn-activate-trial" onclick="activateTrial()"
+                  class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition shadow-sm">
+            1개월 유료 맛보기 지금 시작하기
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 border border-indigo-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-black text-indigo-950 flex items-center gap-1.5">
+              <span>💳</span> Payment Code 입력 (법인·개인 유료 연동)
+            </h2>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">즉시 유료 전환</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            소속 법인이 유료 회원인 경우 법인 Payment Code를 입력하면 즉시 정식 유료 회원 자격을 승계받습니다. *(테스트 예시: <code class="bg-slate-100 px-1 rounded font-mono">BEPMC-C-2026-DEMO01</code>)*
+          </p>
+          <div class="flex gap-2">
+            <input type="text" id="redeem-code-input" placeholder="BEPMC-C-2026-XXXXXX"
+                   class="flex-1 text-xs p-2.5 border border-slate-300 rounded-xl font-mono uppercase">
+            <button type="button" onclick="redeemPaymentCode()"
+                    class="px-4 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-black shrink-0">
+              코드 연동
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 유료 회원 전용: 세금계산서·공식문서 필수 항목 & 별도 결재 비밀번호 & 전자서명/직인 설정 -->
+      <section id="paid-onboarding-section" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 bg-gradient-to-r from-blue-900 to-indigo-900 text-white flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 class="text-base font-black flex items-center gap-2">
+              <span>🖋️</span> 유료 회원 필수 설정: 세금계산서 · 정부 공식문서 · 별도 결재 비밀번호
+            </h2>
+            <p class="text-[11px] text-blue-200 mt-0.5">
+              세무·공식 문서 기재사항과 전자서명/직인 날인용 별도 결재 비밀번호를 완료해야 공식 보고서 발행이 가능합니다.
+            </p>
+          </div>
+          <span id="paid-completion-pill" class="px-3 py-1 rounded-full text-xs font-black bg-amber-400 text-slate-950">설정 필요</span>
+        </div>
+
+        <form onsubmit="savePaidProfile(event)" class="p-6 space-y-6">
+
+          <!-- 법인 소속 개인 자동 상속 안내 -->
+          <div id="inherited-corp-banner" class="hidden p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
+            <div class="text-xs font-black text-emerald-900 flex items-center gap-1.5">
+              <span>🏢</span> 소속 법인 공식 문서 정보 자동 상속 완료
+            </div>
+            <p class="text-[11px] text-emerald-800">
+              소속 법인의 유료 Payment Code로 연동되어, 본인 명의로 공식 검토 보고서 발행 시 필요한 아래 법인 정보가 자동 기입됩니다. (세금계산서는 소속 법인이 관리하므로 별도 세무 입력이 면제됩니다.)
+            </p>
+            <div id="inherited-corp-details" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] bg-white p-3 rounded-lg border border-emerald-200 text-slate-700"></div>
+          </div>
+
+          <!-- A. 세무 및 공식문서 필수 항목 (법인 / 개인사업자 / 단독 개인) -->
+          <div id="tax-and-doc-fields" class="space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+              <h3 class="text-sm font-black text-slate-900">1) 세금계산서 및 정부 공식 문서 기재 사항 <span class="text-rose-600 text-xs">(유료 필수)</span></h3>
+              <select id="paid-tax-payer-type" onchange="toggleTaxPayerFields()" class="text-xs p-1.5 border border-slate-300 rounded-lg font-bold">
+                <option value="CORPORATE">법인 사업자 (세금계산서)</option>
+                <option value="SOLE_PROPRIETOR">개인 사업자 (세금계산서)</option>
+                <option value="INDIVIDUAL">비사업자 개인 (현금영수증/공식문서)</option>
+              </select>
+            </div>
+
+            <!-- 사업자 (법인/개인사업자) 세금계산서 + 공식문서 필드 -->
+            <div id="biz-tax-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">사업자등록번호 (10자리) <span class="text-rose-600">*</span></label>
+                <input type="text" id="paid-biz-no" placeholder="123-45-67890" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">상호 / 법인명 <span class="text-rose-600">*</span></label>
+                <input type="text" id="paid-company-name" placeholder="(주)BEPMC" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">대표자 성명 <span class="text-rose-600">*</span></label>
+                <input type="text" id="paid-ceo-name" placeholder="대표자 실명" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">종사업장 번호 (해당 시 4자리)</label>
+                <input type="text" id="paid-sub-biz-no" maxlength="4" placeholder="예: 0001" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl font-mono">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1">사업장 소재지 (주소) <span class="text-rose-600">*</span></label>
+                <input type="text" id="paid-biz-address" placeholder="서울특별시 강남구 테헤란로 152" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">업태 <span class="text-rose-600">*</span></label>
+                <input type="text" id="paid-biz-type" placeholder="예: 건설업 / 서비스업" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">종목 <span class="text-rose-600">*</span></label>
+                <input type="text" id="paid-biz-item" placeholder="예: 안전진단 및 엔지니어링" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">세금계산서 수신 이메일 <span class="text-rose-600">*</span></label>
+                <input type="email" id="paid-tax-email" placeholder="tax@company.co.kr" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">정부/지도기관 지정번호 (해당 기관 필수)</label>
+                <input type="text" id="paid-agency-reg-no" placeholder="예: 고용노동부 중부-2024-제048호" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+            </div>
+
+            <!-- 비사업자 개인 유료회원 현금영수증/공식문서 필드 -->
+            <div id="non-biz-grid" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">현금영수증 발급 구분</label>
+                <select id="paid-cash-receipt-type" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+                  <option value="INCOME_DEDUCTION">소득공제용 (휴대폰 번호)</option>
+                  <option value="EXPENSE_PROOF">지출증빙용</option>
+                  <option value="NONE">미신청</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">현금영수증 발급 번호</label>
+                <input type="text" id="paid-cash-receipt-no" placeholder="010-1234-5678" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl font-mono">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1">공식 문서 기재용 소속/연락 주소 <span class="text-rose-600">*</span></label>
+                <input type="text" id="paid-official-address" placeholder="공식 보고서 작성자란에 표기할 주소" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+            </div>
+
+            <!-- 공통: 개인 자격증 & 직위 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">국가공인자격 종목명 (보유 시)</label>
+                <input type="text" id="paid-cert-name" placeholder="예: 건설안전기술사" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">국가공인자격 등록번호</label>
+                <input type="text" id="paid-cert-no" placeholder="예: 2024-123456A" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">직위 / 역할</label>
+                <input type="text" id="paid-job-title" placeholder="예: 기술지도요원 / 대표이사" class="w-full text-xs p-2.5 border border-slate-300 rounded-xl">
+              </div>
+            </div>
+          </div>
+
+          <!-- B. 별도 결재용 비밀번호 설정 (접속 비밀번호와 분리 강제) -->
+          <div class="p-4 rounded-xl bg-rose-50/50 border border-rose-200 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="text-sm font-black text-rose-950">2) 전자서명 · 직인 결재용 비밀번호 설정 <span class="text-rose-600 text-xs">(유료 필수 · 로그인 비번과 분리)</span></h3>
+              <span id="approval-pw-status" class="text-[11px] font-bold px-2 py-0.5 rounded bg-white border border-rose-200 text-rose-700">미설정</span>
+            </div>
+            <p class="text-[11px] text-rose-900 leading-relaxed">
+              공식 안전보고서에 전자서명 또는 법인 직인을 날인할 때 사용하는 2차 결재 비밀번호입니다. <strong>접속(로그인) 비밀번호와 동일한 값은 설정할 수 없습니다.</strong>
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">결재 비밀번호 방식</label>
+                <select id="paid-approval-type" onchange="updateApprovalPwPlaceholder()" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl">
+                  <option value="PIN_6">숫자 6자리 간편 결재 PIN</option>
+                  <option value="ALPHANUMERIC">영문+숫자 8자 이상 결재 비밀번호</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">새 결재용 비밀번호</label>
+                <input type="password" id="paid-approval-pw" placeholder="숫자 6자리 입력 (접속비번과 다르게)" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">결재용 비밀번호 확인</label>
+                <input type="password" id="paid-approval-pw-confirm" placeholder="결재 비밀번호 재입력" class="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl">
+              </div>
+            </div>
+          </div>
+
+          <!-- C. 전자서명 캔버스 & 법인 직인 등록 -->
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
+            <h3 class="text-sm font-black text-slate-900">3) 전자서명 및 법인 직인 이미지 등록 <span class="text-rose-600 text-xs">(유료 필수)</span></h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- 개인 전자서명 패드 -->
+              <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-800">✍️ 전자서명 (마우스/터치 서명 또는 PNG 업로드)</span>
+                  <button type="button" onclick="clearSignaturePad()" class="text-[11px] text-rose-600 font-bold hover:underline">지우기</button>
+                </div>
+                <canvas id="signature-pad-canvas" width="360" height="120" class="w-full h-28 border border-dashed border-slate-300 rounded-lg bg-slate-50 cursor-crosshair"></canvas>
+                <div class="flex items-center justify-between gap-2 text-[11px]">
+                  <input type="file" id="signature-file-input" accept="image/png,image/jpeg" onchange="handleImageUpload(this, 'signature')" class="text-[11px]">
+                  <img id="signature-preview-img" class="hidden h-10 border rounded bg-white p-0.5">
+                </div>
+              </div>
+
+              <!-- 법인 직인 등록 -->
+              <div id="corp-seal-upload-box" class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-800">🛑 법인 직인 / 사용인감 이미지</span>
+                  <button type="button" onclick="generateSampleCorpSeal()" class="text-[11px] text-blue-700 font-bold hover:underline">샘플 직인 자동생성</button>
+                </div>
+                <p class="text-[11px] text-slate-500">배경이 투명한 PNG 직인 이미지를 등록하거나 테스트용 샘플 직인을 생성할 수 있습니다.</p>
+                <div class="flex items-center gap-3 pt-2">
+                  <input type="file" id="seal-file-input" accept="image/png,image/jpeg" onchange="handleImageUpload(this, 'seal')" class="text-[11px] flex-1">
+                  <img id="seal-preview-img" class="hidden h-16 w-16 object-contain border rounded-lg p-1 bg-white">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-black text-sm shadow-md transition">
+            유료 세무·공식문서 정보 및 별도 결재 비밀번호 저장하기
+          </button>
+        </form>
+      </section>
+
+      <!-- 4. 전자서명·직인 결재 감사 로그 -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-black text-slate-900">📜 전자서명 · 직인 날인 감사 로그 (위변조 방지 SHA-256)</h2>
+          <button type="button" onclick="handleSelfWithdraw()" class="text-[11px] text-rose-600 hover:underline font-bold">회원 탈퇴하기</button>
+        </div>
+        <div id="approval-logs-container" class="text-xs text-slate-500">이력을 불러오는 중...</div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <div id="global-footer"></div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    let profileState = {
+      user: null,
+      signatureDataUrl: '',
+      sealDataUrl: '',
+      padHasStroke: false
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initLayout();
+      await loadProfilePage();
+      initSignaturePad();
+    });
+
+    async function loadProfilePage() {
+      if (!currentAuth || !currentAuth.isLoggedIn) {
+        document.getElementById('not-logged-in-box').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('account-main-box').classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/member/profile');
+        const data = await res.json();
+        if (!data.success) return;
+
+        const u = data.profile;
+        profileState.user = u;
+        renderProfileHeader(u);
+        renderPaidOnboardingForm(u);
+        renderApprovalLogs(data.approvalLogs || []);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderProfileHeader(u) {
+      const tier = u.role === 'admin' ? 'PAID' : u.membershipTier;
+      const tierBadge = document.getElementById('acc-tier-badge');
+      const typeBadge = document.getElementById('acc-type-badge');
+      const setupBadge = document.getElementById('acc-paid-setup-badge');
+      const titleEl = document.getElementById('acc-user-title');
+      const subEl = document.getElementById('acc-user-sub');
+      const widget = document.getElementById('acc-status-widget');
+
+      typeBadge.textContent = u.memberType === 'CORPORATE' ? '🏢 법인 회원' : '👤 개인 회원';
+      titleEl.textContent = `${u.name} (${u.username})`;
+      subEl.textContent = `이메일: ${u.email || '-'} · 연락처: ${u.phone || '-'}`;
+
+      if (tier === 'PAID') {
+        tierBadge.textContent = '💎 정식 유료 회원 (PAID)';
+        tierBadge.className = 'px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-slate-950';
+        setupBadge.classList.remove('hidden');
+        setupBadge.textContent = u.paidProfileCompleted ? '✅ 세무·결재 비번 설정 완료' : '⚠️ 세무·결재 비번 설정 필요';
+        setupBadge.className = u.paidProfileCompleted
+          ? 'px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-900/70 text-emerald-300 border border-emerald-500/40'
+          : 'px-2.5 py-0.5 rounded text-[11px] font-bold bg-rose-600 text-white animate-pulse';
+
+        const subInfo = u.subscriptionInfo;
+        widget.innerHTML = subInfo
+          ? `
+            <div class="font-bold text-emerald-300">💳 Payment Code: <span class="font-mono">${escapeHtml(subInfo.paymentCode)}</span></div>
+            <div class="text-slate-300">구독 기관: ${escapeHtml(subInfo.companyName)}</div>
+            <div class="text-slate-400">당월 유효기한: <b class="text-white">${escapeHtml(subInfo.currentPeriodEnd || '-')}</b></div>
+          `
+          : `<div class="font-bold text-emerald-300">관리자 승인 유료 / 마스터 계정</div><div class="text-slate-400">모든 AI 분석 및 공식문서 발행 가능</div>`;
+      } else if (tier === 'TRIAL') {
+        tierBadge.textContent = '🎁 1개월 유료 맛보기 (TRIAL)';
+        tierBadge.className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-400 text-slate-950';
+        const ti = u.trialInfo || {};
+        const pct = Math.min(100, Math.round(((ti.quotaUsed || 0) / (ti.quotaTotal || 30)) * 100));
+        widget.innerHTML = `
+          <div class="flex items-center justify-between font-bold text-amber-300">
+            <span>잔여 체험: ${ti.daysRemaining || 0}일 남음</span>
+            <span>${ti.quotaUsed || 0} / ${ti.quotaTotal || 30}회</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div class="h-full bg-amber-400" style="width:${pct}%"></div>
+          </div>
+          <div class="text-[11px] text-slate-400">만료일: ${String(ti.expiresAt || '').slice(0, 10)} (체험용 워터마크 적용)</div>
+        `;
+      } else {
+        tierBadge.textContent = '🌱 무료 회원 (FREE)';
+        tierBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-slate-700 text-slate-200';
+        widget.innerHTML = `<div class="font-bold text-slate-300">무료 기본 등급</div><div class="text-[11px] text-slate-400">1개월 무료 맛보기 또는 Payment Code 연동 후 AI 정밀진단을 이용할 수 있습니다.</div>`;
+      }
+    }
+
+    function renderPaidOnboardingForm(u) {
+      const upgradeSec = document.getElementById('tier-upgrade-section');
+      const trialCard = document.getElementById('trial-start-card');
+      const paidSec = document.getElementById('paid-onboarding-section');
+      const isPaid = (u.role === 'admin' || u.membershipTier === 'PAID');
+
+      if (u.hasUsedTrial || u.membershipTier === 'TRIAL' || isPaid) {
+        trialCard.classList.add('opacity-60');
+        const btnTrial = document.getElementById('btn-activate-trial');
+        if (btnTrial) {
+          btnTrial.disabled = true;
+          btnTrial.textContent = isPaid ? '이미 정식 유료 회원입니다' : (u.membershipTier === 'TRIAL' ? '현재 1개월 유료 맛보기 이용 중' : '이미 1개월 맛보기를 사용하셨습니다');
+        }
+      }
+
+      if (!isPaid) {
+        paidSec.classList.add('hidden');
+        return;
+      }
+
+      paidSec.classList.remove('hidden');
+      const pill = document.getElementById('paid-completion-pill');
+      pill.textContent = u.paidProfileCompleted ? '✅ 유료 필수 설정 완료' : '⚠️ 필수 입력 대기중';
+      pill.className = u.paidProfileCompleted
+        ? 'px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-slate-950'
+        : 'px-3 py-1 rounded-full text-xs font-black bg-amber-400 text-slate-950';
+
+      const isCorpEmployee = Boolean(u.memberType === 'INDIVIDUAL' && u.subscriptionInfo && u.subscriptionInfo.ownerType === 'CORPORATE' && !u.subscriptionInfo.isOwner);
+      const inhBanner = document.getElementById('inherited-corp-banner');
+      const inhDetails = document.getElementById('inherited-corp-details');
+      const taxSelect = document.getElementById('paid-tax-payer-type');
+      const bizGrid = document.getElementById('biz-tax-grid');
+      const nonBizGrid = document.getElementById('non-biz-grid');
+      const corpSealBox = document.getElementById('corp-seal-upload-box');
+
+      if (isCorpEmployee && u.inheritedCorporateInfo) {
+        inhBanner.classList.remove('hidden');
+        const c = u.inheritedCorporateInfo;
+        inhDetails.innerHTML = `
+          <div><b>상호/법인명:</b> ${escapeHtml(c.companyName)}</div>
+          <div><b>사업자등록번호:</b> ${escapeHtml(c.businessRegNo)}</div>
+          <div><b>대표자:</b> ${escapeHtml(c.ceoName || '-')}</div>
+          <div><b>기관지정번호:</b> ${escapeHtml(c.agencyRegNo || '-')}</div>
+          <div class="sm:col-span-2"><b>사업장 주소:</b> ${escapeHtml(c.businessAddress || '-')}</div>
+        `;
+        taxSelect.classList.add('hidden');
+        bizGrid.classList.add('hidden');
+        nonBizGrid.classList.add('hidden');
+        corpSealBox.classList.add('hidden');
+      } else {
+        inhBanner.classList.add('hidden');
+        taxSelect.classList.remove('hidden');
+        taxSelect.value = u.taxPayerType || (u.memberType === 'CORPORATE' ? 'CORPORATE' : 'INDIVIDUAL');
+        toggleTaxPayerFields();
+        if (u.memberType !== 'CORPORATE' && u.role !== 'admin') {
+          corpSealBox.classList.add('hidden');
+        } else {
+          corpSealBox.classList.remove('hidden');
+        }
+      }
+
+      document.getElementById('paid-biz-no').value = u.businessRegNo || '';
+      document.getElementById('paid-sub-biz-no').value = u.subBusinessNo || '';
+      document.getElementById('paid-company-name').value = u.companyName || '';
+      document.getElementById('paid-ceo-name').value = u.ceoName || '';
+      document.getElementById('paid-biz-address').value = u.businessAddress || '';
+      document.getElementById('paid-biz-type').value = u.businessType || '';
+      document.getElementById('paid-biz-item').value = u.businessItem || '';
+      document.getElementById('paid-tax-email').value = u.taxInvoiceEmail || u.email || '';
+      document.getElementById('paid-agency-reg-no').value = u.agencyRegNo || '';
+      document.getElementById('paid-cash-receipt-type').value = u.cashReceiptType || 'INCOME_DEDUCTION';
+      document.getElementById('paid-official-address').value = u.officialDocAddress || '';
+      document.getElementById('paid-cert-name').value = u.nationalCertName || '';
+      document.getElementById('paid-cert-no').value = u.nationalCertNo || '';
+      document.getElementById('paid-job-title').value = u.jobTitle || '';
+
+      const apStatus = document.getElementById('approval-pw-status');
+      apStatus.textContent = u.hasApprovalPassword ? '✅ 별도 결재 비밀번호 등록됨 (변경 시에만 입력)' : '⚠️ 미설정 (필수)';
+
+      if (u.signatureImagePath) {
+        profileState.signatureDataUrl = u.signatureImagePath;
+        const img = document.getElementById('signature-preview-img');
+        img.src = u.signatureImagePath;
+        img.classList.remove('hidden');
+      }
+      if (u.corporateSealPath) {
+        profileState.sealDataUrl = u.corporateSealPath;
+        const img = document.getElementById('seal-preview-img');
+        img.src = u.corporateSealPath;
+        img.classList.remove('hidden');
+      }
+    }
+
+    function toggleTaxPayerFields() {
+      const val = document.getElementById('paid-tax-payer-type').value;
+      const bizGrid = document.getElementById('biz-tax-grid');
+      const nonBizGrid = document.getElementById('non-biz-grid');
+      if (val === 'INDIVIDUAL') {
+        bizGrid.classList.add('hidden');
+        nonBizGrid.classList.remove('hidden');
+      } else {
+        bizGrid.classList.remove('hidden');
+        nonBizGrid.classList.add('hidden');
+      }
+    }
+
+    function updateApprovalPwPlaceholder() {
+      const t = document.getElementById('paid-approval-type').value;
+      const inp = document.getElementById('paid-approval-pw');
+      inp.placeholder = t === 'PIN_6' ? '숫자 6자리 입력 (접속비번과 다르게)' : '영문+숫자 8자 이상 (접속비번과 다르게)';
+    }
+
+    function initSignaturePad() {
+      const canvas = document.getElementById('signature-pad-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      let drawing = false;
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: (clientX - rect.left) * (canvas.width / rect.width),
+          y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+      }
+
+      canvas.addEventListener('mousedown', (e) => { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+      canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        const p = getPos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        profileState.padHasStroke = true;
+      });
+      window.addEventListener('mouseup', () => {
+        if (drawing && profileState.padHasStroke) {
+          profileState.signatureDataUrl = canvas.toDataURL('image/png');
+        }
+        drawing = false;
+      });
+    }
+
+    function clearSignaturePad() {
+      const canvas = document.getElementById('signature-pad-canvas');
+      if (!canvas) return;
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      profileState.padHasStroke = false;
+      profileState.signatureDataUrl = '';
+    }
+
+    function handleImageUpload(input, target) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (target === 'signature') {
+          profileState.signatureDataUrl = reader.result;
+          const img = document.getElementById('signature-preview-img');
+          img.src = reader.result;
+          img.classList.remove('hidden');
+        } else {
+          profileState.sealDataUrl = reader.result;
+          const img = document.getElementById('seal-preview-img');
+          img.src = reader.result;
+          img.classList.remove('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function generateSampleCorpSeal() {
+      const name = document.getElementById('paid-company-name').value.trim() || profileState.user?.name || 'BEPMC법인';
+      const c = document.createElement('canvas');
+      c.width = 140; c.height = 140;
+      const ctx = c.getContext('2d');
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(10, 10, 120, 120);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(name.slice(0, 4), 70, 62);
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText('대표이사인', 70, 96);
+      const dataUrl = c.toDataURL('image/png');
+      profileState.sealDataUrl = dataUrl;
+      const img = document.getElementById('seal-preview-img');
+      img.src = dataUrl;
+      img.classList.remove('hidden');
+    }
+
+    async function activateTrial() {
+      if (!confirm('1개월 무료 유료 맛보기(비용 연관 AI API 월 30회 제한)를 지금 시작하시겠습니까?')) return;
+      try {
+        const res = await fetch('/api/member/start-trial', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) location.reload();
+      } catch (e) {
+        alert('오류가 발생했습니다.');
+      }
+    }
+
+    async function redeemPaymentCode() {
+      const code = document.getElementById('redeem-code-input').value.trim();
+      if (!code) { alert('Payment Code를 입력해주세요.'); return; }
+      try {
+        const res = await fetch('/api/member/redeem-payment-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentCode: code })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) location.reload();
+      } catch (e) {
+        alert('코드 연동 중 오류 발생');
+      }
+    }
+
+    async function savePaidProfile(e) {
+      e.preventDefault();
+      const apPw = document.getElementById('paid-approval-pw').value;
+      const apPw2 = document.getElementById('paid-approval-pw-confirm').value;
+      if (apPw && apPw !== apPw2) {
+        alert('결재용 비밀번호 확인이 일치하지 않습니다.');
+        return;
+      }
+
+      const payload = {
+        taxPayerType: document.getElementById('paid-tax-payer-type').value,
+        businessRegNo: document.getElementById('paid-biz-no').value.trim(),
+        subBusinessNo: document.getElementById('paid-sub-biz-no').value.trim(),
+        companyName: document.getElementById('paid-company-name').value.trim(),
+        ceoName: document.getElementById('paid-ceo-name').value.trim(),
+        businessAddress: document.getElementById('paid-biz-address').value.trim(),
+        businessType: document.getElementById('paid-biz-type').value.trim(),
+        businessItem: document.getElementById('paid-biz-item').value.trim(),
+        taxInvoiceEmail: document.getElementById('paid-tax-email').value.trim(),
+        agencyRegNo: document.getElementById('paid-agency-reg-no').value.trim(),
+        cashReceiptType: document.getElementById('paid-cash-receipt-type').value,
+        cashReceiptNo: document.getElementById('paid-cash-receipt-no').value.trim(),
+        officialDocAddress: document.getElementById('paid-official-address').value.trim(),
+        nationalCertName: document.getElementById('paid-cert-name').value.trim(),
+        nationalCertNo: document.getElementById('paid-cert-no').value.trim(),
+        jobTitle: document.getElementById('paid-job-title').value.trim(),
+        approvalPasswordType: document.getElementById('paid-approval-type').value,
+        approvalPassword: apPw || undefined,
+        signatureImagePath: profileState.signatureDataUrl,
+        corporateSealPath: profileState.sealDataUrl
+      };
+
+      try {
+        const res = await fetch('/api/member/paid-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) location.reload();
+      } catch (e) {
+        alert('저장 중 오류가 발생했습니다.');
+      }
+    }
+
+    function renderApprovalLogs(logs) {
+      const container = document.getElementById('approval-logs-container');
+      if (!logs || logs.length === 0) {
+        container.innerHTML = '<div class="py-4 text-center text-slate-400">아직 전자서명 또는 직인 날인 이력이 없습니다.</div>';
+        return;
+      }
+      container.innerHTML = `
+        <table class="w-full text-left text-[11px] border-t border-slate-200">
+          <thead class="bg-slate-50 text-slate-600 font-bold">
+            <tr>
+              <th class="p-2">보고서 ID</th>
+              <th class="p-2">유형</th>
+              <th class="p-2">날인 구분</th>
+              <th class="p-2">무결성 해시 (SHA-256)</th>
+              <th class="p-2">결재 일시</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            ${logs.map(l => `
+              <tr>
+                <td class="p-2 font-mono font-bold text-slate-800">${escapeHtml(l.reportId || l.report_id)}</td>
+                <td class="p-2">${escapeHtml(l.reportType || l.report_type)}</td>
+                <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">${escapeHtml(l.sealUsedType || l.seal_used_type)}</span></td>
+                <td class="p-2 font-mono text-slate-500">${escapeHtml(String(l.documentSha256 || l.document_sha256 || '').slice(0, 16))}...</td>
+                <td class="p-2 text-slate-500">${escapeHtml(String(l.signedAt || l.signed_at || '').slice(0, 19).replace('T', ' '))}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function handleSelfWithdraw() {
+      if (!confirm('정말 회원 탈퇴하시겠습니까?\n\n보안 정책에 따라 현재 사용 중인 아이디는 영구히 재사용할 수 없습니다.')) return;
+      try {
+        const res = await fetch('/api/member/withdraw', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) location.href = '/index.html';
+      } catch (e) {
+        alert('탈퇴 처리 오류');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -15,6 +15,7 @@ const railwaySafetyAnalysisService = require('./services/railwaySafetyAnalysisSe
 const universalSafetyAnalysisService = require('./services/universalSafetyAnalysisService');
 const geminiQuotaService = require('./services/geminiQuotaService');
 const geminiVideoAnalysisService = require('./services/geminiVideoAnalysisService');
+const memberSecurityService = require('./services/memberSecurityService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -72,7 +73,44 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// [보안 미들웨어] 인증된 관리자 또는 유료 가입 회원만 허용
+function buildSessionUser(user) {
+  if (!user) return null;
+  const tier = user.role === 'admin' ? 'PAID' : (user.membershipTier || (user.role === 'paid_member' ? 'PAID' : 'FREE'));
+  const isPaid = (user.role === 'admin' || tier === 'PAID');
+  const isTrial = (tier === 'TRIAL' && user.trialInfo && user.trialInfo.isActive);
+
+  return {
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    memberType: user.memberType || 'INDIVIDUAL',
+    membershipTier: tier,
+    membership: isPaid ? 'paid' : (isTrial ? 'trial' : 'free'),
+    phone: user.phone || '',
+    emailVerified: Boolean(user.emailVerified),
+    trialInfo: user.trialInfo || null,
+    subscriptionInfo: user.subscriptionInfo || null,
+    inheritedCorporateInfo: user.inheritedCorporateInfo || null,
+    paidProfileCompleted: Boolean(user.paidProfileCompleted),
+    hasApprovalPassword: Boolean(user.hasApprovalPassword),
+    canUseCorporateSeal: Boolean(user.canUseCorporateSeal),
+    companyName: user.companyName || '',
+    businessRegNo: user.businessRegNo || '',
+    nationalCertName: user.nationalCertName || '',
+    nationalCertNo: user.nationalCertNo || '',
+    affiliationCompany: user.affiliationCompany || '',
+    jobTitle: user.jobTitle || '',
+    primaryDomain: user.primaryDomain || 'UNIVERSAL',
+    defaultSiteName: user.defaultSiteName || '',
+    signatureImagePath: user.signatureImagePath || '',
+    corporateSealPath: user.corporateSealPath || ''
+  };
+}
+
+// [보안 미들웨어] 인증된 관리자, 유료 회원, 또는 활성 1개월 유료 맛보기 회원 허용
 function requirePaidOrAdmin(req, res, next) {
   if (!req.session.user) {
     return res.status(401).json({
@@ -87,23 +125,24 @@ function requirePaidOrAdmin(req, res, next) {
       message: '관리자의 가입 승인이 완료되지 않은 계정입니다.'
     });
   }
-  const isAuthorized = (req.session.user.role === 'admin' || req.session.user.role === 'paid_member' || req.session.user.membership === 'paid');
+  const tier = req.session.user.membershipTier;
+  const isAuthorized = (req.session.user.role === 'admin' || req.session.user.role === 'paid_member' || tier === 'PAID' || tier === 'TRIAL');
   if (!isAuthorized) {
     return res.status(403).json({
       success: false,
       requirePaid: true,
-      message: '인증된 관리자 및 기술지도 유료 구독 회원 전용 서비스입니다. 플랜 가입 후 이용 가능합니다.'
+      message: '유료 회원 또는 1개월 유료 맛보기 회원 전용 서비스입니다. 무료 체험 신청 또는 Payment Code 등록 후 이용 가능합니다.'
     });
   }
   next();
 }
 
 // ---------------------------------------------------------------------
-// 1. Auth & Session API
+// 1. Auth & Session API (4단계 등급: GUEST / FREE / TRIAL / PAID)
 // ---------------------------------------------------------------------
 
-// 내 정보 확인
-app.get('/api/auth/me', (req, res) => {
+// 내 정보 확인 (DB에서 실시간 구독/만료/상속 정보 동기화)
+app.get('/api/auth/me', async (req, res) => {
   const dbType = isSupabaseConfigured() ? 'Supabase' : 'Local';
   if (!req.session.user) {
     return res.json({
@@ -111,19 +150,111 @@ app.get('/api/auth/me', (req, res) => {
       user: null,
       mode: 'guest',
       membership: 'none',
+      membershipTier: 'GUEST',
       canAccessDashboard: false,
       dbType
     });
   }
-  const isAuthorized = (req.session.user.role === 'admin' || req.session.user.role === 'paid_member' || req.session.user.membership === 'paid');
+
+  try {
+    const freshUser = await dbService.findUserById(req.session.user.id);
+    if (freshUser && freshUser.status !== 'withdrawn') {
+      req.session.user = buildSessionUser(freshUser);
+    }
+  } catch (e) {}
+
+  const u = req.session.user;
+  const tier = u.role === 'admin' ? 'PAID' : (u.membershipTier || 'FREE');
+  const canAccess = (u.role === 'admin' || tier === 'PAID' || tier === 'TRIAL');
+
   res.json({
     isLoggedIn: true,
-    user: req.session.user,
-    mode: req.session.user.role === 'admin' ? 'admin' : (req.session.user.role === 'paid_member' ? 'paid_member' : 'member'),
-    membership: isAuthorized ? 'paid' : 'free',
-    canAccessDashboard: isAuthorized,
+    user: u,
+    mode: u.role === 'admin' ? 'admin' : (tier === 'PAID' ? 'paid_member' : (tier === 'TRIAL' ? 'trial_member' : 'member')),
+    membership: tier === 'PAID' ? 'paid' : (tier === 'TRIAL' ? 'trial' : 'free'),
+    membershipTier: tier,
+    canAccessDashboard: canAccess,
     dbType
   });
+});
+
+// ID 사용 가능 여부 및 탈퇴자 ID 중복 실시간 확인
+app.get('/api/auth/check-id', async (req, res) => {
+  try {
+    const username = String(req.query.username || '').trim();
+    const result = await dbService.enterprise.checkLoginIdAvailability(username);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, available: false, message: '아이디 확인 중 오류가 발생했습니다.' });
+  }
+});
+
+// 이메일 유효성 확인 인증코드 발송
+app.post('/api/auth/send-email-code', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const emailCheck = memberSecurityService.validateEmail(email);
+    if (!emailCheck.isValid) {
+      return res.status(400).json({ success: false, message: emailCheck.message });
+    }
+    const alreadyUsed = await dbService.enterprise.isEmailAlreadyUsed(emailCheck.normalized);
+    if (alreadyUsed) {
+      return res.status(409).json({ success: false, message: '이미 가입된 이메일 주소입니다.' });
+    }
+    const issued = memberSecurityService.issueEmailVerificationCode(emailCheck.normalized);
+    res.json({
+      success: true,
+      email: issued.email,
+      expiresAt: issued.expiresAt,
+      // 로컬/테스트 환경에서 즉시 인증 테스트 가능하도록 previewCode 함께 반환
+      previewCode: issued.code,
+      message: `인증코드 6자리가 ${issued.email} 로 발송되었습니다. (10분 유효)`
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 이메일 인증코드 검증
+app.post('/api/auth/verify-email-code', (req, res) => {
+  try {
+    const { email, code } = req.body;
+    const result = memberSecurityService.verifyEmailCode(email, code);
+    if (!result.verified) {
+      return res.status(400).json({ success: false, ...result });
+    }
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '이메일 인증 확인 중 오류가 발생했습니다.' });
+  }
+});
+
+// Payment Code 사전 유효성 및 법인 정보 미리보기 확인
+app.get('/api/auth/check-payment-code', async (req, res) => {
+  try {
+    const code = String(req.query.code || '').trim();
+    if (!code) {
+      return res.status(400).json({ success: false, valid: false, message: 'Payment Code를 입력해주세요.' });
+    }
+    const sub = await dbService.enterprise.findSubscriptionByCode(code);
+    if (!sub) {
+      return res.json({ success: true, valid: false, message: '존재하지 않는 Payment Code입니다.' });
+    }
+    const isValid = dbService.enterprise.isSubscriptionCurrentlyValid(sub);
+    res.json({
+      success: true,
+      valid: isValid,
+      ownerType: sub.ownerType,
+      companyName: sub.companyName,
+      planName: sub.planName,
+      currentPeriodEnd: sub.currentPeriodEnd,
+      message: isValid
+        ? `[${sub.companyName}] 유료 구독 코드 확인 완료 (만료일: ${sub.currentPeriodEnd}) — 가입 시 자동 유료 승계`
+        : `[${sub.companyName}] 해당 Payment Code는 당월 입금 미확인 또는 만료 상태입니다.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Payment Code 확인 중 오류 발생' });
+  }
 });
 
 // 로그인
@@ -132,12 +263,41 @@ app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
     const user = await dbService.findUserByUsername(username);
 
-    const masterPassword = process.env.ADMIN_MASTER_PASSWORD;
-    const isMasterAdmin = (username === 'admin' && Boolean(masterPassword && password === masterPassword));
-    const isPasswordMatch = user && user.password && (user.password === password);
-
-    if (!user || (!isMasterAdmin && !isPasswordMatch)) {
+    if (!user) {
       return res.status(400).json({ success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+    }
+    if (user.status === 'withdrawn') {
+      return res.status(403).json({ success: false, message: '탈퇴 처리된 계정입니다. 동일 아이디로는 재로그인이 불가합니다.' });
+    }
+    if (user.lockedUntil && new Date(user.lockedUntil).getTime() > Date.now()) {
+      const remainMin = Math.ceil((new Date(user.lockedUntil).getTime() - Date.now()) / 60000);
+      return res.status(429).json({
+        success: false,
+        message: `로그인 비밀번호 5회 이상 오입력으로 계정이 일시 잠금되었습니다. ${remainMin}분 후 다시 시도해주세요.`
+      });
+    }
+
+    const masterPassword = process.env.ADMIN_MASTER_PASSWORD;
+    const isMasterAdmin = (String(username).toLowerCase() === 'admin' && Boolean(masterPassword && password === masterPassword));
+    const isPasswordMatch = memberSecurityService.verifySecret(password, user.password);
+
+    if (!isMasterAdmin && !isPasswordMatch) {
+      const nextFails = (user.failedLoginAttempts || 0) + 1;
+      const patch = { failedLoginAttempts: nextFails };
+      if (nextFails >= 5) {
+        patch.lockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      }
+      await dbService.enterprise.updateMemberFields(user.id, user.username, patch);
+      return res.status(400).json({
+        success: false,
+        message: nextFails >= 5
+          ? '비밀번호 5회 연속 오류로 15분간 로그인이 제한됩니다.'
+          : `아이디 또는 비밀번호가 올바르지 않습니다. (${nextFails}/5회)`
+      });
+    }
+
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      await dbService.enterprise.updateMemberFields(user.id, user.username, { failedLoginAttempts: 0, lockedUntil: null });
     }
 
     // 관리자는 승인여부 무관(기본 approved)
@@ -156,24 +316,18 @@ app.post('/api/auth/login', async (req, res) => {
       }
     }
 
-    const isPaid = (user.role === 'admin' || user.role === 'paid_member');
+    // 세션 저장 (실시간 등급 및 상속 정보 포함)
+    req.session.user = buildSessionUser(user);
 
-    // 세션 저장
-    req.session.user = {
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      membership: isPaid ? 'paid' : 'free',
-      status: user.status
-    };
-
-    const roleName = user.role === 'admin' ? '관리자 모드' : (user.role === 'paid_member' ? '유료 회원 모드' : '일반 회원 모드');
+    const tierLabel = user.role === 'admin'
+      ? '관리자 모드'
+      : (req.session.user.membershipTier === 'PAID'
+        ? '유료 회원(PAID)'
+        : (req.session.user.membershipTier === 'TRIAL' ? '1개월 유료 맛보기(TRIAL)' : '무료 회원(FREE)'));
 
     res.json({
       success: true,
-      message: `${user.name}님 환영합니다. (${roleName})`,
+      message: `${user.name}님 환영합니다. (${tierLabel})`,
       user: req.session.user
     });
   } catch (err) {
@@ -182,44 +336,146 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// 회원가입 신청 (기본 상태: pending)
+// 법인·개인 통합 회원가입 신청
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { username, password, name, email, site, phone } = req.body;
-    if (!username || !password || !name) {
-      return res.status(400).json({ success: false, message: '모든 필수 항목을 입력해주세요.' });
+    const {
+      username,
+      password,
+      memberType = 'INDIVIDUAL',
+      name,
+      phone,
+      email,
+      emailVerificationCode,
+      businessRegNo,
+      companyName,
+      ceoName,
+      businessAddress,
+      nationalCertName,
+      nationalCertNo,
+      startTrial = false,
+      paymentCode = '',
+      managerPhone = '',
+      primaryDomain = 'UNIVERSAL',
+      defaultSiteName = '',
+      jobTitle = '',
+      marketingAgreed = false,
+      site // 레거시 호환
+    } = req.body;
+
+    // 1. ID 중복 및 탈퇴자 ID 체크
+    const idCheck = await dbService.enterprise.checkLoginIdAvailability(username);
+    if (!idCheck.available) {
+      return res.status(idCheck.reason === 'INVALID_FORMAT' ? 400 : 409).json({
+        success: false,
+        message: idCheck.message
+      });
     }
 
-    const existing = await dbService.findUserByUsername(username);
-    if (existing) {
-      return res.status(400).json({ success: false, message: '이미 존재하는 아이디입니다.' });
+    // 2. 접속 비밀번호 강도 체크
+    const pwEval = memberSecurityService.evaluatePasswordStrength(password, idCheck.normalized, email);
+    if (!pwEval.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: pwEval.errors[0],
+        passwordErrors: pwEval.errors
+      });
     }
 
-    // 소속 현장 및 연락처가 전달된 경우 성명 필드에 유용한 메타정보 함께 표기
-    let displayName = name.trim();
-    if (site && !displayName.includes(site)) {
-      displayName = `${displayName} [${site.trim()}]`;
-    }
-    if (phone && !displayName.includes(phone)) {
-      displayName = `${displayName} (${phone.trim()})`;
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ success: false, message: '성명 또는 법인명을 입력해주세요.' });
     }
 
-    await dbService.createUser({
-      username: username.trim(),
-      password: password.trim(),
-      name: displayName,
-      email: email ? email.trim() : `${username.trim()}@bepmc-site.co.kr`,
-      role: 'member',
-      status: 'pending' // 관리자 승인 대기
-    });
+    // 3. 연락처 검증
+    const phoneCheck = memberSecurityService.validatePhone(phone);
+    if (!phoneCheck.isValid) {
+      return res.status(400).json({ success: false, message: phoneCheck.message });
+    }
+
+    // 4. 이메일 검증 + 중복 + 인증코드 확인
+    const emailCheck = memberSecurityService.validateEmail(email);
+    if (!emailCheck.isValid) {
+      return res.status(400).json({ success: false, message: emailCheck.message });
+    }
+    if (await dbService.enterprise.isEmailAlreadyUsed(emailCheck.normalized)) {
+      return res.status(409).json({ success: false, message: '이미 가입된 이메일 주소입니다.' });
+    }
+
+    let emailVerified = memberSecurityService.isEmailVerifiedInSession(emailCheck.normalized);
+    if (!emailVerified && emailVerificationCode) {
+      const otpResult = memberSecurityService.verifyEmailCode(emailCheck.normalized, emailVerificationCode);
+      if (!otpResult.verified) {
+        return res.status(400).json({ success: false, message: otpResult.message });
+      }
+      emailVerified = true;
+    }
+    if (!emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: '이메일 유효성 확인을 위해 [인증코드 발송] 및 인증 확인을 먼저 완료해주세요.'
+      });
+    }
+
+    // 5. 법인 사업자등록번호 필수 검증 (법인 회원)
+    let normalizedBizNo = '';
+    if (memberType === 'CORPORATE') {
+      const bizCheck = memberSecurityService.validateKoreanBizRegNo(businessRegNo);
+      if (!bizCheck.isValid) {
+        return res.status(400).json({ success: false, message: bizCheck.message });
+      }
+      normalizedBizNo = bizCheck.normalized;
+    }
+
+    // 6. 1개월 유료 맛보기 1회성 자격 확인
+    if (startTrial && !paymentCode) {
+      const trialElig = await dbService.enterprise.checkTrialEligibility({
+        email: emailCheck.normalized,
+        phone: phoneCheck.normalized,
+        businessRegNo: normalizedBizNo
+      });
+      if (!trialElig.eligible) {
+        return res.status(409).json({ success: false, message: trialElig.message });
+      }
+    }
+
+    const passwordHash = memberSecurityService.hashSecret(password);
+    const createdUser = await dbService.enterprise.registerEnterpriseMember({
+      username: idCheck.normalized,
+      passwordHash,
+      memberType,
+      name: String(name).trim(),
+      phone: phoneCheck.normalized,
+      email: emailCheck.normalized,
+      emailVerified: true,
+      businessRegNo: normalizedBizNo,
+      companyName: String(companyName || '').trim(),
+      ceoName: String(ceoName || '').trim(),
+      businessAddress: String(businessAddress || '').trim(),
+      nationalCertName: String(nationalCertName || '').trim(),
+      nationalCertNo: String(nationalCertNo || '').trim(),
+      startTrial: Boolean(startTrial),
+      paymentCode: String(paymentCode || '').trim(),
+      managerPhone: String(managerPhone || '').trim(),
+      primaryDomain: primaryDomain || 'UNIVERSAL',
+      defaultSiteName: String(defaultSiteName || site || '').trim(),
+      jobTitle: String(jobTitle || '').trim(),
+      marketingAgreed: Boolean(marketingAgreed)
+    }, dbService);
+
+    const tierNotice = createdUser.membershipTier === 'PAID'
+      ? '입력하신 유료 Payment Code로 즉시 유료 회원 권한이 연동되었습니다.'
+      : (createdUser.membershipTier === 'TRIAL'
+        ? '1개월 무료 유료 맛보기(월 30회 한도)가 신청되었습니다.'
+        : '일반 무료 회원으로 신청되었습니다.');
 
     res.json({
       success: true,
-      message: '회원가입 신청이 완료되었습니다. 본사 관리자의 승인 후 정식 이용이 가능합니다.'
+      user: dbService.enterprise.toSafeUserDto(createdUser),
+      message: `회원가입 신청이 완료되었습니다. ${tierNotice} 관리자 승인 후 로그인하여 이용하실 수 있습니다.`
     });
   } catch (err) {
     console.error('Register error:', err);
-    res.status(500).json({ success: false, message: '회원가입 처리 중 오류가 발생했습니다.' });
+    res.status(400).json({ success: false, message: err.message || '회원가입 처리 중 오류가 발생했습니다.' });
   }
 });
 
@@ -891,10 +1147,488 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
     }
 
     await dbService.deleteUser(id);
-    res.json({ success: true, message: '회원이 삭제되었습니다.' });
+    res.json({ success: true, message: '회원이 탈퇴(비활성) 처리되었으며 아이디는 영구 보호 목록에 등록되었습니다.' });
   } catch (err) {
     console.error('Delete user error:', err);
     res.status(500).json({ success: false, message: '회원 삭제 실패' });
+  }
+});
+
+// 관리자: 4단계 회원 등급 직접 변경 (FREE / TRIAL 1개월·30회 / PAID)
+app.put('/api/admin/users/:id/tier', requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { tier } = req.body; // 'FREE' | 'TRIAL' | 'PAID'
+    if (!['FREE', 'TRIAL', 'PAID'].includes(tier)) {
+      return res.status(400).json({ success: false, message: '유효하지 않은 회원 등급입니다. (FREE, TRIAL, PAID)' });
+    }
+    const user = await dbService.findUserById(id);
+    if (!user) return res.status(404).json({ success: false, message: '사용자를 찾을 수 없습니다.' });
+    if (user.role === 'admin') return res.status(400).json({ success: false, message: '관리자 등급은 변경할 수 없습니다.' });
+
+    const now = new Date();
+    const patch = {
+      membershipTier: tier,
+      role: tier === 'PAID' ? 'paid_member' : 'member'
+    };
+    if (tier === 'TRIAL') {
+      patch.trialStatus = 'ACTIVE';
+      patch.trialStartedAt = now.toISOString();
+      patch.trialExpiresAt = memberSecurityService.addOneMonthIso(now);
+      patch.trialQuotaTotal = 30;
+      patch.trialQuotaUsed = 0;
+      patch.hasUsedTrial = true;
+    }
+
+    await dbService.enterprise.updateMemberFields(id, user.username, patch);
+    res.json({
+      success: true,
+      message: `${user.name}님의 등급이 '${tier}'(으)로 전환되었습니다.`,
+      tier
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '등급 전환 실패: ' + err.message });
+  }
+});
+
+// 관리자: 유료 구독 및 Payment Code 목록 조회
+app.get('/api/admin/subscriptions', requireAdmin, async (req, res) => {
+  try {
+    const subscriptions = await dbService.enterprise.getAllSubscriptionsWithStats();
+    res.json({ success: true, subscriptions });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '구독 목록 조회 실패' });
+  }
+});
+
+// 관리자: 신규 법인/개인 Payment Code 발급
+app.post('/api/admin/subscriptions', requireAdmin, async (req, res) => {
+  try {
+    const { ownerType, companyName, businessRegNo, ceoName, businessAddress, agencyRegNo, planName, maxSeats, monthlyFee, startActive } = req.body;
+    if (!companyName) {
+      return res.status(400).json({ success: false, message: '법인(기관)명 또는 구독자명을 입력해주세요.' });
+    }
+    if (ownerType === 'CORPORATE' && businessRegNo) {
+      const bizCheck = memberSecurityService.validateKoreanBizRegNo(businessRegNo);
+      if (!bizCheck.isValid) {
+        return res.status(400).json({ success: false, message: bizCheck.message });
+      }
+    }
+    const created = await dbService.enterprise.createSubscription({
+      ownerType: ownerType || 'CORPORATE',
+      companyName,
+      businessRegNo,
+      ceoName,
+      businessAddress,
+      agencyRegNo,
+      planName,
+      maxSeats: Number(maxSeats) || 10,
+      monthlyFee: Number(monthlyFee) || 330000,
+      startActive: startActive !== false
+    });
+    res.json({
+      success: true,
+      subscription: created,
+      message: `신규 Payment Code [${created.paymentCode}] 가 발급되었습니다.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Payment Code 발급 실패: ' + err.message });
+  }
+});
+
+// 관리자: 월별 입금 확인 처리 (+1개월 연장 및 소속 개인 자동 유료 유지)
+app.post('/api/admin/subscriptions/:id/confirm-payment', requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { billingMonth, paidAmount, depositorName, paymentMethod } = req.body;
+    const updated = await dbService.enterprise.confirmMonthlyPayment(id, {
+      billingMonth,
+      paidAmount,
+      depositorName,
+      paymentMethod,
+      verifiedBy: req.session.user.username
+    });
+    if (!updated) return res.status(404).json({ success: false, message: '구독을 찾을 수 없습니다.' });
+    res.json({
+      success: true,
+      subscription: updated,
+      message: `[${updated.paymentCode}] 당월 입금이 확인되어 유효기간이 ${updated.currentPeriodEnd} 까지 연장되었습니다.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '입금 확인 처리 실패' });
+  }
+});
+
+// 관리자: 월별 입금 미확인 시 구독 만료/정지 처리 (소속 개인 자동 차단 연동)
+app.put('/api/admin/subscriptions/:id/status', requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { billingStatus } = req.body;
+    if (!['ACTIVE', 'EXPIRED', 'SUSPENDED', 'PENDING_PAYMENT'].includes(billingStatus)) {
+      return res.status(400).json({ success: false, message: '유효하지 않은 구독 상태입니다.' });
+    }
+    const updated = await dbService.enterprise.updateSubscriptionStatus(id, billingStatus);
+    if (!updated) return res.status(404).json({ success: false, message: '구독을 찾을 수 없습니다.' });
+    res.json({
+      success: true,
+      subscription: updated,
+      message: `[${updated.paymentCode}] 상태가 '${billingStatus}'(으)로 변경되었습니다.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '구독 상태 변경 실패' });
+  }
+});
+
+// ---------------------------------------------------------------------
+// 6. Member Self-Service: 1개월 맛보기, Payment Code, 유료 세무·공식문서 프로필, 결재 비밀번호 & 날인
+// ---------------------------------------------------------------------
+
+// 회원 상세 프로필 및 결재/날인 이력 조회
+app.get('/api/member/profile', requireMember, async (req, res) => {
+  try {
+    const user = await dbService.findUserById(req.session.user.id);
+    if (!user) return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
+    req.session.user = buildSessionUser(user);
+    const approvalLogs = await dbService.enterprise.getApprovalLogsByUser(user.id);
+    res.json({
+      success: true,
+      profile: dbService.enterprise.toSafeUserDto(user),
+      approvalLogs
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '회원 프로필 조회 실패' });
+  }
+});
+
+// 무료 회원 -> 1개월 유료 맛보기(월 30회) 활성화
+app.post('/api/member/start-trial', requireMember, async (req, res) => {
+  try {
+    const user = await dbService.findUserById(req.session.user.id);
+    if (!user) return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
+    if (user.membershipTier === 'PAID') {
+      return res.status(400).json({ success: false, message: '이미 정식 유료 회원입니다.' });
+    }
+    if (user.hasUsedTrial) {
+      return res.status(409).json({ success: false, message: '이미 1개월 유료 맛보기를 사용하신 계정입니다.' });
+    }
+
+    const elig = await dbService.enterprise.checkTrialEligibility({
+      email: user.email,
+      phone: user.phone,
+      businessRegNo: user.businessRegNo
+    });
+    if (!elig.eligible) {
+      return res.status(409).json({ success: false, message: elig.message });
+    }
+
+    const now = new Date();
+    const expiresAt = memberSecurityService.addOneMonthIso(now);
+    await dbService.enterprise.updateMemberFields(user.id, user.username, {
+      membershipTier: 'TRIAL',
+      trialStatus: 'ACTIVE',
+      trialStartedAt: now.toISOString(),
+      trialExpiresAt: expiresAt,
+      trialQuotaTotal: 30,
+      trialQuotaUsed: 0,
+      hasUsedTrial: true
+    });
+    await dbService.enterprise.recordTrialHistory({
+      email: user.email,
+      phone: user.phone,
+      businessRegNo: user.businessRegNo
+    });
+
+    const refreshed = await dbService.findUserById(user.id);
+    req.session.user = buildSessionUser(refreshed);
+    res.json({
+      success: true,
+      user: req.session.user,
+      message: '1개월 유료 맛보기(비용 연관 API 월 30회 한도)가 즉시 활성화되었습니다!'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '유료 맛보기 활성화 실패: ' + err.message });
+  }
+});
+
+// Payment Code 등록 / 소속 법인 유료 승계
+app.post('/api/member/redeem-payment-code', requireMember, async (req, res) => {
+  try {
+    const { paymentCode } = req.body;
+    const user = await dbService.findUserById(req.session.user.id);
+    if (!user) return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
+
+    const sub = await dbService.enterprise.redeemPaymentCodeForUser(user, paymentCode);
+    const refreshed = await dbService.findUserById(user.id);
+    req.session.user = buildSessionUser(refreshed);
+
+    res.json({
+      success: true,
+      subscription: sub,
+      user: req.session.user,
+      message: `[${sub.companyName}] 유료 구독 코드(${sub.paymentCode})가 연동되어 정식 유료 회원 자격을 획득했습니다.`
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 유료 회원 2단계 필수 정보 등록: 세금계산서/공식문서 기재사항 + 별도 결재 비밀번호 + 서명/직인
+app.post('/api/member/paid-profile', requireMember, async (req, res) => {
+  try {
+    const user = await dbService.findUserById(req.session.user.id);
+    if (!user) return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
+    if (user.role !== 'admin' && user.membershipTier !== 'PAID') {
+      return res.status(403).json({ success: false, message: '세무·공식문서·결재 비밀번호 설정은 유료 회원 전용입니다.' });
+    }
+
+    const {
+      taxPayerType,
+      businessRegNo,
+      subBusinessNo,
+      companyName,
+      ceoName,
+      businessAddress,
+      businessType,
+      businessItem,
+      taxInvoiceEmail,
+      cashReceiptType,
+      cashReceiptNo,
+      nationalCertName,
+      nationalCertNo,
+      agencyRegNo,
+      jobTitle,
+      officialDocAddress,
+      approvalPassword,
+      approvalPasswordType = 'ALPHANUMERIC',
+      signatureImagePath,
+      corporateSealPath
+    } = req.body;
+
+    const isCorporateEmployee = Boolean(
+      user.memberType === 'INDIVIDUAL' &&
+      user.subscriptionInfo &&
+      user.subscriptionInfo.ownerType === 'CORPORATE' &&
+      !user.subscriptionInfo.isOwner
+    );
+
+    const effectiveTaxPayerType = taxPayerType || (user.memberType === 'CORPORATE' ? 'CORPORATE' : 'INDIVIDUAL');
+    const needsTaxInvoiceFields = !isCorporateEmployee && (user.memberType === 'CORPORATE' || effectiveTaxPayerType === 'SOLE_PROPRIETOR');
+
+    let normalizedBizNo = user.businessRegNo || '';
+    if (needsTaxInvoiceFields) {
+      const bizCheck = memberSecurityService.validateKoreanBizRegNo(businessRegNo);
+      if (!bizCheck.isValid) {
+        return res.status(400).json({ success: false, message: `세금계산서 필수 오류: ${bizCheck.message}` });
+      }
+      normalizedBizNo = bizCheck.normalized;
+
+      if (!companyName || !ceoName || !businessAddress || !businessType || !businessItem) {
+        return res.status(400).json({
+          success: false,
+          message: '세금계산서 및 정부 공식 문서 발행을 위해 상호명, 대표자명, 사업장 주소, 업태, 종목을 모두 입력해주세요.'
+        });
+      }
+      const taxMailCheck = memberSecurityService.validateEmail(taxInvoiceEmail || user.email);
+      if (!taxMailCheck.isValid) {
+        return res.status(400).json({ success: false, message: '세금계산서 수신용 유효 이메일을 입력해주세요.' });
+      }
+    } else if (!isCorporateEmployee) {
+      // 비사업자 단독 유료 개인 회원: 현금영수증 또는 공식문서 주소 확인
+      if (cashReceiptType && cashReceiptType !== 'NONE' && (!cashReceiptNo || memberSecurityService.normalizeDigits(cashReceiptNo).length < 10)) {
+        return res.status(400).json({ success: false, message: '현금영수증 발급용 휴대폰 번호(또는 사업자번호)를 정확히 입력해주세요.' });
+      }
+      if (!officialDocAddress) {
+        return res.status(400).json({ success: false, message: '정부/공식 문서 발행 시 기재할 소속/연락 주소를 입력해주세요.' });
+      }
+    }
+
+    // 결재용 비밀번호 검증 (기존 미설정 시 필수, 접속 비밀번호와 동일 불가)
+    let nextApprovalHash = user.approvalPasswordHash;
+    if (!nextApprovalHash || approvalPassword) {
+      const apCheck = memberSecurityService.validateApprovalPassword(
+        approvalPassword,
+        approvalPasswordType,
+        user.password,
+        ''
+      );
+      if (!apCheck.isValid) {
+        return res.status(400).json({ success: false, message: apCheck.errors[0] });
+      }
+      nextApprovalHash = memberSecurityService.hashSecret(approvalPassword);
+    }
+
+    // 전자서명/법인직인 검증
+    const nextSign = signatureImagePath !== undefined ? signatureImagePath : user.signatureImagePath;
+    const nextSeal = corporateSealPath !== undefined ? corporateSealPath : user.corporateSealPath;
+    if (user.memberType === 'INDIVIDUAL' && !nextSign) {
+      return res.status(400).json({ success: false, message: '공식 보고서 결재를 위해 개인 전자서명 이미지 등록(또는 서명패드 작성)이 필수입니다.' });
+    }
+    if (user.memberType === 'CORPORATE' && !nextSeal && !nextSign) {
+      return res.status(400).json({ success: false, message: '법인 회원은 법인 직인(또는 대표자 전자서명) 이미지 등록이 필수입니다.' });
+    }
+
+    const patch = {
+      taxPayerType: effectiveTaxPayerType,
+      businessRegNo: normalizedBizNo,
+      subBusinessNo: subBusinessNo || '',
+      companyName: companyName || user.companyName || '',
+      ceoName: ceoName || user.ceoName || '',
+      businessAddress: businessAddress || user.businessAddress || '',
+      businessType: businessType || user.businessType || '',
+      businessItem: businessItem || user.businessItem || '',
+      taxInvoiceEmail: (taxInvoiceEmail || user.email || '').trim().toLowerCase(),
+      cashReceiptType: cashReceiptType || 'NONE',
+      cashReceiptNoEnc: cashReceiptNo ? memberSecurityService.sha256(cashReceiptNo) : (user.cashReceiptNoEnc || ''),
+      nationalCertName: nationalCertName !== undefined ? nationalCertName : user.nationalCertName,
+      nationalCertNo: nationalCertNo !== undefined ? nationalCertNo : user.nationalCertNo,
+      agencyRegNo: agencyRegNo !== undefined ? agencyRegNo : user.agencyRegNo,
+      jobTitle: jobTitle !== undefined ? jobTitle : user.jobTitle,
+      officialDocAddress: officialDocAddress !== undefined ? officialDocAddress : user.officialDocAddress,
+      approvalPasswordHash: nextApprovalHash,
+      approvalPasswordType,
+      approvalPasswordUpdatedAt: new Date().toISOString(),
+      approvalFailedAttempts: 0,
+      approvalLockedUntil: null,
+      signatureImagePath: nextSign || '',
+      corporateSealPath: nextSeal || '',
+      paidProfileCompleted: true
+    };
+
+    await dbService.enterprise.updateMemberFields(user.id, user.username, patch);
+    const refreshed = await dbService.findUserById(user.id);
+    req.session.user = buildSessionUser(refreshed);
+
+    res.json({
+      success: true,
+      user: req.session.user,
+      message: '세무·공식문서 기재사항 및 분리된 결재용 비밀번호·전자서명 설정이 완료되었습니다.'
+    });
+  } catch (err) {
+    console.error('Paid profile error:', err);
+    res.status(500).json({ success: false, message: '유료 프로필 설정 저장 실패: ' + err.message });
+  }
+});
+
+// 자발적 회원 탈퇴 (탈퇴자 ID 영구 재사용 차단)
+app.post('/api/member/withdraw', requireAuth, async (req, res) => {
+  try {
+    const user = await dbService.findUserById(req.session.user.id);
+    if (!user) return res.status(404).json({ success: false, message: '사용자를 찾을 수 없습니다.' });
+    if (user.role === 'admin') {
+      return res.status(400).json({ success: false, message: '최고관리자 계정은 탈퇴할 수 없습니다.' });
+    }
+    await dbService.enterprise.withdrawMember(user);
+    req.session.destroy(() => {
+      res.json({
+        success: true,
+        message: '회원 탈퇴가 완료되었습니다. 보안 정책상 사용하시던 아이디는 영구히 재사용할 수 없습니다.'
+      });
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '탈퇴 처리 중 오류 발생' });
+  }
+});
+
+// 공식 보고서 전자서명 · 직인 결재 실행 (결재용 비밀번호 검증 + 감사로그 기록)
+app.post('/api/reports/sign-approve', requireMember, async (req, res) => {
+  try {
+    const { reportId, reportType = 'VIDEO_SAFETY', sealUsedType = 'PERSONAL_SIGN', approvalPassword, reportPayload } = req.body;
+    const user = await dbService.findUserById(req.session.user.id);
+    if (!user) return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
+
+    if (user.role !== 'admin' && user.membershipTier !== 'PAID') {
+      return res.status(403).json({
+        success: false,
+        requirePaid: true,
+        message: '전자서명·직인 날인 및 공식 문서 발행은 정식 유료 회원(PAID)만 가능합니다. (체험용 보고서는 공식 제출 불가)'
+      });
+    }
+
+    if (user.role !== 'admin' && (!user.paidProfileCompleted || !user.approvalPasswordHash)) {
+      return res.status(400).json({
+        success: false,
+        requirePaidSetup: true,
+        message: '먼저 [유료 세무·공식문서 정보 및 결재용 비밀번호] 설정을 완료해주세요.'
+      });
+    }
+
+    if (user.approvalLockedUntil && new Date(user.approvalLockedUntil).getTime() > Date.now()) {
+      const remainMin = Math.ceil((new Date(user.approvalLockedUntil).getTime() - Date.now()) / 60000);
+      return res.status(429).json({
+        success: false,
+        message: `결재용 비밀번호 5회 이상 오입력으로 전자결재가 일시 잠금되었습니다. ${remainMin}분 후 재시도하세요.`
+      });
+    }
+
+    // 최고관리자는 데모 시 또는 결재비번 설정 시 검증
+    const hashToVerify = user.approvalPasswordHash || user.password;
+    const isMatch = memberSecurityService.verifySecret(approvalPassword, hashToVerify);
+    if (!isMatch) {
+      const nextFails = (user.approvalFailedAttempts || 0) + 1;
+      const patch = { approvalFailedAttempts: nextFails };
+      if (nextFails >= 5) {
+        patch.approvalLockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      }
+      await dbService.enterprise.updateMemberFields(user.id, user.username, patch);
+      return res.status(401).json({
+        success: false,
+        message: nextFails >= 5
+          ? '결재용 비밀번호 5회 연속 오류로 15분간 전자서명·직인 결재가 잠금되었습니다.'
+          : `결재용 비밀번호가 일치하지 않습니다. (접속 비밀번호와 별도 설정된 결재 비번 필요, ${nextFails}/5회)`
+      });
+    }
+
+    if ((sealUsedType === 'CORPORATE_SEAL' || sealUsedType === 'BOTH') && user.role !== 'admin' && !user.canUseCorporateSeal) {
+      return res.status(403).json({
+        success: false,
+        message: '법인 직인 날인 권한이 없습니다. 소속 개인 회원은 개인 전자서명(PERSONAL_SIGN)만 사용할 수 있습니다.'
+      });
+    }
+
+    if (user.approvalFailedAttempts > 0) {
+      await dbService.enterprise.updateMemberFields(user.id, user.username, { approvalFailedAttempts: 0, approvalLockedUntil: null });
+    }
+
+    // 본인 명의 공식 문서 발행 시 법인 소속 개인은 필요한 법인 정보만 선별 상속
+    const corporateInfoSnapshot = user.inheritedCorporateInfo || (user.memberType === 'CORPORATE' ? {
+      companyName: user.companyName,
+      businessRegNo: user.businessRegNo,
+      ceoName: user.ceoName,
+      businessAddress: user.businessAddress,
+      agencyRegNo: user.agencyRegNo
+    } : null);
+
+    const docSha256 = memberSecurityService.sha256(JSON.stringify(reportPayload || { reportId, reportType, ts: Date.now() }));
+    const signerIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+
+    const log = await dbService.enterprise.createApprovalLog({
+      reportId: reportId || `BEPMC-DOC-${Date.now()}`,
+      reportType,
+      signerUserId: user.id,
+      subscriptionId: user.subscriptionId,
+      sealUsedType,
+      corporateInfoSnapshot,
+      documentSha256: docSha256,
+      signerIp
+    });
+
+    res.json({
+      success: true,
+      approvalLog: log,
+      signerSummary: {
+        name: user.name,
+        jobTitle: user.jobTitle,
+        nationalCertName: user.nationalCertName,
+        nationalCertNo: user.nationalCertNo,
+        signatureImagePath: user.signatureImagePath,
+        corporateSealPath: user.corporateSealPath,
+        corporateInfoSnapshot
+      },
+      message: '결재용 비밀번호 인증 및 공식 보고서 전자서명·직인 날인이 완료되었습니다.'
+    });
+  } catch (err) {
+    console.error('Report sign approve error:', err);
+    res.status(500).json({ success: false, message: '전자결재 처리 중 오류가 발생했습니다.' });
   }
 });
 
@@ -1251,6 +1985,60 @@ app.post('/api/technical-guidance/universal-video-analysis', async (req, res) =>
       });
     }
 
+    let watermarkMeta = { isTrial: false, isOpenVerification: true };
+    let officialDocIssuer = null;
+
+    if (req.session && req.session.user) {
+      const liveUser = await dbService.findUserById(req.session.user.id);
+      if (liveUser) {
+        req.session.user = buildSessionUser(liveUser);
+        if (liveUser.role !== 'admin') {
+          if (liveUser.membershipTier === 'FREE') {
+            return res.status(403).json({
+              success: false,
+              requireTrialOrPaid: true,
+              message: '무료 회원은 AI 동영상 안전 분석을 직접 실행할 수 없습니다. [내 정보]에서 1개월 무료 맛보기(월 30회)를 시작하거나 유료 Payment Code를 등록해주세요.'
+            });
+          }
+          if (liveUser.membershipTier === 'TRIAL') {
+            const quotaRes = await dbService.enterprise.consumeTrialQuota(liveUser);
+            if (!quotaRes.allowed) {
+              return res.status(403).json({
+                success: false,
+                trialExhausted: true,
+                message: quotaRes.message
+              });
+            }
+            watermarkMeta = {
+              isTrial: true,
+              quotaUsed: quotaRes.quotaUsed,
+              quotaTotal: quotaRes.quotaTotal,
+              quotaRemaining: quotaRes.quotaRemaining,
+              expiresAt: quotaRes.expiresAt,
+              label: `BEPMC 1개월 유료 맛보기 체험용 (${quotaRes.quotaUsed}/${quotaRes.quotaTotal}회 사용) — 공식·관공서 제출 불가`
+            };
+          } else if (liveUser.membershipTier === 'PAID') {
+            watermarkMeta = { isTrial: false, isOpenVerification: false };
+            officialDocIssuer = {
+              signerName: liveUser.name,
+              jobTitle: liveUser.jobTitle || '',
+              nationalCertName: liveUser.nationalCertName || '',
+              nationalCertNo: liveUser.nationalCertNo || '',
+              corporateInfo: liveUser.inheritedCorporateInfo || (liveUser.memberType === 'CORPORATE' ? {
+                companyName: liveUser.companyName,
+                businessRegNo: liveUser.businessRegNo,
+                ceoName: liveUser.ceoName,
+                businessAddress: liveUser.businessAddress,
+                agencyRegNo: liveUser.agencyRegNo
+              } : null)
+            };
+          }
+        } else {
+          watermarkMeta = { isTrial: false, isAdmin: true };
+        }
+      }
+    }
+
     const userName = (req.session && req.session.user) ? (req.session.user.name || req.session.user.username) : '안전총괄책임자 / 현장검증단';
     const analysisReport = await universalSafetyAnalysisService.analyzeUniversalSafety({
       siteName: siteName || (youtubeUrl ? '유튜브 온라인 안전 분석 영상' : '스마트 통합 안전 관리 구역'),
@@ -1264,6 +2052,8 @@ app.post('/api/technical-guidance/universal-video-analysis', async (req, res) =>
       youtubeUrl: youtubeUrl || ''
     });
 
+    analysisReport.watermark = watermarkMeta;
+    analysisReport.officialDocIssuer = officialDocIssuer;
     res.json(analysisReport);
   } catch (err) {
     console.error('Universal safety video analysis error:', err);

@@ -130,8 +130,36 @@
         </button>
       </div>
 
-      <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-x-auto">
         <div id="admin-users-table-container">
+          <!-- 동적 로드 -->
+        </div>
+      </div>
+
+      <!-- 유료 구독(Payment Code) 발급 & 월별 입금 정산 관리 -->
+      <div class="bg-white rounded-lg shadow-sm border border-indigo-200 p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+          <div>
+            <h3 class="text-sm font-black text-indigo-950 flex items-center gap-1.5">
+              <span>💳</span> 유료 구독 (Payment Code) 발급 및 월별 입금 확인
+            </h3>
+            <p class="text-[11px] text-slate-500">법인 또는 개인에게 Payment Code를 발급하고, 매월 입금 확인 시 소속 개인 계정의 유료 권한이 자동 연동됩니다.</p>
+          </div>
+          <button onclick="loadAdminSubscriptions()" class="text-xs px-3 py-1.5 rounded bg-indigo-50 text-indigo-700 font-bold hover:bg-indigo-100">구독 목록 새로고침</button>
+        </div>
+
+        <form onsubmit="issueNewPaymentCode(event)" class="grid grid-cols-1 sm:grid-cols-6 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+          <select id="sub-owner-type" class="p-2 border border-slate-300 rounded bg-white font-bold">
+            <option value="CORPORATE">🏢 법인 구독</option>
+            <option value="INDIVIDUAL">👤 개인 구독</option>
+          </select>
+          <input type="text" id="sub-company-name" required placeholder="법인명 또는 구독자명" class="p-2 border border-slate-300 rounded bg-white sm:col-span-2">
+          <input type="text" id="sub-biz-no" placeholder="사업자번호 (10자리)" class="p-2 border border-slate-300 rounded bg-white font-mono">
+          <input type="number" id="sub-max-seats" value="10" min="1" placeholder="허용 인원(명)" class="p-2 border border-slate-300 rounded bg-white">
+          <button type="submit" class="bg-indigo-700 hover:bg-indigo-600 text-white font-black rounded px-3 py-2">Payment Code 발급</button>
+        </form>
+
+        <div id="admin-subscriptions-container" class="overflow-x-auto text-xs text-slate-600">
           <!-- 동적 로드 -->
         </div>
       </div>
@@ -362,7 +390,7 @@
       });
 
       if (tab === 'qna') loadAdminQna();
-      if (tab === 'users') loadAdminUsers();
+      if (tab === 'users') { loadAdminUsers(); loadAdminSubscriptions(); }
       if (tab === 'posts') loadAdminPosts();
       if (tab === 'settings') populateSettingsForm();
       if (tab === 'shop') {
@@ -500,14 +528,14 @@
           <table class="w-full text-left text-xs text-slate-600">
             <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
               <tr>
-                <th class="px-4 py-3 text-center w-16">번호</th>
-                <th class="px-4 py-3 text-center w-28">아이디</th>
-                <th class="px-4 py-3 text-center w-28">성명/담당자</th>
-                <th class="px-4 py-3">이메일</th>
-                <th class="px-4 py-3 text-center w-28">회원 등급</th>
-                <th class="px-4 py-3 text-center w-36">AI 관제 권한</th>
-                <th class="px-4 py-3 text-center w-24">상태</th>
-                <th class="px-4 py-3 text-center w-60">등급 전환 &amp; 승인 관리</th>
+                <th class="px-3 py-3 text-center w-12">번호</th>
+                <th class="px-3 py-3 text-center">아이디 / 구분</th>
+                <th class="px-3 py-3 text-center">성명 / 법인명</th>
+                <th class="px-3 py-3">이메일 / 연락처</th>
+                <th class="px-3 py-3 text-center">4단계 등급</th>
+                <th class="px-3 py-3 text-center">세무·결재설정</th>
+                <th class="px-3 py-3 text-center">승인 상태</th>
+                <th class="px-3 py-3 text-center w-64">등급 전환 &amp; 승인 관리</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -524,48 +552,55 @@
           let statusBadge = '';
           if (u.status === 'approved') statusBadge = '<span class="badge-green text-[10px] px-2 py-0.5 rounded font-bold">승인 완료</span>';
           else if (u.status === 'pending') statusBadge = '<span class="badge-yellow text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">승인 대기</span>';
+          else if (u.status === 'withdrawn') statusBadge = '<span class="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded font-bold">탈퇴(ID보존)</span>';
           else statusBadge = '<span class="badge-red text-[10px] px-2 py-0.5 rounded font-bold">거절됨</span>';
 
-          const isPaid = (u.role === 'admin' || u.role === 'paid_member');
+          const tier = u.role === 'admin' ? 'ADMIN' : (u.membershipTier || 'FREE');
+          let tierBadge = '<span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded font-bold">무료 (FREE)</span>';
+          if (tier === 'ADMIN') tierBadge = '<span class="badge-blue text-[10px] px-2.5 py-0.5 rounded font-bold">👑 최고관리자</span>';
+          else if (tier === 'PAID') tierBadge = '<span class="bg-indigo-100 text-indigo-800 border border-indigo-300 text-[10px] px-2 py-0.5 rounded font-black">💎 유료 (PAID)</span>';
+          else if (tier === 'TRIAL') {
+            const rem = u.trialInfo ? `${u.trialInfo.quotaUsed}/${u.trialInfo.quotaTotal}회 · ${u.trialInfo.daysRemaining}일` : '1개월·30회';
+            tierBadge = `<span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] px-2 py-0.5 rounded font-black">🎁 맛보기 (${rem})</span>`;
+          }
+
+          const typeLabel = u.memberType === 'CORPORATE' ? '🏢 법인' : '👤 개인';
+          const profileBadge = tier === 'PAID'
+            ? (u.paidProfileCompleted ? '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✅ 설정완료</span>' : '<span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">⚠️ 미완료</span>')
+            : '<span class="text-[10px] text-slate-400">-</span>';
 
           html += `
-            <tr class="hover:bg-slate-50 transition ${u.status === 'pending' ? 'bg-amber-50/30' : ''}">
-              <td class="px-4 py-3 text-center text-slate-400 font-mono">${u.id}</td>
-              <td class="px-4 py-3 text-center font-bold text-slate-900">${escapeHtml(u.username)}</td>
-              <td class="px-4 py-3 text-center text-slate-800">${escapeHtml(u.name)}</td>
-              <td class="px-4 py-3 text-slate-600">${escapeHtml(u.email || '-')}</td>
-              <td class="px-4 py-3 text-center">
-                ${u.role === 'admin' ? '<span class="badge-blue text-[10px] px-2.5 py-0.5 rounded font-bold">👑 최고관리자</span>' : (u.role === 'paid_member' ? '<span class="bg-indigo-100 text-indigo-800 border border-indigo-300 text-[10px] px-2 py-0.5 rounded font-black">💎 유료회원</span>' : '<span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded">일반회원</span>')}
+            <tr class="hover:bg-slate-50 transition ${u.status === 'pending' ? 'bg-amber-50/30' : ''} ${u.status === 'withdrawn' ? 'opacity-50' : ''}">
+              <td class="px-3 py-3 text-center text-slate-400 font-mono">${u.id}</td>
+              <td class="px-3 py-3 text-center">
+                <div class="font-bold text-slate-900 font-mono">${escapeHtml(u.username)}</div>
+                <div class="text-[10px] text-slate-500">${typeLabel}</div>
               </td>
-              <td class="px-4 py-3 text-center">
-                ${isPaid ? '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>이용 가능</span>' : '<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">🔒 권한 없음</span>'}
+              <td class="px-3 py-3 text-center">
+                <div class="font-semibold text-slate-800">${escapeHtml(u.name)}</div>
+                ${u.companyName ? `<div class="text-[10px] text-blue-700">${escapeHtml(u.companyName)}</div>` : ''}
+                ${u.enteredPaymentCode ? `<div class="text-[10px] font-mono text-indigo-600">${escapeHtml(u.enteredPaymentCode)}</div>` : ''}
               </td>
-              <td class="px-4 py-3 text-center">${statusBadge}</td>
-              <td class="px-4 py-3 text-center">
-                ${u.role === 'admin' ? '<span class="text-slate-400 text-[11px]">-</span>' : `
-                  <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                    ${u.role === 'paid_member' ? `
-                      <button onclick="changeUserRole(${u.id}, 'member')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-2 py-1 rounded text-[11px] font-bold transition">
-                        무료 전환
-                      </button>
-                    ` : `
-                      <button onclick="changeUserRole(${u.id}, 'paid_member')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded text-[11px] font-black transition shadow-sm flex items-center gap-1">
-                        <span>💎</span> 유료 승급
-                      </button>
-                    `}
+              <td class="px-3 py-3">
+                <div class="text-slate-700">${escapeHtml(u.email || '-')}</div>
+                <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(u.phone || '')}</div>
+              </td>
+              <td class="px-3 py-3 text-center">${tierBadge}</td>
+              <td class="px-3 py-3 text-center">${profileBadge}</td>
+              <td class="px-3 py-3 text-center">${statusBadge}</td>
+              <td class="px-3 py-3 text-center">
+                ${(u.role === 'admin' || u.status === 'withdrawn') ? '<span class="text-slate-400 text-[11px]">-</span>' : `
+                  <div class="flex items-center justify-center gap-1 flex-wrap">
+                    <button onclick="changeUserTier(${u.id}, 'FREE')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded text-[10px] font-bold">무료</button>
+                    <button onclick="changeUserTier(${u.id}, 'TRIAL')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded text-[10px] font-bold">맛보기1개월</button>
+                    <button onclick="changeUserTier(${u.id}, 'PAID')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded text-[10px] font-black">유료</button>
                     ${u.status !== 'approved' ? `
-                      <button onclick="changeUserStatus(${u.id}, 'approved')" class="btn-safety-green px-2 py-1 rounded text-[11px] font-bold shadow-sm">
-                        승인
-                      </button>
+                      <button onclick="changeUserStatus(${u.id}, 'approved')" class="btn-safety-green px-2 py-1 rounded text-[10px] font-bold">승인</button>
                     ` : ''}
                     ${u.status !== 'rejected' ? `
-                      <button onclick="changeUserStatus(${u.id}, 'rejected')" class="bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded text-[11px] font-bold transition">
-                        거절
-                      </button>
+                      <button onclick="changeUserStatus(${u.id}, 'rejected')" class="bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded text-[10px] font-bold">거절</button>
                     ` : ''}
-                    <button onclick="deleteUser(${u.id})" class="text-slate-400 hover:text-slate-700 p-1 text-[11px]">
-                      삭제
-                    </button>
+                    <button onclick="deleteUser(${u.id})" class="text-slate-400 hover:text-rose-600 p-1 text-[10px]" title="탈퇴 처리 (ID 영구 차단)">탈퇴</button>
                   </div>
                 `}
               </td>
@@ -579,6 +614,127 @@
       } catch (err) {
         container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">회원 목록을 불러오지 못했습니다.</div>`;
       }
+    }
+
+    async function changeUserTier(userId, tier) {
+      if (!confirm(`이 회원의 등급을 [${tier}] 로 전환하시겠습니까?`)) return;
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/tier`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier })
+        });
+        const result = await res.json();
+        alert(result.message);
+        if (result.success) {
+          loadAdminUsers();
+          loadSummaryStats();
+        }
+      } catch (e) {
+        alert('등급 전환 오류');
+      }
+    }
+
+    async function loadAdminSubscriptions() {
+      const container = document.getElementById('admin-subscriptions-container');
+      if (!container) return;
+      try {
+        const res = await fetch('/api/admin/subscriptions');
+        const data = await res.json();
+        const subs = data.subscriptions || [];
+        if (subs.length === 0) {
+          container.innerHTML = '<div class="py-4 text-center text-slate-400">발급된 유료 구독 코드가 없습니다.</div>';
+          return;
+        }
+        container.innerHTML = `
+          <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+            <thead class="bg-indigo-50 text-indigo-950 font-bold">
+              <tr>
+                <th class="p-2.5">Payment Code</th>
+                <th class="p-2.5">구분 / 기관명</th>
+                <th class="p-2.5 text-center">소속 인원</th>
+                <th class="p-2.5 text-center">월 입금 상태</th>
+                <th class="p-2.5 text-center">유효 기한</th>
+                <th class="p-2.5 text-center">월별 정산 관리</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${subs.map(s => `
+                <tr>
+                  <td class="p-2.5 font-mono font-black text-indigo-700">${escapeHtml(s.paymentCode)}</td>
+                  <td class="p-2.5">
+                    <div class="font-bold text-slate-900">${s.ownerType === 'CORPORATE' ? '🏢' : '👤'} ${escapeHtml(s.companyName)}</div>
+                    <div class="text-[10px] text-slate-400">사업자: ${escapeHtml(s.businessRegNo || '-')}</div>
+                  </td>
+                  <td class="p-2.5 text-center font-bold">${s.seatsUsed || 0} / ${s.maxSeats}명</td>
+                  <td class="p-2.5 text-center">
+                    ${s.isCurrentlyValid
+                      ? '<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">ACTIVE (입금확인)</span>'
+                      : `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-[10px]">${escapeHtml(s.billingStatus)} (만료)</span>`}
+                  </td>
+                  <td class="p-2.5 text-center font-mono">${escapeHtml(s.currentPeriodEnd || '-')}</td>
+                  <td class="p-2.5 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                      <button onclick="confirmSubPayment(${s.id})" class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold">💰 당월 입금확인 (+1달)</button>
+                      <button onclick="changeSubStatus(${s.id}, 'EXPIRED')" class="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold">만료/정지</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (e) {
+        container.innerHTML = '<div class="text-rose-500 py-3">구독 목록 로딩 실패</div>';
+      }
+    }
+
+    async function issueNewPaymentCode(e) {
+      e.preventDefault();
+      const ownerType = document.getElementById('sub-owner-type').value;
+      const companyName = document.getElementById('sub-company-name').value.trim();
+      const businessRegNo = document.getElementById('sub-biz-no').value.trim();
+      const maxSeats = parseInt(document.getElementById('sub-max-seats').value, 10) || 10;
+      try {
+        const res = await fetch('/api/admin/subscriptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ownerType, companyName, businessRegNo, maxSeats, startActive: true })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+          document.getElementById('sub-company-name').value = '';
+          document.getElementById('sub-biz-no').value = '';
+          loadAdminSubscriptions();
+        }
+      } catch (err) {
+        alert('발급 중 오류');
+      }
+    }
+
+    async function confirmSubPayment(subId) {
+      if (!confirm('당월 입금을 확인하고 구독 기간을 1개월 연장하시겠습니까?')) return;
+      const res = await fetch(`/api/admin/subscriptions/${subId}/confirm-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      alert(data.message);
+      if (data.success) { loadAdminSubscriptions(); loadAdminUsers(); }
+    }
+
+    async function changeSubStatus(subId, billingStatus) {
+      if (!confirm(`이 구독을 [${billingStatus}] 상태로 전환하시겠습니까? 소속 개인 계정들의 유료 권한도 즉시 차단됩니다.`)) return;
+      const res = await fetch(`/api/admin/subscriptions/${subId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billingStatus })
+      });
+      const data = await res.json();
+      alert(data.message);
+      if (data.success) { loadAdminSubscriptions(); loadAdminUsers(); }
     }
 
     async function changeUserRole(userId, role) {

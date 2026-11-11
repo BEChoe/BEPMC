@@ -159,5 +159,52 @@
       "answeredBy": null,
       "createdAt": "2026-10-22 15:40:00"
     }
-  ]
+  ],
+  "reservedLoginIds": [
+    {
+      "id": 1,
+      "loginIdLower": "withdrawn_user",
+      "reason": "WITHDRAWN",
+      "originalUserId": 999,
+      "reservedAt": "2026-10-05 11:00:00"
+    }
+  ],
+  "trialHistoryHashes": [],
+  "paymentSubscriptions": [
+    {
+      "id": 1,
+      "paymentCode": "BEPMC-C-2026-DEMO01",
+      "ownerType": "CORPORATE",
+      "ownerUserId": 2,
+      "companyName": "BEPMC(주) 스마트안전기술단",
+      "businessRegNo": "1238112345",
+      "ceoName": "최병억",
+      "businessAddress": "서울특별시 강남구 테헤란로 152",
+      "agencyRegNo": "고용노동부 중부-2024-제048호",
+      "planName": "BEPMC 법인 AI 통합 안전 구독 (10인)",
+      "maxSeats": 10,
+      "monthlyFee": 330000,
+      "billingStatus": "ACTIVE",
+      "currentPeriodStart": "2026-11-01",
+      "currentPeriodEnd": "2026-12-31",
+      "lastPaidAt": "2026-11-01 09:30:00",
+      "createdAt": "2026-10-01 09:00:00"
+    }
+  ],
+  "paymentMonthlyLogs": [
+    {
+      "id": 1,
+      "subscriptionId": 1,
+      "billingMonth": "2026-11",
+      "expectedAmount": 330000,
+      "paidAmount": 330000,
+      "depositorName": "BEPMC(주)",
+      "paymentMethod": "계좌이체",
+      "paymentStatus": "PAID",
+      "verifiedBy": "admin",
+      "verifiedAt": "2026-11-01 09:30:00"
+    }
+  ],
+  "documentApprovalLogs": [],
+  "userExtendedMeta": {}
 }

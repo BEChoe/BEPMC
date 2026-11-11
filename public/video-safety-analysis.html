@@ -444,12 +444,40 @@
                   class="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition">
             <span>🛡️</span> 대외 배포용 (비식별화 보호)
           </button>
+          <button id="btn-sign-official-report" onclick="openReportSignModal()" 
+                  class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition">
+            <span>🖋️</span> 전자서명·직인 결재
+          </button>
           <button onclick="printSafetyReport()" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition">
             <span>🖨️</span> 인쇄 / PDF
           </button>
           <button onclick="exportReportJson()" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition">
             <span>💾</span> JSON
           </button>
+        </div>
+      </div>
+
+      <!-- 1개월 유료 맛보기 체험용 워터마크 배너 -->
+      <div id="trial-watermark-banner" class="hidden p-3 rounded-xl bg-amber-100 border-2 border-dashed border-amber-500 text-amber-950 text-xs font-black flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⚠️</span>
+          <span id="trial-watermark-text">BEPMC 1개월 유료 맛보기 체험용 (월 30회 한도) — 공식·관공서 제출 불가</span>
+        </div>
+        <a href="/paid-onboarding.html" class="px-3 py-1 rounded-lg bg-slate-900 text-amber-300 text-[11px] font-bold hover:bg-slate-800">정식 유료 전환 / 코드 입력 &rarr;</a>
+      </div>
+
+      <!-- 공식 결재 전자서명·직인 날인 확인란 (유료 회원 결재 시 표시) -->
+      <div id="official-signed-seal-box" class="hidden p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-400 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="space-y-1 text-xs">
+          <div class="font-black text-emerald-900 flex items-center gap-1.5">
+            <span>✅</span> BEPMC 공식 전자서명 · 직인 결재 완료 (법적 무결성 SHA-256 검증)
+          </div>
+          <div id="signed-issuer-details" class="text-slate-700 leading-relaxed"></div>
+          <div id="signed-hash-details" class="text-[11px] font-mono text-emerald-800"></div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <img id="signed-signature-img" class="hidden h-14 border border-emerald-300 rounded-lg bg-white p-1" alt="전자서명">
+          <img id="signed-seal-img" class="hidden h-14 w-14 object-contain border border-rose-300 rounded-lg bg-white p-1" alt="법인직인">
         </div>
       </div>
 
@@ -877,6 +905,47 @@
         </button>
         <button onclick="closeGeminiQuotaModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
           닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전자서명 · 직인 결재용 비밀번호 확인 모달 -->
+  <div id="sign-approval-modal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+          <span>🖋️</span> 공식 보고서 전자서명 · 직인 결재
+        </h3>
+        <button onclick="closeReportSignModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-950 leading-relaxed">
+        접속(로그인) 비밀번호와는 별도로 설정하신 <strong>전자서명·직인 결재용 비밀번호</strong>를 입력하여 공식 문서 날인을 진행합니다. (5회 연속 오류 시 15분간 결재가 잠금됩니다.)
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">날인 구분</label>
+          <select id="modal-seal-type" class="w-full p-2.5 border border-slate-300 rounded-xl bg-white">
+            <option value="PERSONAL_SIGN">✍️ 개인 전자서명 날인</option>
+            <option value="CORPORATE_SEAL">🛑 법인 직인 날인 (법인/권한자)</option>
+            <option value="BOTH">✍️+🛑 전자서명 + 법인 직인 동시 날인</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">결재용 비밀번호 입력</label>
+          <input type="password" id="modal-approval-password" placeholder="별도 설정한 결재 비밀번호/PIN 입력"
+                 class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 pt-2">
+        <button onclick="submitReportSignApproval()" class="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs shadow-md transition">
+          결재 승인 및 직인 날인
+        </button>
+        <button onclick="closeReportSignModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+          취소
         </button>
       </div>
     </div>

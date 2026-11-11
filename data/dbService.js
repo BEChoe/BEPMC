@@ -1,5 +1,6 @@
 const { supabase, isSupabaseConfigured } = require('./supabaseClient');
 const localStore = require('./store');
+const enterprise = require('./enterpriseMemberService');
 
 // ========================================================
 // 1. 사이트 설정 (Site Settings)
@@ -122,25 +123,31 @@ async function updateSiteSettings(settings) {
 // 2. 회원 관리 (Users & Auth)
 // ========================================================
 async function findUserByUsername(username) {
+  const normalized = String(username || '').trim();
+  if (!normalized) return null;
+
   if (isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('username', username)
-        .single();
+        .ilike('username', normalized)
+        .limit(1);
 
       if (error && error.code !== 'PGRST116') {
         console.error('Supabase findUserByUsername error:', error.message);
       }
-      return data || null;
+      if (data && data.length > 0) {
+        return await enterprise.hydrateUser(data[0]);
+      }
     } catch (e) {
       console.error('Supabase findUserByUsername exception:', e);
     }
   }
 
   const db = localStore.getDb();
-  return db.users.find(u => u.username === username) || null;
+  const raw = db.users.find(u => String(u.username || '').toLowerCase() === normalized.toLowerCase()) || null;
+  return await enterprise.hydrateUser(raw);
 }
 
 async function findUserById(id) {
@@ -153,14 +160,15 @@ async function findUserById(id) {
         .single();
 
       if (error) console.error('Supabase findUserById error:', error.message);
-      return data || null;
+      if (data) return await enterprise.hydrateUser(data);
     } catch (e) {
       console.error('Supabase findUserById exception:', e);
     }
   }
 
   const db = localStore.getDb();
-  return db.users.find(u => u.id === Number(id)) || null;
+  const raw = db.users.find(u => u.id === Number(id)) || null;
+  return await enterprise.hydrateUser(raw);
 }
 
 async function createUser({ username, password, name, email, role = 'member', status = 'pending' }) {
@@ -197,43 +205,41 @@ async function createUser({ username, password, name, email, role = 'member', st
 }
 
 async function getAllUsers() {
+  let rawUsers = [];
   if (isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, username, name, email, role, status, created_at')
+        .select('*')
         .order('id', { ascending: true });
 
       if (error) throw error;
-      return data.map(u => ({
-        id: u.id,
-        username: u.username,
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        membership: (u.role === 'admin' || u.role === 'paid_member') ? 'paid' : 'free',
-        status: u.status,
-        createdAt: u.created_at ? new Date(u.created_at).toISOString().replace('T', ' ').slice(0, 19) : ''
-      }));
+      rawUsers = data || [];
     } catch (e) {
       console.error('Supabase getAllUsers exception:', e);
+      const db = localStore.getDb();
+      rawUsers = db.users || [];
     }
+  } else {
+    const db = localStore.getDb();
+    rawUsers = db.users || [];
   }
 
-  const db = localStore.getDb();
-  return db.users.map(u => ({
-    id: u.id,
-    username: u.username,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    membership: (u.role === 'admin' || u.role === 'paid_member') ? 'paid' : 'free',
-    status: u.status,
-    createdAt: u.createdAt
-  }));
+  const hydratedList = [];
+  for (const raw of rawUsers) {
+    const h = await enterprise.hydrateUser(raw);
+    const safe = enterprise.toSafeUserDto(h);
+    safe.membership = (safe.role === 'admin' || safe.membershipTier === 'PAID') ? 'paid' : (safe.membershipTier === 'TRIAL' ? 'trial' : 'free');
+    safe.createdAt = safe.createdAt ? String(safe.createdAt).replace('T', ' ').slice(0, 19) : '';
+    hydratedList.push(safe);
+  }
+  return hydratedList;
 }
 
 async function updateUserRole(id, role) {
+  const tier = role === 'paid_member' || role === 'admin' ? 'PAID' : 'FREE';
+  const user = await findUserById(id);
+
   if (isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase
@@ -244,6 +250,9 @@ async function updateUserRole(id, role) {
         .single();
 
       if (error) throw error;
+      if (user) {
+        await enterprise.updateMemberFields(id, user.username, { role, membershipTier: tier });
+      }
       return data;
     } catch (e) {
       console.error('Supabase updateUserRole exception:', e);
@@ -255,12 +264,15 @@ async function updateUserRole(id, role) {
   const target = db.users.find(u => u.id === Number(id));
   if (target) {
     target.role = role;
+    target.membershipTier = tier;
     localStore.saveDb(db);
+    await enterprise.updateMemberFields(id, target.username, { role, membershipTier: tier });
   }
   return target;
 }
 
 async function updateUserStatus(id, status) {
+  const user = await findUserById(id);
   if (isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase
@@ -271,6 +283,9 @@ async function updateUserStatus(id, status) {
         .single();
 
       if (error) throw error;
+      if (user) {
+        await enterprise.updateMemberFields(id, user.username, { status });
+      }
       return data;
     } catch (e) {
       console.error('Supabase updateUserStatus exception:', e);
@@ -283,33 +298,16 @@ async function updateUserStatus(id, status) {
   if (target) {
     target.status = status;
     localStore.saveDb(db);
+    await enterprise.updateMemberFields(id, target.username, { status });
   }
   return target;
 }
 
 async function deleteUser(id) {
-  if (isSupabaseConfigured()) {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      return true;
-    } catch (e) {
-      console.error('Supabase deleteUser exception:', e);
-      throw e;
-    }
-  }
-
-  const db = localStore.getDb();
-  const idx = db.users.findIndex(u => u.id === Number(id));
-  if (idx !== -1) {
-    db.users.splice(idx, 1);
-    localStore.saveDb(db);
-  }
-  return true;
+  const user = await findUserById(id);
+  if (!user) return false;
+  // 물리 삭제 대신 Soft Delete + 탈퇴자 ID 영구 차단
+  return await enterprise.withdrawMember(user);
 }
 
 // ========================================================
@@ -1023,5 +1021,6 @@ module.exports = {
   createOrder,
   getAllOrders,
   getOrderByIdOrNumber,
-  updateOrderStatus
+  updateOrderStatus,
+  enterprise
 };
