@@ -129,62 +129,64 @@ async function initLayout(activeMenu = '') {
     headerContainer.innerHTML = `
       <header class="bg-[#0f172a] border-b border-blue-900/60 text-white sticky top-0 z-40 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex items-center justify-between h-16">
-            <!-- BEPMC 회사 로고 및 명칭 -->
-            <a href="/index.html" class="flex items-center gap-3 group">
-              <div class="h-10 px-3 rounded-lg bg-blue-700 flex items-center justify-center font-black text-white text-base shadow-inner border border-blue-500 group-hover:scale-105 transition-transform tracking-tight">
+          <!-- 1줄: 회사명 BEPMC Title & 사용자 인증 영역 -->
+          <div class="flex flex-wrap items-center justify-between gap-2 py-2.5 border-b border-blue-900/50">
+            <a href="/index.html" class="flex items-center gap-3 group min-w-0">
+              <div class="h-9 px-3 rounded-lg bg-blue-700 flex items-center justify-center font-black text-white text-base shadow-inner border border-blue-500 group-hover:scale-105 transition-transform tracking-tight shrink-0">
                 <span class="text-white">BE</span><span class="text-amber-300">PMC</span>
               </div>
-              <div>
-                <span class="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
-                  BEPMC
+              <div class="min-w-0">
+                <span class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-1.5 flex-wrap">
+                  <span>BEPMC</span>
                   <span class="text-xs font-semibold text-blue-300 hidden sm:inline">(Project Management Consultancy)</span>
                   <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
                 </span>
-                <span class="block text-[11px] text-slate-400 font-medium tracking-wider">PROJECT MANAGEMENT & SAFETY CONSULTANCY</span>
+                <span class="block text-[10px] sm:text-[11px] text-slate-400 font-medium tracking-wider truncate">PROJECT MANAGEMENT &amp; SAFETY CONSULTANCY</span>
               </div>
             </a>
 
-            <!-- 메인 네비게이션 -->
-            <nav class="hidden md:flex items-center gap-1">
-              <a href="/index.html" class="px-3.5 py-2 rounded-md text-sm font-semibold transition ${activeMenu === 'home' ? 'text-amber-400 bg-blue-950/80' : 'text-slate-300 hover:text-white hover:bg-blue-950/50'}">
-                안전 공익정보
-              </a>
-              <a href="/shop.html" class="px-3.5 py-2 rounded-md text-sm font-semibold transition ${activeMenu === 'shop' ? 'text-amber-400 bg-blue-950/80' : 'text-slate-300 hover:text-white hover:bg-blue-950/50'} flex items-center gap-1.5">
-                <span>🛒</span> 안전용품몰
-                <span class="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-black">생활·현장</span>
-                <span id="nav-cart-count" class="hidden bg-emerald-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
-              </a>
-              <a href="/boards.html?type=general" class="px-3.5 py-2 rounded-md text-sm font-semibold transition ${activeMenu === 'general' ? 'text-amber-400 bg-blue-950/80' : 'text-slate-300 hover:text-white hover:bg-blue-950/50'}">
-                일반 안전자료실 <span class="text-[10px] bg-emerald-900/80 text-emerald-300 px-1.5 py-0.5 rounded font-normal ml-0.5">전체공개</span>
-              </a>
-              <a href="/boards.html?type=member" class="px-3.5 py-2 rounded-md text-sm font-semibold transition ${activeMenu === 'member' ? 'text-amber-400 bg-blue-950/80' : 'text-slate-300 hover:text-white hover:bg-blue-950/50'}">
-                회원 전용 게시판 <span class="text-[10px] bg-amber-900/80 text-amber-300 px-1.5 py-0.5 rounded font-normal ml-0.5">회원전용</span>
-              </a>
-              <a href="/technical-guidance.html" class="px-3 py-2 rounded-md text-sm font-semibold transition ${activeMenu === 'technical-guidance' ? 'text-amber-400 bg-blue-950/80 ring-1 ring-amber-400/50' : 'text-amber-300 hover:text-white hover:bg-blue-950/50'} flex items-center gap-1.5">
-                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>건설기술지도 AI관제</span>
-                <span class="text-[10px] bg-red-600 text-white px-1.5 py-0.2 rounded font-black tracking-tight">K2B</span>
-              </a>
-              <a href="/video-safety-analysis.html" class="px-2 py-1 rounded-md text-xs font-black bg-gradient-to-r from-amber-400 to-rose-500 hover:brightness-110 text-slate-950 transition flex items-center gap-1 shadow-sm ml-0.5" title="공공데이터 10대 재해 동영상 AI 분석">
-                <span>🎬</span>
-                <span>동영상AI</span>
-                <span class="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-black">PRO</span>
-              </a>
-              <a href="/mobile-app.html" target="_blank" class="px-2.5 py-1.5 rounded-md text-xs font-black bg-amber-400 text-slate-950 hover:bg-amber-300 transition flex items-center gap-1 shadow-sm ml-1">
-                <span>📱</span>
-                <span>현장앱</span>
-              </a>
-              <a href="/qna.html" class="px-3.5 py-2 rounded-md text-sm font-semibold transition ${activeMenu === 'qna' ? 'text-amber-400 bg-blue-950/80' : 'text-slate-300 hover:text-white hover:bg-blue-950/50'}">
-                안전 Q&A 문의
-              </a>
-            </nav>
-
             <!-- 사용자 인증 영역 -->
-            <div>
+            <div class="flex items-center flex-wrap gap-2 shrink-0">
               ${authNavHtml}
             </div>
           </div>
+
+          <!-- 2줄 이하: 전체 메뉴 (공간 부족 시 자동 다음 줄 추가 배치) -->
+          <nav class="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 py-2">
+            <a href="/index.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'home' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
+              <span>안전 공익정보</span>
+            </a>
+            <a href="/shop.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'shop' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
+              <span>🛒 안전용품몰</span>
+              <span class="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-black">생활·현장</span>
+              <span id="nav-cart-count" class="hidden bg-emerald-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+            </a>
+            <a href="/boards.html?type=general" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'general' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
+              <span>일반 안전자료실</span>
+              <span class="text-[10px] bg-emerald-900/80 text-emerald-300 px-1.5 py-0.5 rounded font-normal">전체공개</span>
+            </a>
+            <a href="/boards.html?type=member" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'member' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
+              <span>회원 전용 게시판</span>
+              <span class="text-[10px] bg-amber-900/80 text-amber-300 px-1.5 py-0.5 rounded font-normal">회원전용</span>
+            </a>
+            <a href="/technical-guidance.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'technical-guidance' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/50' : 'text-amber-300 hover:text-white hover:bg-blue-950/60'}">
+              <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>건설기술지도 AI관제</span>
+              <span class="text-[10px] bg-red-600 text-white px-1.5 py-0.2 rounded font-black tracking-tight">K2B</span>
+            </a>
+            <a href="/video-safety-analysis.html" class="px-3 py-1.5 rounded-md text-xs font-black bg-gradient-to-r from-amber-400 to-rose-500 hover:brightness-110 text-slate-950 transition whitespace-nowrap inline-flex items-center gap-1 shrink-0 shadow-sm" title="전방위 동영상 AI 안전분석">
+              <span>🎬</span>
+              <span>동영상AI</span>
+              <span class="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-black">PRO</span>
+            </a>
+            <a href="/mobile-app.html" target="_blank" class="px-3 py-1.5 rounded-md text-xs font-black bg-amber-400 text-slate-950 hover:bg-amber-300 transition whitespace-nowrap inline-flex items-center gap-1 shrink-0 shadow-sm">
+              <span>📱</span>
+              <span>현장앱</span>
+            </a>
+            <a href="/qna.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'qna' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
+              <span>안전 Q&amp;A 문의</span>
+            </a>
+          </nav>
         </div>
       </header>
     `;
