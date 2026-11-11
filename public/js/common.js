@@ -174,7 +174,7 @@ async function initLayout(activeMenu = '') {
                   <span class="text-sm sm:text-base font-bold text-blue-300 hidden sm:inline">(Project Management Consultancy)</span>
                   <span class="inline-block w-3 h-3 rounded-full bg-emerald-400"></span>
                 </span>
-                <span class="block text-xs sm:text-sm text-slate-400 font-semibold tracking-wider truncate mt-1">PROJECT MANAGEMENT &amp; SAFETY CONSULTANCY</span>
+                <span class="block text-xs sm:text-sm text-slate-400 font-semibold tracking-wider leading-snug mt-1">Project Management &amp; Safety Support with Experiences and AI Technologies</span>
               </div>
             </a>
           </div>
