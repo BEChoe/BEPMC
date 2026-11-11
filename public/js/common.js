@@ -57,22 +57,9 @@ async function logout() {
   }
 }
 
-// 4. 공통 레이아웃 렌더링 (헤더 + 상단배너 + 푸터)
+// 4. 공통 레이아웃 렌더링 (헤더 + 메뉴 아래 2배 확대 안전배너 + 푸터)
 async function initLayout(activeMenu = '') {
   await Promise.all([checkAuth(), loadSiteSettings()]);
-
-  // 상단 알림 띠배너 렌더링 (경고/주의 옐로우 배너)
-  const bannerContainer = document.getElementById('global-alert-banner');
-  if (bannerContainer && currentSettings.alertBanner) {
-    bannerContainer.innerHTML = `
-      <div class="bg-amber-400 text-slate-900 px-4 py-2 text-xs font-semibold flex items-center justify-between border-b border-amber-500 shadow-sm">
-        <div class="flex items-center gap-2 max-w-7xl mx-auto w-full">
-          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-amber-400 text-xs font-black">!</span>
-          <span class="truncate">${escapeHtml(currentSettings.alertBanner)}</span>
-        </div>
-      </div>
-    `;
-  }
 
   // 요구사항: 상단의 비회원/일반회원/관리자 구분은 삭제
   const demoSwitcherContainer = document.getElementById('demo-role-switcher');
@@ -83,6 +70,42 @@ async function initLayout(activeMenu = '') {
 
   // 상단 글로벌 헤더 (편안하고 믿음직한 딥 블루 테마)
   const headerContainer = document.getElementById('global-header');
+  const bannerContainer = document.getElementById('global-alert-banner');
+
+  // 안전 정보 띠배너를 모든 네비게이션 메뉴(#global-header) 아래로 이동 배치
+  if (headerContainer && bannerContainer) {
+    headerContainer.after(bannerContainer);
+  }
+
+  // 안전 알림 띠배너 렌더링 (크기 2배 확대 + 우측 체크 후 제거 기능)
+  let isDismissed = false;
+  try {
+    const dismissedText = sessionStorage.getItem('bepmc_dismissed_alert');
+    isDismissed = Boolean(dismissedText && dismissedText === currentSettings.alertBanner);
+  } catch (e) {}
+
+  if (bannerContainer) {
+    if (currentSettings.alertBanner && !isDismissed) {
+      bannerContainer.classList.remove('hidden');
+      bannerContainer.innerHTML = `
+        <div class="bg-amber-400 text-slate-900 px-4 py-4 border-b-2 border-amber-500 shadow-md">
+          <div class="max-w-7xl mx-auto w-full flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5 min-w-0 flex-1">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-900 text-amber-400 text-xl font-black shrink-0 shadow-sm">!</span>
+              <span class="text-base sm:text-xl font-black leading-snug tracking-tight text-slate-950">${escapeHtml(currentSettings.alertBanner)}</span>
+            </div>
+            <label class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-950/10 hover:bg-slate-950/20 border border-slate-950/25 cursor-pointer select-none shrink-0 transition ml-auto">
+              <input type="checkbox" onchange="dismissGlobalAlertBanner(this)" class="w-5 h-5 rounded border-slate-900 text-slate-950 focus:ring-slate-900 cursor-pointer accent-slate-900">
+              <span class="text-xs sm:text-sm font-black text-slate-950 whitespace-nowrap">확인 후 제거</span>
+            </label>
+          </div>
+        </div>
+      `;
+    } else {
+      bannerContainer.innerHTML = '';
+      bannerContainer.classList.add('hidden');
+    }
+  }
   if (headerContainer) {
     let authNavHtml = '';
     if (currentAuth.isLoggedIn) {
@@ -267,6 +290,28 @@ async function initLayout(activeMenu = '') {
         </div>
       </footer>
     `;
+  }
+}
+
+/**
+ * 안전 알림 띠배너 우측 체크박스 클릭 시 배너 제거 (세션 내 유지, 새 공지 시 재노출)
+ */
+function dismissGlobalAlertBanner(checkboxEl) {
+  if (checkboxEl && !checkboxEl.checked) return;
+  const bannerContainer = document.getElementById('global-alert-banner');
+  try {
+    if (currentSettings && currentSettings.alertBanner) {
+      sessionStorage.setItem('bepmc_dismissed_alert', currentSettings.alertBanner);
+    }
+  } catch (e) {}
+  if (bannerContainer) {
+    bannerContainer.style.transition = 'opacity 0.2s ease';
+    bannerContainer.style.opacity = '0';
+    setTimeout(() => {
+      bannerContainer.innerHTML = '';
+      bannerContainer.classList.add('hidden');
+      bannerContainer.style.opacity = '';
+    }, 200);
   }
 }
 
