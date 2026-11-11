@@ -107,11 +107,21 @@ async function initLayout(activeMenu = '') {
     }
   }
   if (headerContainer) {
+    const isLoggedIn = Boolean(currentAuth && currentAuth.isLoggedIn);
+    const isAdmin = Boolean(isLoggedIn && currentAuth.mode === 'admin');
+    const tier = isLoggedIn
+      ? (isAdmin ? 'PAID' : (currentAuth.membershipTier || (currentAuth.membership === 'paid' ? 'PAID' : (currentAuth.membership === 'trial' ? 'TRIAL' : 'FREE'))))
+      : 'GUEST';
+    const isPaid = (isAdmin || tier === 'PAID');
+    const isTrial = (tier === 'TRIAL');
+
+    // 메뉴 등급별 노출 권한
+    const canUseMemberMenus = isLoggedIn; // 로그인 필요 (무료/맛보기/유료/관리자)
+    const canUseTrialOrPaid = isLoggedIn && (isTrial || isPaid); // 맛보기 또는 정기유료/관리자
+    const canUsePaidOnly = isLoggedIn && isPaid; // 정기구독 유료회원 및 관리자 전용
+
     let authNavHtml = '';
-    if (currentAuth.isLoggedIn) {
-      const tier = currentAuth.membershipTier || (currentAuth.membership === 'paid' ? 'PAID' : (currentAuth.membership === 'trial' ? 'TRIAL' : 'FREE'));
-      const isPaid = (currentAuth.mode === 'admin' || tier === 'PAID');
-      const isTrial = (tier === 'TRIAL');
+    if (isLoggedIn) {
       const remainTrial = currentAuth.user?.trialInfo?.quotaRemaining ?? 30;
       const tierBadge = isPaid
         ? '<span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-1.5 py-0.2 rounded font-black">💎 유료회원</span>'
@@ -120,22 +130,22 @@ async function initLayout(activeMenu = '') {
           : '<span class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.2 rounded font-normal">무료</span>');
 
       authNavHtml = `
-        <div class="flex items-center gap-2">
-          ${currentAuth.mode === 'admin' ? `
-            <a href="/admin.html" class="flex items-center gap-1.5 bg-amber-400 text-slate-950 hover:bg-amber-300 px-3 py-1.5 rounded-md font-black text-xs tracking-tight transition shadow-sm">
+        <div class="flex items-center flex-wrap gap-2">
+          ${isAdmin ? `
+            <a href="/admin.html" class="flex items-center gap-1.5 bg-amber-400 text-slate-950 hover:bg-amber-300 px-3 py-1.5 rounded-md font-black text-xs tracking-tight transition shadow-sm whitespace-nowrap">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
               <span>관리자 모드</span>
             </a>
           ` : `
-            <a href="/paid-onboarding.html" class="flex items-center gap-1.5 text-xs bg-blue-900/80 hover:bg-blue-800 text-blue-200 border border-blue-700 px-2.5 py-1 rounded font-medium transition" title="회원 등급 및 세무·결재 비밀번호 설정">
+            <a href="/paid-onboarding.html" class="flex items-center gap-1.5 text-xs bg-blue-900/80 hover:bg-blue-800 text-blue-200 border border-blue-700 px-2.5 py-1 rounded font-medium transition whitespace-nowrap" title="회원 등급 및 세무·결재 비밀번호 설정">
               <span><b>${escapeHtml(currentAuth.user.name)}</b>님</span>
               ${tierBadge}
             </a>
           `}
-          <a href="/paid-onboarding.html" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1.5 rounded transition font-bold border border-slate-700 hidden sm:inline-block">
+          <a href="/paid-onboarding.html" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1.5 rounded transition font-bold border border-slate-700 whitespace-nowrap">
             내 정보·결재설정
           </a>
-          <button onclick="logout()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition font-medium border border-slate-700">
+          <button onclick="logout()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition font-medium border border-slate-700 whitespace-nowrap">
             로그아웃
           </button>
         </div>
@@ -143,8 +153,8 @@ async function initLayout(activeMenu = '') {
     } else {
       authNavHtml = `
         <div class="flex items-center gap-2">
-          <a href="/login.html" class="text-xs font-semibold text-slate-200 hover:text-amber-300 px-3 py-1.5 rounded transition">로그인</a>
-          <a href="/register.html" class="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded transition shadow-sm">회원가입 신청</a>
+          <a href="/login.html" class="text-xs font-semibold text-slate-200 hover:text-amber-300 px-3 py-1.5 rounded transition whitespace-nowrap">로그인</a>
+          <a href="/register.html" class="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded transition shadow-sm whitespace-nowrap">회원가입 신청</a>
         </div>
       `;
     }
@@ -169,45 +179,55 @@ async function initLayout(activeMenu = '') {
             </a>
           </div>
 
-          <!-- 2줄 이하: 전체 메뉴(좌측) + 로그인/회원가입 메뉴(우측, 공간 부족 시 자동 다음 줄 추가 배치) -->
+          <!-- 2줄 이하: 비로그인 공개메뉴 + 로그인·등급별 조건부 메뉴(평상시 hidden) + 우측 로그인/회원가입 -->
           <div class="flex flex-wrap items-center justify-between gap-2 py-2">
             <nav class="flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
+              <!-- [공개 1] 안전 공익정보 (비로그인 허용) -->
               <a href="/index.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'home' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
                 <span>안전 공익정보</span>
               </a>
+              <!-- [공개 2] 안전용품몰 (비로그인 허용) -->
               <a href="/shop.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'shop' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
                 <span>🛒 안전용품몰</span>
                 <span class="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-black">생활·현장</span>
                 <span id="nav-cart-count" class="hidden bg-emerald-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
               </a>
+              <!-- [공개 3] 일반 안전자료실 (비로그인 허용) -->
               <a href="/boards.html?type=general" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'general' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
                 <span>일반 안전자료실</span>
                 <span class="text-[10px] bg-emerald-900/80 text-emerald-300 px-1.5 py-0.5 rounded font-normal">전체공개</span>
               </a>
-              <a href="/boards.html?type=member" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'member' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
+              <!-- [공개 4] 안전 Q&A 문의 (비로그인 허용) -->
+              <a href="/qna.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'qna' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
+                <span>안전 Q&amp;A 문의</span>
+              </a>
+
+              <!-- [로그인 필수: 무료회원 이상] 평상시 hidden, 로그인 시 표시 -->
+              <a href="/boards.html?type=member" class="${canUseMemberMenus ? 'inline-flex' : 'hidden'} px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap items-center gap-1.5 shrink-0 transition ${activeMenu === 'member' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
                 <span>회원 전용 게시판</span>
                 <span class="text-[10px] bg-amber-900/80 text-amber-300 px-1.5 py-0.5 rounded font-normal">회원전용</span>
               </a>
-              <a href="/technical-guidance.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'technical-guidance' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/50' : 'text-amber-300 hover:text-white hover:bg-blue-950/60'}">
+
+              <!-- [유료 맛보기(TRIAL) 또는 정기구독 유료(PAID)] 평상시 hidden -->
+              <a href="/video-safety-analysis.html" class="${canUseTrialOrPaid ? 'inline-flex' : 'hidden'} px-3 py-1.5 rounded-md text-xs font-black bg-gradient-to-r from-amber-400 to-rose-500 hover:brightness-110 text-slate-950 transition whitespace-nowrap items-center gap-1 shrink-0 shadow-sm" title="전방위 동영상 AI 안전분석">
+                <span>🎬</span>
+                <span>동영상AI</span>
+                <span class="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-black">${isTrial ? '체험' : 'PRO'}</span>
+              </a>
+
+              <!-- [정기구독 유료회원(PAID) 및 관리자 전용] 평상시 hidden -->
+              <a href="/technical-guidance.html" class="${canUsePaidOnly ? 'inline-flex' : 'hidden'} px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap items-center gap-1.5 shrink-0 transition ${activeMenu === 'technical-guidance' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/50' : 'text-amber-300 hover:text-white hover:bg-blue-950/60'}">
                 <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>건설기술지도 AI관제</span>
                 <span class="text-[10px] bg-red-600 text-white px-1.5 py-0.2 rounded font-black tracking-tight">K2B</span>
               </a>
-              <a href="/video-safety-analysis.html" class="px-3 py-1.5 rounded-md text-xs font-black bg-gradient-to-r from-amber-400 to-rose-500 hover:brightness-110 text-slate-950 transition whitespace-nowrap inline-flex items-center gap-1 shrink-0 shadow-sm" title="전방위 동영상 AI 안전분석">
-                <span>🎬</span>
-                <span>동영상AI</span>
-                <span class="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-black">PRO</span>
-              </a>
-              <a href="/mobile-app.html" target="_blank" class="px-3 py-1.5 rounded-md text-xs font-black bg-amber-400 text-slate-950 hover:bg-amber-300 transition whitespace-nowrap inline-flex items-center gap-1 shrink-0 shadow-sm">
+              <a href="/mobile-app.html" target="_blank" class="${canUsePaidOnly ? 'inline-flex' : 'hidden'} px-3 py-1.5 rounded-md text-xs font-black bg-amber-400 text-slate-950 hover:bg-amber-300 transition whitespace-nowrap items-center gap-1 shrink-0 shadow-sm">
                 <span>📱</span>
                 <span>현장앱</span>
               </a>
-              <a href="/qna.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'qna' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
-                <span>안전 Q&amp;A 문의</span>
-              </a>
             </nav>
 
-            <!-- 사용자 인증 영역 (한 줄 아래 우측 배치) -->
+            <!-- 사용자 인증 영역 (공개 메뉴 우측 배치) -->
             <div class="flex items-center flex-wrap gap-2 ml-auto shrink-0">
               ${authNavHtml}
             </div>
@@ -220,6 +240,15 @@ async function initLayout(activeMenu = '') {
   // 공통 푸터 (편안하고 믿음직한 네이비 블루 테마 + 관리자 모드 진입 링크)
   const footerContainer = document.getElementById('global-footer');
   if (footerContainer) {
+    const isLoggedIn = Boolean(currentAuth && currentAuth.isLoggedIn);
+    const isAdmin = Boolean(isLoggedIn && currentAuth.mode === 'admin');
+    const tier = isLoggedIn
+      ? (isAdmin ? 'PAID' : (currentAuth.membershipTier || (currentAuth.membership === 'paid' ? 'PAID' : (currentAuth.membership === 'trial' ? 'TRIAL' : 'FREE'))))
+      : 'GUEST';
+    const canUseMemberMenus = isLoggedIn;
+    const canUseTrialOrPaid = isLoggedIn && (tier === 'TRIAL' || tier === 'PAID' || isAdmin);
+    const canUsePaidOnly = isLoggedIn && (tier === 'PAID' || isAdmin);
+
     footerContainer.innerHTML = `
       <footer class="bg-[#0f172a] text-slate-400 border-t-4 border-blue-600 mt-auto">
         <!-- 안전 빗금 얇은 라인 -->
@@ -254,11 +283,11 @@ async function initLayout(activeMenu = '') {
                 <li><a href="/index.html" class="hover:text-amber-300 transition">첫페이지 (공익안전정보)</a></li>
                 <li><a href="/shop.html" class="hover:text-amber-300 transition text-amber-300 font-semibold">🛒 안전용품몰 (생활·현장용품)</a></li>
                 <li><a href="/boards.html?type=general" class="hover:text-amber-300 transition">일반 안전자료실 (전체열람)</a></li>
-                <li><a href="/boards.html?type=member" class="hover:text-amber-300 transition">회원 전용 게시판 (회원전용)</a></li>
-                <li><a href="/technical-guidance.html" class="hover:text-amber-300 transition text-amber-400 font-semibold flex items-center gap-1"><span>🤖</span> 건설재해예방 기술지도 AI 관제 (K2B)</a></li>
-                <li><a href="/video-safety-analysis.html" class="hover:text-amber-300 transition text-amber-200 font-semibold flex items-center gap-1"><span>🎬</span> 10대 재해 동영상 AI 안전분석 (유료)</a></li>
-                <li><a href="/mobile-app.html" target="_blank" class="hover:text-amber-300 transition text-amber-300 font-bold flex items-center gap-1"><span>📱</span> 현장 관리자 모바일앱 (동영상·점검·전자결재)</a></li>
                 <li><a href="/qna.html" class="hover:text-amber-300 transition">안전 Q&A 문의 접수</a></li>
+                <li class="${canUseMemberMenus ? '' : 'hidden'}"><a href="/boards.html?type=member" class="hover:text-amber-300 transition">회원 전용 게시판 (회원전용)</a></li>
+                <li class="${canUseTrialOrPaid ? '' : 'hidden'}"><a href="/video-safety-analysis.html" class="hover:text-amber-300 transition text-amber-200 font-semibold flex items-center gap-1"><span>🎬</span> 10대 재해 동영상 AI 안전분석 (${tier === 'TRIAL' ? '맛보기' : '유료'})</a></li>
+                <li class="${canUsePaidOnly ? '' : 'hidden'}"><a href="/technical-guidance.html" class="hover:text-amber-300 transition text-amber-400 font-semibold flex items-center gap-1"><span>🤖</span> 건설재해예방 기술지도 AI 관제 (K2B)</a></li>
+                <li class="${canUsePaidOnly ? '' : 'hidden'}"><a href="/mobile-app.html" target="_blank" class="hover:text-amber-300 transition text-amber-300 font-bold flex items-center gap-1"><span>📱</span> 현장 관리자 모바일앱 (동영상·점검·전자결재)</a></li>
               </ul>
             </div>
 
