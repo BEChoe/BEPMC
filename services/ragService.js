@@ -17,7 +17,7 @@ const CHAT_ROOMS_FILE = path.join(process.cwd(), 'data', 'chat-rooms.json');
 
 // Supabase 환경 변수 확인
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 let supabaseClient = null;
