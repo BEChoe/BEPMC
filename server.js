@@ -2289,12 +2289,15 @@ app.post('/api/mobile/auth/logout', (req, res) => {
 });
 
 // ========================================================
-// AI 안전 법규 & 제도 챗봇 (Gemini + Google Search Grounding)
+// AI 안전 법규 & 제도 챗봇 (Gemini + RAG + Chat Rooms)
 // ========================================================
+const ragService = require('./services/ragService');
+
 app.get('/chat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
 
+// 채팅 쿼터 조회
 app.get('/api/chat', (req, res) => {
   try {
     const quota = geminiQuotaService.getQuotaStatus();
@@ -2304,21 +2307,99 @@ app.get('/api/chat', (req, res) => {
   }
 });
 
+// 채팅방 목록 조회
+app.get('/api/chat/rooms', async (req, res) => {
+  try {
+    const userId = req.session.user ? (req.session.user.id || req.session.user.username) : (req.query.userId || 'guest');
+    const rooms = await ragService.listRooms(userId);
+    res.json({ success: true, rooms });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 새 채팅방 생성
+app.post('/api/chat/rooms', async (req, res) => {
+  try {
+    const userId = req.session.user ? (req.session.user.id || req.session.user.username) : (req.body.userId || 'guest');
+    const title = req.body.title || '새로운 안전 상담 대화';
+    const room = await ragService.createRoom(userId, title);
+    res.json({ success: true, room });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 특정 채팅방 대화 내역 조회
+app.get('/api/chat/rooms/:id', async (req, res) => {
+  try {
+    const userId = req.session.user ? (req.session.user.id || req.session.user.username) : (req.query.userId || 'guest');
+    const room = await ragService.getRoom(req.params.id, userId);
+    if (!room) {
+      return res.status(404).json({ success: false, message: '채팅방을 찾을 수 없습니다.' });
+    }
+    res.json({ success: true, room });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 특정 채팅방 삭제
+app.delete('/api/chat/rooms/:id', async (req, res) => {
+  try {
+    const userId = req.session.user ? (req.session.user.id || req.session.user.username) : (req.query.userId || 'guest');
+    const result = await ragService.deleteRoom(req.params.id, userId);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 챗봇 질문 및 RAG 기반 답변 생성
 app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const { message, roomId, history = [] } = req.body;
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ success: false, error: '질문 메시지를 입력해 주세요.' });
+    }
+
+    const userId = req.session.user ? (req.session.user.id || req.session.user.username) : (req.body.userId || 'guest');
+
+    // 1. 활성 채팅방 확보
+    let activeRoomId = roomId;
+    if (!activeRoomId) {
+      const newRoom = await ragService.createRoom(userId, message.slice(0, 30));
+      activeRoomId = newRoom.id;
+    }
+
+    // 2. 사용자 질문 채팅방 저장
+    await ragService.addMessage(activeRoomId, userId, 'user', message, []);
+
+    // 3. RAG: Safety 문서 벡터 유사도 검색 (Gemini gemini-embedding-001)
+    let safetyDocs = [];
+    try {
+      safetyDocs = await ragService.searchSafetyDocuments(message, { topK: 3 });
+    } catch (e) {
+      console.warn('[RAG Search Warning]:', e.message);
     }
 
     geminiQuotaService.consumeQuota({ fileName: 'chat-query' });
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 
+    // RAG 컨텍스트 주입
+    let ragContext = '';
+    if (safetyDocs.length > 0) {
+      ragContext = `\n\n[참고 안전 사내/공공 문서 (Safety RAG 검색 결과)]\n` +
+        safetyDocs.map((doc, idx) => `[문서 ${idx + 1}] 출처: ${doc.source} | 항목: ${doc.title}\n내용: ${doc.content}`).join('\n\n') +
+        `\n\n위 [참고 안전 문서]의 구체적인 수치, 안전 조치 기준, 사고 원인 및 재발방지대책을 답변에 적극 인용하여 전문적으로 설명하십시오.`;
+    }
+
     const systemPrompt = `당신은 BEPMC(Project Management & Safety Support with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
 1. 전문분야: 철도안전법, 철도기술기준, 1,435mm 표준궤, 25kV 가공전차선 이격거리(2.0m 이상), 4대 중대재해(압착/감전/충돌), 산업안전보건법, 중대재해처벌법 및 2026년 최신 안전 제도 안내.
 2. 스타일: 신뢰감 있는 비즈니스 어조(~합니다, ~권장합니다), 글머리기호와 표로 명확히 정리.
-3. 실시간 정보: Google Search Grounding 결과를 토대로 최신 뉴스 및 법령 개정사항을 정확히 안내.
-4. 면책안내: 답변 말미에 관계 법령 원문 및 주무관청 유권해석 확인 권장 안내.`;
+3. 사내/공공 안전 문서 인용: 제공된 Safety 문서를 최우선적으로 참조하여 실질적이고 구체적인 안전수칙을 안내.
+4. 실시간 정보: Google Search Grounding 결과를 토대로 최신 뉴스 및 법령 개정사항을 정확히 안내.
+5. 면책안내: 답변 말미에 관계 법령 원문 및 주무관청 유권해석 확인 권장 안내.${ragContext}`;
 
     const contents = [];
     if (Array.isArray(history)) {
@@ -2335,6 +2416,15 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
       role: 'user',
       parts: [{ text: message }]
     });
+
+    const docSources = safetyDocs.map(doc => ({
+      type: 'document',
+      source: doc.source,
+      title: doc.title,
+      category: doc.category,
+      snippet: doc.content.slice(0, 150) + (doc.content.length > 150 ? '...' : ''),
+      similarity: doc.similarity
+    }));
 
     if (apiKey) {
       try {
@@ -2358,14 +2448,24 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
           const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
           const webSources = groundingChunks
             .filter(c => c.web?.uri)
-            .map(c => ({ title: c.web.title || c.web.uri, uri: c.web.uri }));
-          const uniqueSources = Array.from(new Map(webSources.map(s => [s.uri, s])).values());
+            .map(c => ({
+              type: 'web',
+              title: c.web.title || c.web.uri,
+              uri: c.web.uri
+            }));
+          const uniqueWebSources = Array.from(new Map(webSources.map(s => [s.uri, s])).values());
+          const allSources = [...docSources, ...uniqueWebSources];
+
+          // AI 답변 대화 내역 저장
+          await ragService.addMessage(activeRoomId, userId, 'assistant', replyText, allSources);
 
           return res.json({
             success: true,
             reply: replyText,
-            sources: uniqueSources,
-            model: 'gemini-3.8-flash (Google Search 연동)',
+            sources: allSources,
+            roomId: activeRoomId,
+            createdAt: new Date().toISOString(),
+            model: 'gemini-3.8-flash (RAG + Google Search)',
             quota: geminiQuotaService.getQuotaStatus()
           });
         }
@@ -2375,11 +2475,16 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
     }
 
     // Fallback domain safety reply
+    const fallbackText = `### 📋 BEPMC 안전 법규 & 제도 전문 상담\n\n문의하신 **"${message}"**에 대한 안전 기준 안내입니다:\n\n- **철도안전법 제45조**: 철도경계표지로부터 30m 이내 철도보호지구 행위신고 의무\n- **가공전차선(25kV)**: 충전부 2.0m 이상 안전 이격거리 절대 유지\n- **중대재해처벌법**: 안전보건관리체계 구축 및 위험성평가 정례화\n\n상세 조항에 대해 추가로 질문해 주시면 상세히 안내해 드리겠습니다.`;
+    await ragService.addMessage(activeRoomId, userId, 'assistant', fallbackText, docSources);
+
     return res.json({
       success: true,
-      reply: `### 📋 BEPMC 안전 법규 & 제도 전문 상담\n\n문의하신 **"${message}"**에 대한 안전 기준 안내입니다:\n\n- **철도안전법 제45조**: 철도경계표지로부터 30m 이내 철도보호지구 행위신고 의무\n- **가공전차선(25kV)**: 충전부 2.0m 이상 안전 이격거리 절대 유지\n- **중대재해처벌법**: 안전보건관리체계 구축 및 위험성평가 정례화\n\n상세 조항에 대해 추가로 질문해 주시면 상세히 안내해 드리겠습니다.`,
-      sources: [],
-      model: 'BEPMC 안전 법규 전문 지식 엔진',
+      reply: fallbackText,
+      sources: docSources,
+      roomId: activeRoomId,
+      createdAt: new Date().toISOString(),
+      model: 'BEPMC 안전 법규 전문 지식 엔진 (RAG 연동)',
       quota: geminiQuotaService.getQuotaStatus()
     });
   } catch (err) {

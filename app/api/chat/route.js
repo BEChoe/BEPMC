@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+const ragService = require('../../../services/ragService');
 
 const SYSTEM_PROMPT = `당신은 BEPMC(Project Management & Safety Support with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
 
@@ -181,6 +182,42 @@ export async function POST(request) {
 
     // Update local quota
     const updatedQuota = incrementQuota();
+    const userId = body.userId || 'guest';
+    let activeRoomId = body.roomId;
+
+    // 1. 활성 채팅방 관리 및 질문 메시지 기록
+    if (!activeRoomId) {
+      const newRoom = await ragService.createRoom(userId, message.slice(0, 30));
+      activeRoomId = newRoom.id;
+    }
+    await ragService.addMessage(activeRoomId, userId, 'user', message, []);
+
+    // 2. RAG: Safety 문서 벡터 유사도 검색 (Gemini gemini-embedding-001)
+    let safetyDocs = [];
+    try {
+      safetyDocs = await ragService.searchSafetyDocuments(message, { topK: 3 });
+    } catch (e) {
+      console.warn('[Next.js RAG Search Warning]:', e.message);
+    }
+
+    const docSources = safetyDocs.map(doc => ({
+      type: 'document',
+      source: doc.source,
+      title: doc.title,
+      category: doc.category,
+      snippet: doc.content.slice(0, 150) + (doc.content.length > 150 ? '...' : ''),
+      similarity: doc.similarity
+    }));
+
+    // RAG 컨텍스트 주입
+    let ragContext = '';
+    if (safetyDocs.length > 0) {
+      ragContext = `\n\n[참고 안전 사내/공공 문서 (Safety RAG 검색 결과)]\n` +
+        safetyDocs.map((doc, idx) => `[문서 ${idx + 1}] 출처: ${doc.source} | 항목: ${doc.title}\n내용: ${doc.content}`).join('\n\n') +
+        `\n\n위 [참고 안전 문서]의 구체적인 수치, 안전 조치 기준, 사고 원인 및 재발방지대책을 답변에 적극 인용하여 전문적으로 설명하십시오.`;
+    }
+
+    const effectiveSystemPrompt = `${SYSTEM_PROMPT}${ragContext}`;
 
     const apiKey =
       process.env.GEMINI_API_KEY ||
@@ -214,7 +251,7 @@ export async function POST(request) {
     let isQuotaError = false;
 
     if (apiKey) {
-      // Step 1: Try with Google Search Grounding
+      // Step 1: Try with Google Search Grounding + RAG Context
       for (const model of candidateModels) {
         try {
           const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -224,7 +261,7 @@ export async function POST(request) {
             signal: AbortSignal.timeout(35000),
             body: JSON.stringify({
               systemInstruction: {
-                parts: [{ text: SYSTEM_PROMPT }],
+                parts: [{ text: effectiveSystemPrompt }],
               },
               contents,
               tools: [
@@ -241,13 +278,12 @@ export async function POST(request) {
 
           if (response.ok) {
             geminiData = await response.json();
-            usedModel = `${model} (Google Search 연동)`;
+            usedModel = `${model} (RAG + Google Search)`;
             break;
           } else {
-            const errData = await response.json().catch(() => ({}));
             if (response.status === 429) {
               isQuotaError = true;
-              break; // Google Search Grounding quota issue, try step 2
+              break;
             }
           }
         } catch (err) {
@@ -256,7 +292,7 @@ export async function POST(request) {
         }
       }
 
-      // Step 2: If Search Grounding hit quota, try plain LLM without search tool
+      // Step 2: If Search Grounding hit quota, try plain LLM with RAG
       if (!geminiData && isQuotaError) {
         for (const model of candidateModels) {
           try {
@@ -264,10 +300,10 @@ export async function POST(request) {
             const response = await fetch(endpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              signal: AbortSignal.timeout(3500),
+              signal: AbortSignal.timeout(35000),
               body: JSON.stringify({
                 systemInstruction: {
-                  parts: [{ text: SYSTEM_PROMPT }],
+                  parts: [{ text: effectiveSystemPrompt }],
                 },
                 contents,
                 generationConfig: {
@@ -279,7 +315,7 @@ export async function POST(request) {
 
             if (response.ok) {
               geminiData = await response.json();
-              usedModel = `${model} (내장 AI 지식)`;
+              usedModel = `${model} (RAG 안전 지식)`;
               isQuotaError = false;
               break;
             }
@@ -302,18 +338,25 @@ export async function POST(request) {
       const webSources = groundingChunks
         .filter((c) => c.web?.uri)
         .map((c) => ({
+          type: 'web',
           title: c.web.title || c.web.uri,
           uri: c.web.uri,
         }));
 
-      const uniqueSources = Array.from(
+      const uniqueWebSources = Array.from(
         new Map(webSources.map((s) => [s.uri, s])).values()
       );
+      const allSources = [...docSources, ...uniqueWebSources];
+
+      // Save assistant reply to room
+      await ragService.addMessage(activeRoomId, userId, 'assistant', replyText, allSources);
 
       return NextResponse.json({
         success: true,
         reply: replyText,
-        sources: uniqueSources,
+        sources: allSources,
+        roomId: activeRoomId,
+        createdAt: new Date().toISOString(),
         model: usedModel,
         quota: updatedQuota,
       });
@@ -325,11 +368,16 @@ export async function POST(request) {
       ? `> ⚠️ **Google API 할당량 안내**: 현재 Google AI Studio 프로젝트의 실시간 검색 쿼터가 일시 소진되어, **BEPMC 내장 안전 법규 전문 지식 엔진**으로 정확히 분석하여 즉시 답변해 드립니다.\n\n`
       : '';
 
+    const fallbackReply = quotaNotice + domainReply;
+    await ragService.addMessage(activeRoomId, userId, 'assistant', fallbackReply, docSources);
+
     return NextResponse.json({
       success: true,
-      reply: quotaNotice + domainReply,
-      sources: [],
-      model: 'BEPMC 안전 법규 전문 지식 엔진',
+      reply: fallbackReply,
+      sources: docSources,
+      roomId: activeRoomId,
+      createdAt: new Date().toISOString(),
+      model: 'BEPMC 안전 법규 전문 지식 엔진 (RAG 연동)',
       quotaExceeded: isQuotaError,
       quota: updatedQuota,
     });

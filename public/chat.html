@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BEPMC AI 안전 법규 & 제도 컨설턴트</title>
+  <title>BEPMC AI 안전 법규 & 제도 RAG 컨설턴트</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
@@ -17,20 +17,20 @@
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
-      background-color: #f7f7f7;
-      color: #262626;
+      background-color: #f8fafc;
+      color: #1e293b;
     }
     .chat-bubble-user {
       background-color: #1c69d4;
       color: #ffffff;
-      border-bottom-right-radius: 2px;
+      border-bottom-right-radius: 4px;
     }
     .chat-bubble-ai {
       background-color: #ffffff;
-      color: #262626;
-      border: 1px solid #e6e6e6;
-      border-bottom-left-radius: 2px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     .dot-pulse {
       width: 7px;
@@ -45,107 +45,335 @@
       0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
       40% { transform: scale(1); opacity: 1; }
     }
+    .room-item.active {
+      background-color: #eff6ff;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+      font-weight: 700;
+    }
   </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden">
+<body class="flex h-screen overflow-hidden bg-slate-50">
 
-  <!-- Top Header -->
-  <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 shrink-0 shadow-sm z-30">
-    <div class="max-w-6xl mx-auto flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <a href="/" class="text-2xl font-black text-slate-900 tracking-tight hover:opacity-90">
-          <span class="text-blue-600">BEPMC</span>
-        </a>
-        <div class="w-px h-6 bg-slate-300 hidden sm:block"></div>
-        <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <h1 class="text-sm sm:text-base font-black text-slate-900 leading-tight">AI 안전 법규 &amp; 제도 컨설턴트</h1>
-            <!-- Quota Indicator Pill -->
-            <div id="quota-pill" class="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs text-blue-900 select-none shadow-xs" title="Google Gemini API 일일 제공량 및 사용량 (매일 09:00 KST 리셋)">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span id="quota-text" class="font-medium text-[11px] sm:text-xs">
-                제공량 <b>1500</b>회 / 사용량 <b id="quota-used">0</b>회 (잔여량 <b id="quota-remain">1500</b>회)
-              </span>
+  <!-- Left Sidebar (Chat Rooms) -->
+  <aside id="chat-sidebar" class="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 z-30 transition-transform duration-200 ease-in-out md:translate-x-0 -translate-x-full fixed md:static inset-y-0 left-0 shadow-lg md:shadow-none">
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs">
+          AI
+        </div>
+        <span class="font-bold text-sm text-slate-800">대화 목록</span>
+      </div>
+      <button onclick="toggleSidebar()" class="md:hidden p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <!-- New Chat Button -->
+    <div class="p-3">
+      <button onclick="startNewChat()" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        새 대화 시작
+      </button>
+    </div>
+
+    <!-- Rooms List Container -->
+    <div id="rooms-list" class="flex-1 overflow-y-auto px-2 py-1 space-y-1">
+      <div class="text-center py-8 text-xs text-slate-400">대화 내역을 불러오는 중...</div>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-500 flex items-center justify-between">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>RAG 지식 엔진 가동 중</span>
+      </div>
+      <a href="/" class="hover:text-blue-600 font-semibold">홈으로</a>
+    </div>
+  </aside>
+
+  <!-- Mobile Backdrop -->
+  <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 z-20 hidden md:hidden"></div>
+
+  <!-- Main Chat Container -->
+  <div class="flex-1 flex flex-col h-screen min-w-0">
+
+    <!-- Top Header -->
+    <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 shrink-0 shadow-xs z-10">
+      <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <!-- Mobile Sidebar Toggle Button -->
+          <button onclick="toggleSidebar()" class="md:hidden p-1.5 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          </button>
+
+          <a href="/" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight hover:opacity-90">
+            <span class="text-blue-600">BEPMC</span>
+          </a>
+          <div class="w-px h-5 bg-slate-300 hidden sm:block"></div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-sm sm:text-base font-black text-slate-900 leading-tight">AI 안전 법규 &amp; 제도 RAG 컨설턴트</h1>
+              <!-- Quota Indicator Pill -->
+              <div id="quota-pill" class="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs text-blue-900 select-none shadow-xs" title="Google Gemini API 일일 제공량 및 사용량 (매일 09:00 KST 리셋)">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="quota-text" class="font-medium text-[11px] sm:text-xs">
+                  제공량 <b>1500</b>회 / 사용량 <b id="quota-used">0</b>회 (잔여량 <b id="quota-remain">1500</b>회)
+                </span>
+              </div>
             </div>
+            <p class="text-[11px] text-slate-500 hidden sm:block mt-0.5">
+              Project Management &amp; Safety Support with Experiences and AI Technologies
+            </p>
           </div>
-          <p class="text-[11px] text-slate-500 hidden sm:block mt-0.5">
-            Project Management &amp; Safety Support with Experiences and AI Technologies
-          </p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="startNewChat()" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-100 transition whitespace-nowrap">
+            새 대화
+          </button>
+          <a href="/" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm whitespace-nowrap">
+            홈으로
+          </a>
         </div>
       </div>
-      <div class="flex items-center gap-2 shrink-0">
-        <button onclick="clearChat()" class="px-3 py-1.5 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-100 transition whitespace-nowrap">
-          대화 초기화
-        </button>
-        <a href="/" class="px-3.5 py-1.5 rounded text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm whitespace-nowrap">
-          홈으로 돌아가기
-        </a>
-      </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Chat Message Stream -->
-  <main id="chat-stream" class="flex-1 overflow-y-auto p-4 sm:p-6">
-    <div id="messages-container" class="max-w-4xl mx-auto flex flex-col gap-5 pb-6">
-      <!-- AI Welcome Message -->
-      <div class="flex items-start gap-3">
-        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3Z"></path></svg>
-        </div>
-        <div class="chat-bubble-ai max-w-[85%] sm:max-w-[80%] p-4 sm:p-5 rounded-2xl text-[14.5px] leading-relaxed">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-xs font-bold text-blue-600">BEPMC AI 컨설턴트</span>
-            <span class="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded">🌐 Google Search 실시간 연동</span>
+    <!-- Chat Message Stream -->
+    <main id="chat-stream" class="flex-1 overflow-y-auto p-4 sm:p-6">
+      <div id="messages-container" class="max-w-4xl mx-auto flex flex-col gap-6 pb-6">
+        <!-- AI Welcome Message -->
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3Z"></path></svg>
           </div>
-          <p class="mb-2">반갑습니다. <strong>BEPMC 공식 AI 안전 법규 &amp; 제도 전문 컨설턴트</strong>입니다.</p>
-          <p class="text-slate-700 leading-normal">
-            철도안전법, 철도기술기준, 산업안전보건법, 중대재해처벌법 및 2026년 최신 안전 고시·제도에 대해 궁금한 점을 질문해 주세요.<br>
-            <strong>Google Search Grounding</strong>이 연동되어 있어 실시간 웹 정보와 최신 뉴스까지 함께 검색하여 답변해 드립니다.
-          </p>
+          <div class="chat-bubble-ai max-w-[90%] sm:max-w-[85%] p-4 sm:p-5 rounded-2xl text-[14.5px] leading-relaxed">
+            <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-blue-600">BEPMC AI RAG 컨설턴트</span>
+                <span class="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded">📚 Safety 문서 &amp; Google Search 연동</span>
+              </div>
+              <span class="text-[11px] text-slate-400">안내</span>
+            </div>
+            <p class="mb-2">반갑습니다. <strong>BEPMC 공식 AI 안전 법규 &amp; 제도 전문 RAG 컨설턴트</strong>입니다.</p>
+            <p class="text-slate-700 leading-normal mb-2">
+              본 챗봇은 <strong>사내 Safety 문서 데이터(추락재해 예방수칙, 밀폐공간 질식재해 매뉴얼, 환절기 전기화재 체크리스트, 국토안전관리원 사고사례 등)</strong>를 Gemini 임베딩 모델(<code>gemini-embedding-001</code>)로 사전 분석하여 가장 정확한 근거를 바탕으로 답변합니다.
+            </p>
+            <p class="text-slate-600 text-xs">
+              💡 모든 대화와 참고 출처는 <strong>채팅방별로 자동 기록</strong>되며, 좌측 대화 목록에서 언제든 다시 확인하실 수 있습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Suggested Questions (shown initially) -->
+    <div id="suggested-box" class="max-w-4xl mx-auto w-full px-4 sm:px-6 pb-2">
+      <div class="flex flex-col gap-1.5">
+        <span class="text-xs font-bold text-slate-500">💡 사내 Safety 문서 기반 추천 질문:</span>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="sendSuggested('산업현장 3대 핵심 추락재해 예방수칙과 안전난간 기준은?')" class="bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-slate-800 hover:text-blue-600 px-3 py-1.5 rounded-full text-xs transition text-left shadow-2xs">
+            추락재해 3대 필수 예방 조치 기준은?
+          </button>
+          <button onclick="sendSuggested('밀폐공간 작업 시 산소 농도 기준과 질식 예방 수칙은?')" class="bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-slate-800 hover:text-blue-600 px-3 py-1.5 rounded-full text-xs transition text-left shadow-2xs">
+            밀폐공간 적정 산소 농도 및 질식 예방 수칙은?
+          </button>
+          <button onclick="sendSuggested('환절기 전기화재 및 감전 예방을 위한 핵심 체크리스트는?')" class="bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-slate-800 hover:text-blue-600 px-3 py-1.5 rounded-full text-xs transition text-left shadow-2xs">
+            환절기 전기화재 및 감전 예방 체크리스트는?
+          </button>
+          <button onclick="sendSuggested('철도 궤도 작업 시 가공전차선(25kV) 안전 이격거리 규정은?')" class="bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-slate-800 hover:text-blue-600 px-3 py-1.5 rounded-full text-xs transition text-left shadow-2xs">
+            철도 가공전차선(25kV) 안전 이격거리 규정은?
+          </button>
         </div>
       </div>
     </div>
-  </main>
 
-  <!-- Suggested Questions (shown initially) -->
-  <div id="suggested-box" class="max-w-4xl mx-auto w-full px-4 sm:px-6 pb-2">
-    <div class="flex flex-col gap-1.5">
-      <span class="text-xs font-bold text-slate-500">💡 추천 질문:</span>
-      <div class="flex flex-wrap gap-2">
-        <button onclick="sendSuggested('철도 궤도 작업 시 4대 중대재해(압착/감전/충돌 등) 예방 기준은?')" class="bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-slate-800 hover:text-blue-600 px-3 py-1.5 rounded-full text-xs transition text-left shadow-2xs">
-          철도 궤도 작업 시 4대 중대재해 예방 기준은?
-        </button>
-        <button onclick="sendSuggested('2026년 중대재해처벌법 핵심 안전보건관리체계 체크리스트는?')" class="bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-slate-800 hover:text-blue-600 px-3 py-1.5 rounded-full text-xs transition text-left shadow-2xs">
-          2026년 중대재해처벌법 핵심 체크리스트는?
-        </button>
-        <button onclick="sendSuggested('가공전차선(25kV) 인근 작업 시 안전 이격거리 규정은?')" class="bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-slate-800 hover:text-blue-600 px-3 py-1.5 rounded-full text-xs transition text-left shadow-2xs">
-          가공전차선(25kV) 안전 이격거리 규정은?
-        </button>
-        <button onclick="sendSuggested('철도보호지구(선로 30m 이내) 행위 제한 및 안전 관리 절차는?')" class="bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-slate-800 hover:text-blue-600 px-3 py-1.5 rounded-full text-xs transition text-left shadow-2xs">
-          철도보호지구(선로 30m) 행위 제한 절차는?
-        </button>
+    <!-- Input Area Footer -->
+    <footer class="bg-white border-t border-slate-200 px-4 sm:px-6 py-3.5 shrink-0">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition shadow-2xs">
+          <textarea id="user-input" rows="1" class="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-slate-800 placeholder-slate-400 max-h-32" placeholder="안전 관련 법규, 현장 수칙, 사고 예방 대책에 대해 질문해 주세요... (Enter: 전송, Shift+Enter: 줄바꿈)"></textarea>
+          <button id="send-btn" onclick="handleSend()" class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shrink-0 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-xs">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 text-center mt-2 leading-relaxed">
+          BEPMC AI는 Safety 사내 지침 및 실시간 검색을 참조하여 답변합니다. 인허가 및 법적 분쟁 등 중대 사안은 국가법령정보센터 원문 및 관계 기관의 유권해석을 최종 확인하시기 바랍니다.
+        </p>
       </div>
-    </div>
+    </footer>
+
   </div>
-
-  <!-- Input Area Footer -->
-  <footer class="bg-white border-t border-slate-200 px-4 sm:px-6 py-3.5 shrink-0">
-    <div class="max-w-4xl mx-auto">
-      <div class="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition">
-        <textarea id="user-input" rows="1" class="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-slate-800 placeholder-slate-400 max-h-32" placeholder="안전 관련 법규, 시행령, 지침 또는 제도에 대해 질문해 주세요... (Enter: 전송, Shift+Enter: 줄바꿈)"></textarea>
-        <button id="send-btn" onclick="handleSend()" class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shrink-0 transition disabled:opacity-40 disabled:cursor-not-allowed">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-        </button>
-      </div>
-      <p class="text-[11px] text-slate-400 text-center mt-2 leading-relaxed">
-        BEPMC AI는 공식 법령 및 실시간 Google Search를 참조하여 답변합니다. 인허가 및 법적 분쟁 등 중대 사안은 국가법령정보센터 원문 및 관계 기관의 유권해석을 최종 확인하시기 바랍니다.
-      </p>
-    </div>
-  </footer>
 
   <script>
     let chatHistory = [];
     let isSubmitting = false;
+    let currentRoomId = null;
+    let currentUser = null;
+
+    // Toggle Mobile Sidebar
+    function toggleSidebar() {
+      const sidebar = document.getElementById('chat-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      sidebar.classList.toggle('-translate-x-full');
+      backdrop.classList.toggle('hidden');
+    }
+
+    // Format Timestamp Helper
+    function formatTime(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      return `${date.getMonth() + 1}월 ${date.getDate()}일 ${date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // Load Chat Rooms
+    async function loadChatRooms() {
+      try {
+        const res = await fetch('/api/chat/rooms');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.rooms)) {
+          renderRoomsList(data.rooms);
+          // If no active room is selected and rooms exist, load the first one
+          if (!currentRoomId && data.rooms.length > 0) {
+            selectRoom(data.rooms[0].id);
+          }
+        }
+      } catch (e) {
+        console.warn('Load rooms failed:', e);
+      }
+    }
+
+    function renderRoomsList(rooms) {
+      const container = document.getElementById('rooms-list');
+      if (!rooms || rooms.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-xs text-slate-400 px-3">
+            저장된 대화가 없습니다.<br>새 질문을 입력하시면 대화방이 생성됩니다.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = rooms.map(room => `
+        <div id="room-${room.id}" onclick="selectRoom('${room.id}')" class="room-item ${room.id === currentRoomId ? 'active' : ''} group p-2.5 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-100/70 transition cursor-pointer flex items-center justify-between text-left">
+          <div class="flex-1 min-w-0 pr-2">
+            <p class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(room.title || '새로운 안전 상담')}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">${formatDate(room.updated_at || room.created_at)}</p>
+          </div>
+          <button onclick="event.stopPropagation(); deleteRoom('${room.id}')" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 rounded transition" title="대화방 삭제">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // Select and load a room's messages
+    async function selectRoom(roomId) {
+      currentRoomId = roomId;
+      // Update UI active state
+      document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+      const activeEl = document.getElementById(`room-${roomId}`);
+      if (activeEl) activeEl.classList.add('active');
+
+      // Hide mobile sidebar on selection
+      const sidebar = document.getElementById('chat-sidebar');
+      if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 768) {
+        toggleSidebar();
+      }
+
+      try {
+        const res = await fetch(`/api/chat/rooms/${roomId}`);
+        const data = await res.json();
+        if (data.success && data.room) {
+          renderRoomMessages(data.room.messages || []);
+        }
+      } catch (e) {
+        console.warn('Load room messages failed:', e);
+      }
+    }
+
+    function renderRoomMessages(messages) {
+      chatHistory = [];
+      const container = document.getElementById('messages-container');
+      container.innerHTML = '';
+
+      if (messages.length === 0) {
+        // Show welcome message
+        container.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3Z"></path></svg>
+            </div>
+            <div class="chat-bubble-ai max-w-[90%] sm:max-w-[85%] p-4 rounded-2xl text-[14.5px]">
+              <span class="text-xs font-bold text-blue-600 block mb-1">BEPMC AI RAG 컨설턴트</span>
+              새로운 대화가 시작되었습니다. 안전 법규 및 사내 Safety 수칙에 대해 질문해 주세요.
+            </div>
+          </div>
+        `;
+        document.getElementById('suggested-box').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('suggested-box').style.display = 'none';
+
+      messages.forEach(msg => {
+        if (msg.role === 'user') {
+          chatHistory.push({ role: 'user', text: msg.content });
+          renderUserBubble(msg.content, msg.created_at);
+        } else {
+          chatHistory.push({ role: 'assistant', text: msg.content });
+          const sources = typeof msg.sources === 'string' ? JSON.parse(msg.sources || '[]') : (msg.sources || []);
+          renderAiBubble(msg.content, sources, msg.created_at, 'BEPMC AI (RAG 저장 대화)');
+        }
+      });
+      scrollToBottom();
+    }
+
+    function startNewChat() {
+      currentRoomId = null;
+      chatHistory = [];
+      document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+      const container = document.getElementById('messages-container');
+      container.innerHTML = `
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3Z"></path></svg>
+          </div>
+          <div class="chat-bubble-ai max-w-[90%] sm:max-w-[85%] p-4 rounded-2xl text-[14.5px]">
+            <span class="text-xs font-bold text-blue-600 block mb-1">BEPMC AI RAG 컨설턴트</span>
+            새 대화가 준비되었습니다. 현장 안전수칙, 법규, 사고대책을 자유롭게 문의해 주세요.
+          </div>
+        </div>
+      `;
+      document.getElementById('suggested-box').style.display = 'block';
+      // Close mobile sidebar if open
+      const sidebar = document.getElementById('chat-sidebar');
+      if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 768) {
+        toggleSidebar();
+      }
+    }
+
+    async function deleteRoom(roomId) {
+      if (!confirm('이 대화방을 삭제하시겠습니까?')) return;
+      try {
+        const res = await fetch(`/api/chat/rooms/${roomId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          if (currentRoomId === roomId) {
+            startNewChat();
+          }
+          await loadChatRooms();
+        }
+      } catch (e) {
+        alert('대화방 삭제 중 오류가 발생했습니다.');
+      }
+    }
 
     // Load Quota on startup
     async function loadQuota() {
@@ -172,28 +400,110 @@
       stream.scrollTop = stream.scrollHeight;
     }
 
-    function clearChat() {
-      if (confirm('대화 내용을 모두 초기화할까요?')) {
-        chatHistory = [];
-        const container = document.getElementById('messages-container');
-        container.innerHTML = `
-          <div class="flex items-start gap-3">
-            <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3Z"></path></svg>
-            </div>
-            <div class="chat-bubble-ai max-w-[85%] sm:max-w-[80%] p-4 rounded-2xl text-[14.5px]">
-              <span class="text-xs font-bold text-blue-600 block mb-1">BEPMC AI 컨설턴트</span>
-              대화가 초기화되었습니다. 철도 및 산업안전 법규, 제도에 대해 무엇이든 질문해 주세요.
-            </div>
-          </div>
-        `;
-        document.getElementById('suggested-box').style.display = 'block';
-      }
-    }
-
     function sendSuggested(text) {
       document.getElementById('user-input').value = text;
       handleSend();
+    }
+
+    // Render User Bubble
+    function renderUserBubble(text, timestamp) {
+      const container = document.getElementById('messages-container');
+      const userRow = document.createElement('div');
+      userRow.className = 'flex items-start justify-end gap-3';
+      userRow.innerHTML = `
+        <div class="flex flex-col items-end max-w-[85%] sm:max-w-[80%]">
+          <div class="chat-bubble-user p-4 rounded-2xl text-[14.5px] shadow-xs">
+            ${escapeHtml(text).replace(/\\n/g, '<br>')}
+          </div>
+          <span class="text-[10px] text-slate-400 mt-1 mr-1">${formatTime(timestamp || new Date())}</span>
+        </div>
+        <div class="w-9 h-9 rounded-xl bg-slate-800 text-white flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
+          나
+        </div>
+      `;
+      container.appendChild(userRow);
+    }
+
+    // Render AI Bubble with RAG Document Citation Cards
+    function renderAiBubble(replyText, sources, timestamp, modelLabel) {
+      const container = document.getElementById('messages-container');
+      const aiRow = document.createElement('div');
+      aiRow.className = 'flex items-start gap-3';
+
+      // Build Document & Web Sources HTML
+      let sourcesHtml = '';
+      if (sources && sources.length > 0) {
+        const docSources = sources.filter(s => s.type === 'document' || !s.uri);
+        const webSources = sources.filter(s => s.type === 'web' || s.uri);
+
+        let docCards = '';
+        if (docSources.length > 0) {
+          docCards = `
+            <div class="mt-4 pt-3.5 border-t border-slate-200">
+              <div class="text-xs font-bold text-blue-900 mb-2 flex items-center gap-1.5">
+                <span>📚 참고한 Safety 안전 문서 및 사례 (${docSources.length}건)</span>
+                <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-medium">RAG Grounding</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                ${docSources.map((d, idx) => `
+                  <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs hover:border-blue-400 hover:bg-blue-50/50 transition">
+                    <div class="flex items-center justify-between gap-1 mb-1">
+                      <span class="font-bold text-slate-800 truncate" title="${escapeHtml(d.title)}">${escapeHtml(d.title)}</span>
+                      ${d.category ? `<span class="shrink-0 text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">${escapeHtml(d.category)}</span>` : ''}
+                    </div>
+                    <p class="text-[11px] text-slate-600 line-clamp-2 leading-relaxed mb-1.5">${escapeHtml(d.snippet || '')}</p>
+                    <div class="flex items-center justify-between text-[10px] text-slate-400">
+                      <span class="truncate" title="${escapeHtml(d.source)}">출처: ${escapeHtml(d.source)}</span>
+                      ${d.similarity ? `<span class="text-blue-600 font-bold shrink-0">일치도 ${Math.min(99, Math.round(d.similarity * 100))}%</span>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        let webCards = '';
+        if (webSources.length > 0) {
+          webCards = `
+            <div class="${docSources.length > 0 ? 'mt-2.5' : 'mt-4 pt-3.5 border-t border-slate-200'}">
+              <div class="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center gap-1">
+                <span>🌐 실시간 웹 검색 출처 (${webSources.length}건)</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                ${webSources.map((s, idx) => `
+                  <a href="${s.uri}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200 hover:border-blue-400 px-2 py-0.5 rounded text-[11px] transition max-w-[220px] truncate" title="${s.title}">
+                    <span class="font-bold text-blue-600">${idx + 1}</span>
+                    <span class="truncate">${escapeHtml(s.title || s.uri)}</span>
+                  </a>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        sourcesHtml = docCards + webCards;
+      }
+
+      const formattedReply = formatMarkdown(replyText || '답변을 불러오지 못했습니다.');
+
+      aiRow.innerHTML = `
+        <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3Z"></path></svg>
+        </div>
+        <div class="chat-bubble-ai max-w-[90%] sm:max-w-[85%] p-4 sm:p-5 rounded-2xl text-[14.5px] leading-relaxed">
+          <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-blue-600">${escapeHtml(modelLabel || 'BEPMC AI RAG 컨설턴트')}</span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded">Safety RAG 검증</span>
+            </div>
+            <span class="text-[10px] text-slate-400">${formatTime(timestamp || new Date())}</span>
+          </div>
+          <div class="text-slate-800 leading-relaxed">${formattedReply}</div>
+          ${sourcesHtml}
+        </div>
+      `;
+      container.appendChild(aiRow);
     }
 
     async function handleSend() {
@@ -205,38 +515,28 @@
       document.getElementById('send-btn').disabled = true;
       inputEl.value = '';
 
-      // Hide suggested questions after 1st question
+      // Hide suggested questions
       document.getElementById('suggested-box').style.display = 'none';
 
-      // Render User Bubble
-      const container = document.getElementById('messages-container');
-      const userRow = document.createElement('div');
-      userRow.className = 'flex items-start justify-end gap-3';
-      userRow.innerHTML = `
-        <div class="chat-bubble-user max-w-[85%] sm:max-w-[80%] p-4 rounded-2xl text-[14.5px] shadow-xs">
-          ${escapeHtml(message).replace(/\\n/g, '<br>')}
-        </div>
-        <div class="w-9 h-9 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
-          나
-        </div>
-      `;
-      container.appendChild(userRow);
+      // 1. Render User Bubble
+      renderUserBubble(message, new Date());
 
-      // Render Loading Indicator
+      // 2. Render Loading Indicator
+      const container = document.getElementById('messages-container');
       const loadingRow = document.createElement('div');
       loadingRow.id = 'loading-indicator';
       loadingRow.className = 'flex items-start gap-3';
       loadingRow.innerHTML = `
-        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+        <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3Z"></path></svg>
         </div>
-        <div class="chat-bubble-ai max-w-[85%] sm:max-w-[80%] p-3.5 px-4 rounded-2xl flex items-center gap-3">
+        <div class="chat-bubble-ai max-w-[90%] sm:max-w-[85%] p-3.5 px-4 rounded-2xl flex items-center gap-3">
           <div class="flex items-center gap-1.5">
             <span class="dot-pulse"></span>
             <span class="dot-pulse"></span>
             <span class="dot-pulse"></span>
           </div>
-          <span class="text-xs text-slate-500 font-medium">최신 법령 및 실시간 웹 정보를 검색·분석 중입니다...</span>
+          <span class="text-xs text-slate-500 font-medium">Safety 문서 임베딩 벡터 검색 및 AI 분석 중...</span>
         </div>
       `;
       container.appendChild(loadingRow);
@@ -246,56 +546,28 @@
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message, history: chatHistory })
+          body: JSON.stringify({
+            message,
+            roomId: currentRoomId,
+            history: chatHistory
+          })
         });
         const data = await res.json();
 
-        // Remove loading indicator
         loadingRow.remove();
 
         if (data.quota) {
           updateQuotaDisplay(data.quota);
         }
 
-        const aiRow = document.createElement('div');
-        aiRow.className = 'flex items-start gap-3';
-
-        let sourcesHtml = '';
-        if (data.sources && data.sources.length > 0) {
-          sourcesHtml = `
-            <div class="mt-3 pt-3 border-t border-slate-200">
-              <div class="text-[11px] font-bold text-slate-500 mb-2 flex items-center gap-1">
-                <span>🌐 실시간 검색 참조 출처 (${data.sources.length}개)</span>
-              </div>
-              <div class="flex flex-wrap gap-1.5">
-                ${data.sources.map((s, idx) => `
-                  <a href="${s.uri}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200 hover:border-blue-400 px-2 py-0.5 rounded text-[11px] transition max-w-[200px] truncate" title="${s.title}">
-                    <span class="font-bold text-blue-600">${idx + 1}</span>
-                    <span class="truncate">${s.title || s.uri}</span>
-                  </a>
-                `).join('')}
-              </div>
-            </div>
-          `;
+        if (data.roomId && data.roomId !== currentRoomId) {
+          currentRoomId = data.roomId;
+          // Refresh room list
+          loadChatRooms();
         }
 
-        const modelLabel = data.model ? `BEPMC AI (${data.model})` : 'BEPMC AI 컨설턴트';
-        const formattedReply = formatMarkdown(data.reply || '답변을 불러오지 못했습니다.');
-
-        aiRow.innerHTML = `
-          <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3Z"></path></svg>
-          </div>
-          <div class="chat-bubble-ai max-w-[85%] sm:max-w-[80%] p-4 sm:p-5 rounded-2xl text-[14.5px] leading-relaxed">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-xs font-bold text-blue-600">${escapeHtml(modelLabel)}</span>
-              ${data.sources && data.sources.length > 0 ? '<span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded">🌐 실시간 웹 정보 반영</span>' : ''}
-            </div>
-            <div class="text-slate-800 leading-relaxed">${formattedReply}</div>
-            ${sourcesHtml}
-          </div>
-        `;
-        container.appendChild(aiRow);
+        const modelLabel = data.model ? `BEPMC AI (${data.model})` : 'BEPMC AI RAG 컨설턴트';
+        renderAiBubble(data.reply, data.sources, data.createdAt, modelLabel);
 
         chatHistory.push({ role: 'user', text: message });
         chatHistory.push({ role: 'assistant', text: data.reply || '' });
@@ -305,7 +577,7 @@
         const errRow = document.createElement('div');
         errRow.className = 'flex items-start gap-3';
         errRow.innerHTML = `
-          <div class="w-9 h-9 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0">!</div>
+          <div class="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">!</div>
           <div class="chat-bubble-ai max-w-[85%] p-4 rounded-2xl text-red-600 text-sm">
             네트워크 연결 오류가 발생했습니다: ${escapeHtml(err.message)}
           </div>
@@ -321,7 +593,7 @@
 
     function formatMarkdown(text) {
       if (!text) return '';
-      return text.split('\\n').map(line => {
+      return text.split('\n').map(line => {
         if (line.startsWith('> ')) {
           return `<div class="bg-amber-50 border-l-4 border-amber-400 p-2.5 rounded my-2 text-xs text-amber-900">${inlineMarkdown(line.slice(2))}</div>`;
         }
@@ -340,8 +612,9 @@
 
     function inlineMarkdown(text) {
       return escapeHtml(text)
-        .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')
-        .replace(/\\*(.*?)\\*/g, '<em>$1</em>');
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code class="bg-slate-100 text-blue-700 px-1 py-0.5 rounded text-xs font-mono">$1</code>');
     }
 
     function escapeHtml(str) {
@@ -373,11 +646,15 @@
         const data = await res.json();
         const isLoggedIn = Boolean(data && data.isLoggedIn);
         const user = data.user;
+        currentUser = user;
         const tier = data.membershipTier || (data.membership === 'paid' ? 'PAID' : (data.membership === 'trial' ? 'TRIAL' : 'FREE'));
         const isPaid = (data.mode === 'admin' || user?.role === 'admin' || tier === 'PAID' || tier === 'TRIAL');
 
         if (!isPaid) {
           showPaidLockModal(!isLoggedIn);
+        } else {
+          // If paid member, load chat rooms!
+          loadChatRooms();
         }
       } catch (e) {
         console.warn('Membership check failed:', e);
@@ -396,8 +673,8 @@
           <h2 class="text-xl font-black text-slate-900 mb-2">유료 회원만 이용 가능한 서비스입니다</h2>
           <p class="text-sm text-slate-600 mb-6 leading-relaxed">
             ${isGuest 
-              ? 'BEPMC AI 안전 법규 &amp; 제도 챗봇(실시간 Google Search 연동)은 <b>정기구독 유료회원</b> 및 <b>맛보기 체험회원</b>에게만 제공됩니다.<br><br>먼저 로그인 또는 회원가입 후 이용해 주세요.' 
-              : '현재 고객님은 <b>[일반 무료 회원]</b> 등급입니다.<br>유료 정기구독(PAID)으로 전환하시면 실시간 안전 법규 챗봇을 제한 없이 이용하실 수 있습니다.'}
+              ? 'BEPMC AI 안전 법규 &amp; 제도 RAG 챗봇은 <b>정기구독 유료회원</b> 및 <b>맛보기 체험회원</b>에게만 제공됩니다.<br><br>먼저 로그인 또는 회원가입 후 이용해 주세요.' 
+              : '현재 고객님은 <b>[일반 무료 회원]</b> 등급입니다.<br>유료 정기구독(PAID)으로 전환하시면 RAG 기반 안전 법규 챗봇을 제한 없이 이용하실 수 있습니다.'}
           </p>
           <div class="flex flex-col gap-2.5">
             ${isGuest 
