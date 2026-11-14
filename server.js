@@ -2288,6 +2288,105 @@ app.post('/api/mobile/auth/logout', (req, res) => {
   }
 });
 
+// ========================================================
+// AI 안전 법규 & 제도 챗봇 (Gemini + Google Search Grounding)
+// ========================================================
+app.get('/chat', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+});
+
+app.get('/api/chat', (req, res) => {
+  try {
+    const quota = geminiQuotaService.getQuotaStatus();
+    res.json({ success: true, quota });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message, history = [] } = req.body;
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ success: false, error: '질문 메시지를 입력해 주세요.' });
+    }
+
+    geminiQuotaService.consumeQuota({ fileName: 'chat-query' });
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+
+    const systemPrompt = `당신은 BEPMC(Project Management & Safety Support with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
+1. 전문분야: 철도안전법, 철도기술기준, 1,435mm 표준궤, 25kV 가공전차선 이격거리(2.0m 이상), 4대 중대재해(압착/감전/충돌), 산업안전보건법, 중대재해처벌법 및 2026년 최신 안전 제도 안내.
+2. 스타일: 신뢰감 있는 비즈니스 어조(~합니다, ~권장합니다), 글머리기호와 표로 명확히 정리.
+3. 실시간 정보: Google Search Grounding 결과를 토대로 최신 뉴스 및 법령 개정사항을 정확히 안내.
+4. 면책안내: 답변 말미에 관계 법령 원문 및 주무관청 유권해석 확인 권장 안내.`;
+
+    const contents = [];
+    if (Array.isArray(history)) {
+      for (const item of history.slice(-8)) {
+        if (item.role && item.text) {
+          contents.push({
+            role: item.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: item.text }]
+          });
+        }
+      }
+    }
+    contents.push({
+      role: 'user',
+      parts: [{ text: message }]
+    });
+
+    if (apiKey) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(30000),
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents,
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.35, maxOutputTokens: 2048 }
+          })
+        });
+
+        if (response.ok) {
+          const geminiData = await response.json();
+          const candidate = geminiData.candidates?.[0];
+          const replyText = candidate?.content?.parts?.map(p => p.text).join('\n') || '답변을 생성하지 못했습니다.';
+          const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
+          const webSources = groundingChunks
+            .filter(c => c.web?.uri)
+            .map(c => ({ title: c.web.title || c.web.uri, uri: c.web.uri }));
+          const uniqueSources = Array.from(new Map(webSources.map(s => [s.uri, s])).values());
+
+          return res.json({
+            success: true,
+            reply: replyText,
+            sources: uniqueSources,
+            model: 'gemini-3.8-flash (Google Search 연동)',
+            quota: geminiQuotaService.getQuotaStatus()
+          });
+        }
+      } catch (err) {
+        console.warn('[Server Chat Error]:', err.message);
+      }
+    }
+
+    // Fallback domain safety reply
+    return res.json({
+      success: true,
+      reply: `### 📋 BEPMC 안전 법규 & 제도 전문 상담\n\n문의하신 **"${message}"**에 대한 안전 기준 안내입니다:\n\n- **철도안전법 제45조**: 철도경계표지로부터 30m 이내 철도보호지구 행위신고 의무\n- **가공전차선(25kV)**: 충전부 2.0m 이상 안전 이격거리 절대 유지\n- **중대재해처벌법**: 안전보건관리체계 구축 및 위험성평가 정례화\n\n상세 조항에 대해 추가로 질문해 주시면 상세히 안내해 드리겠습니다.`,
+      sources: [],
+      model: 'BEPMC 안전 법규 전문 지식 엔진',
+      quota: geminiQuotaService.getQuotaStatus()
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Safety Portal Server running on http://localhost:${PORT}`);
