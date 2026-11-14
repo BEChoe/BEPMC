@@ -2304,7 +2304,7 @@ app.get('/api/chat', (req, res) => {
   }
 });
 
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
   try {
     const { message, history = [] } = req.body;
     if (!message || typeof message !== 'string') {

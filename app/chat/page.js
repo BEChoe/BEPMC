@@ -25,6 +25,8 @@ export default function ChatPage() {
     usedToday: 0,
     remainingToday: 1500,
   });
+  const [isLocked, setIsLocked] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -37,7 +39,7 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages, loading]);
 
-  // Load quota status on mount
+  // Load quota status & check paid membership on mount
   useEffect(() => {
     fetch('/api/chat')
       .then((res) => res.json())
@@ -47,6 +49,23 @@ export default function ChatPage() {
         }
       })
       .catch((err) => console.warn('[Quota Fetch Error]:', err));
+
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        const isLoggedIn = Boolean(data && data.isLoggedIn);
+        const user = data.user;
+        const tier = data.membershipTier || (data.membership === 'paid' ? 'PAID' : (data.membership === 'trial' ? 'TRIAL' : 'FREE'));
+        const isPaid = (data.mode === 'admin' || user?.role === 'admin' || tier === 'PAID' || tier === 'TRIAL');
+        if (!isPaid) {
+          setIsLocked(true);
+          setIsGuest(!isLoggedIn);
+        }
+      })
+      .catch(() => {
+        setIsLocked(true);
+        setIsGuest(true);
+      });
   }, []);
 
   const handleSend = async (textToSend) => {
@@ -312,14 +331,14 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="안전 관련 법규, 시행령, 지침 또는 제도에 대해 질문해 주세요... (Enter: 전송, Shift+Enter: 줄바꿈)"
+            placeholder={isLocked ? "🔒 유료 회원 전용 서비스입니다. 로그인 또는 유료 등급 신청 후 이용해 주세요." : "안전 관련 법규, 시행령, 지침 또는 제도에 대해 질문해 주세요... (Enter: 전송, Shift+Enter: 줄바꿈)"}
             rows={1}
-            disabled={loading}
+            disabled={loading || isLocked}
             className="chat-textarea"
           />
           <button
             onClick={() => handleSend()}
-            disabled={!input.trim() || loading}
+            disabled={!input.trim() || loading || isLocked}
             className="btn-send"
             title="질문 전송"
           >
@@ -333,6 +352,49 @@ export default function ChatPage() {
           BEPMC AI는 공식 법령 및 실시간 Google Search를 참조하여 답변합니다. 인허가 및 법적 분쟁 등 중대 사안은 국가법령정보센터 원문 및 관계 기관의 유권해석을 최종 확인하시기 바랍니다.
         </p>
       </footer>
+
+      {/* Paid Member Lock Modal */}
+      {isLocked && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '32px', maxWidth: '440px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '2px solid #1c69d4', textAlign: 'center' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '16px', backgroundColor: '#eff6ff', color: '#1c69d4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', border: '1px solid #bfdbfe' }}>
+              <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div style={{ display: 'inline-block', padding: '4px 12px', backgroundColor: '#fef3c7', color: '#78350f', borderRadius: '9999px', fontSize: '12px', fontWeight: 800, marginBottom: '8px' }}>
+              💎 유료 구독 전용 서비스
+            </div>
+            <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', marginBottom: '8px' }}>
+              유료 회원만 이용 가능한 서비스입니다
+            </h2>
+            <p style={{ fontSize: '13.5px', color: '#475569', marginBottom: '24px', lineHeight: 1.6 }}>
+              {isGuest
+                ? 'BEPMC AI 안전 법규 & 제도 챗봇(실시간 Google Search 연동)은 정기구독 유료회원 및 맛보기 체험회원 전용 서비스입니다. 로그인 또는 회원가입 후 이용해 주세요.'
+                : '현재 고객님은 [일반 무료 회원] 등급입니다. 유료 정기구독(PAID)으로 전환하시면 실시간 안전 법규 챗봇을 제한 없이 이용하실 수 있습니다.'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {isGuest ? (
+                <>
+                  <a href="/login.html?redirect=/chat" style={{ width: '100%', padding: '12px', backgroundColor: '#1c69d4', color: '#ffffff', borderRadius: '10px', fontWeight: 700, fontSize: '14px', textDecoration: 'none', display: 'block', boxSizing: 'border-box' }}>
+                    로그인하기
+                  </a>
+                  <a href="/register.html" style={{ width: '100%', padding: '10px', backgroundColor: '#f1f5f9', color: '#334155', borderRadius: '10px', fontWeight: 600, fontSize: '13px', textDecoration: 'none', display: 'block', boxSizing: 'border-box' }}>
+                    회원가입 신청
+                  </a>
+                </>
+              ) : (
+                <a href="/paid-onboarding.html" style={{ width: '100%', padding: '12px', background: 'linear-gradient(to right, #f59e0b, #d97706)', color: '#ffffff', borderRadius: '10px', fontWeight: 900, fontSize: '14px', textDecoration: 'none', display: 'block', boxSizing: 'border-box' }}>
+                  💎 유료 등급 전환 신청
+                </a>
+              )}
+              <a href="/" style={{ width: '100%', padding: '8px', color: '#64748b', fontSize: '12px', fontWeight: 500, textDecoration: 'none', display: 'block' }}>
+                메인 홈페이지로 돌아가기
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Styling */}
       <style jsx>{`

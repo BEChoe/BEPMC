@@ -201,12 +201,6 @@ async function initLayout(activeMenu = '') {
               <a href="/qna.html" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'qna' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
                 <span>안전 Q&amp;A 문의</span>
               </a>
-              <!-- [공개 5] AI 안전 법규 & 제도 챗봇 (비로그인 허용 / 실시간 검색) -->
-              <a href="/chat" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition ${activeMenu === 'chat' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-cyan-300 hover:text-white hover:bg-blue-950/60'}" title="안전 법규·시행령 및 제도 실시간 AI 검색 챗봇">
-                <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                <span>💬 AI 안전 챗봇</span>
-                <span class="text-[10px] bg-blue-600/90 text-cyan-200 px-1.5 py-0.2 rounded font-bold">실시간</span>
-              </a>
 
               <!-- [로그인 필수: 무료회원 이상] 평상시 hidden, 로그인 시 표시 -->
               <a href="/boards.html?type=member" class="${canUseMemberMenus ? 'inline-flex' : 'hidden'} px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap items-center gap-1.5 shrink-0 transition ${activeMenu === 'member' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/40' : 'text-slate-300 hover:text-white hover:bg-blue-950/60'}">
@@ -219,6 +213,11 @@ async function initLayout(activeMenu = '') {
                 <span>🎬</span>
                 <span>동영상AI</span>
                 <span class="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-black">${isTrial ? '체험' : 'PRO'}</span>
+              </a>
+              <a href="/chat" class="${canUseTrialOrPaid ? 'inline-flex' : 'hidden'} px-3 py-1.5 rounded-md text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white transition whitespace-nowrap items-center gap-1.5 shrink-0 shadow-sm" title="AI 안전 법규 & 제도 챗봇 (유료 전용)">
+                <span class="inline-block w-2 h-2 rounded-full bg-cyan-300 animate-ping"></span>
+                <span>💬 AI 안전 챗봇</span>
+                <span class="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-black">${isTrial ? '체험' : '유료전용'}</span>
               </a>
 
               <!-- [정기구독 유료회원(PAID) 및 관리자 전용] 평상시 hidden -->
@@ -329,18 +328,21 @@ async function initLayout(activeMenu = '') {
     `;
   }
 
-  // 우측 하단 플로팅 AI 챗봇 런처 버튼 (챗봇 페이지가 아닐 때 항시 노출)
+  // 우측 하단 플로팅 AI 챗봇 런처 버튼 (유료 회원 및 체험 회원 전용)
   if (!document.getElementById('floating-chat-btn') && !window.location.pathname.startsWith('/chat')) {
-    const floatingBtn = document.createElement('a');
-    floatingBtn.id = 'floating-chat-btn';
-    floatingBtn.href = '/chat';
-    floatingBtn.className = 'fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white px-4 py-3 rounded-full shadow-2xl transition transform hover:scale-105 active:scale-95 border-2 border-blue-400 font-bold text-sm tracking-tight';
-    floatingBtn.title = 'BEPMC AI 안전 법규 & 제도 챗봇 열기';
-    floatingBtn.innerHTML = `
-      <span class="w-2.5 h-2.5 rounded-full bg-cyan-300 animate-ping"></span>
-      <span>💬 AI 안전 챗봇</span>
-    `;
-    document.body.appendChild(floatingBtn);
+    if (canUseTrialOrPaid) {
+      const floatingBtn = document.createElement('a');
+      floatingBtn.id = 'floating-chat-btn';
+      floatingBtn.href = '/chat';
+      floatingBtn.className = 'fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white px-4 py-3 rounded-full shadow-2xl transition transform hover:scale-105 active:scale-95 border-2 border-blue-400 font-bold text-sm tracking-tight';
+      floatingBtn.title = 'BEPMC AI 안전 법규 & 제도 챗봇 열기 (유료 전용)';
+      floatingBtn.innerHTML = `
+        <span class="w-2.5 h-2.5 rounded-full bg-cyan-300 animate-ping"></span>
+        <span>💬 AI 안전 챗봇</span>
+        <span class="text-[9px] bg-black/40 text-amber-300 px-1.5 py-0.5 rounded font-bold">${isTrial ? '체험' : '유료전용'}</span>
+      `;
+      document.body.appendChild(floatingBtn);
+    }
   }
 }
 
