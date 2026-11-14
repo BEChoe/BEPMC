@@ -1,5 +1,9 @@
 node_modules/
 .env
+.env.local
+.env*.local
+.next/
+out/
 worktrees/
 __pycache__/
 *.py[cod]
@@ -11,6 +15,12 @@ Thumbs.db
 *.hwpx
 downloads/*.hwpx
 public/uploads/
+Safety/*.csv
+Safety/*.hwpx
+*.docx
+*.xlsx
+*.pdf
+Safety/
 .gradle/
 android/.gradle/
 android/build/

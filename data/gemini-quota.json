@@ -1,15 +1,8 @@
 {
-  "date": "2026-11-10",
+  "date": "2026-11-14",
   "dailyLimit": 1500,
-  "usedToday": 5,
-  "remainingToday": 1495,
+  "usedToday": 9,
+  "remainingToday": 1491,
   "rpmLimit": 15,
-  "lastRequestTimestamp": "2026-11-10T04:25:18.034Z",
-  "history": [
-    {
-      "timestamp": "2026-11-10T03:25:58.212Z",
-      "fileName": "video",
-      "durationSec": 3
-    }
-  ]
+  "lastRequestTimestamp": "2026-11-14T12:02:31.616Z"
 }
