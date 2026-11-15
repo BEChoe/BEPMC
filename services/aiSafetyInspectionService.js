@@ -125,7 +125,7 @@ async function analyzeHazardPhoto({ imageBase64, mimeType = 'image/jpeg', siteNa
           const enriched = enrichWithPEEngineeringKnowledge(parsed);
           return {
             success: true,
-            source: "Gemini 2.5 Flash Multimodal Vision API + BEPMC PE Engineering Engine",
+            source: "Gemini 2.5 Flash Multimodal Vision API + BEPSMC PE Engineering Engine",
             analyzedAt: new Date().toISOString(),
             data: enriched
           };
@@ -223,7 +223,7 @@ function getIntelligentFallbackAnalysis({ siteName, memo = '' }) {
 
   return {
     success: true,
-    source: "BEPMC KOSHA-Compliant Intelligent Safety Engine (PE Augmented Simulation)",
+    source: "BEPSMC KOSHA-Compliant Intelligent Safety Engine (PE Augmented Simulation)",
     analyzedAt: new Date().toISOString(),
     siteName,
     data: enriched

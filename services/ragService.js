@@ -1,6 +1,6 @@
 /**
  * services/ragService.js
- * BEPMC AI RAG (Retrieval-Augmented Generation) & Chat Storage Service
+ * BEPSMC AI RAG (Retrieval-Augmented Generation) & Chat Storage Service
  * 
  * - 문서/질문 임베딩: Gemini gemini-embedding-001 (768 차원)
  * - 벡터 검색 및 채팅방/메시지 저장:

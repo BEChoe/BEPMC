@@ -1602,7 +1602,7 @@ app.post('/api/reports/sign-approve', requireMember, async (req, res) => {
     const signerIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
 
     const log = await dbService.enterprise.createApprovalLog({
-      reportId: reportId || `BEPMC-DOC-${Date.now()}`,
+      reportId: reportId || `BEPSMC-DOC-${Date.now()}`,
       reportType,
       signerUserId: user.id,
       subscriptionId: user.subscriptionId,
@@ -2015,7 +2015,7 @@ app.post('/api/technical-guidance/universal-video-analysis', async (req, res) =>
               quotaTotal: quotaRes.quotaTotal,
               quotaRemaining: quotaRes.quotaRemaining,
               expiresAt: quotaRes.expiresAt,
-              label: `BEPMC 1개월 유료 맛보기 체험용 (${quotaRes.quotaUsed}/${quotaRes.quotaTotal}회 사용) — 공식·관공서 제출 불가`
+              label: `BEPSMC 1개월 유료 맛보기 체험용 (${quotaRes.quotaUsed}/${quotaRes.quotaTotal}회 사용) — 공식·관공서 제출 불가`
             };
           } else if (liveUser.membershipTier === 'PAID') {
             watermarkMeta = { isTrial: false, isOpenVerification: false };
@@ -2376,7 +2376,7 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
     // 2. 사용자 질문 채팅방 저장
     await ragService.addMessage(activeRoomId, userId, 'user', message, []);
 
-    // 2-1. 도메인 가드레일: 안전/법규/BEPMC 서비스 무관 질의 필터링
+    // 2-1. 도메인 가드레일: 안전/법규/BEPSMC 서비스 무관 질의 필터링
     const topicValidation = safetyGuardrailService.validateSafetyTopic(message);
     if (!topicValidation.isAllowed) {
       const refusalReply = topicValidation.refusalMessage || safetyGuardrailService.STANDARD_REFUSAL_MESSAGE;
@@ -2388,7 +2388,7 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
         isOutOfScope: true,
         roomId: activeRoomId,
         createdAt: new Date().toISOString(),
-        model: 'BEPMC 안전 도메인 가드레일',
+        model: 'BEPSMC 안전 도메인 가드레일',
         quota: geminiQuotaService.getQuotaStatus()
       });
     }
@@ -2412,12 +2412,12 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
         `\n\n위 [참고 안전 문서]의 구체적인 수치, 안전 조치 기준, 사고 원인 및 재발방지대책을 답변에 적극 인용하여 전문적으로 설명하십시오.`;
     }
 
-    const systemPrompt = `당신은 BEPMC(Project Management & Safety Support with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
-1. 전문분야: 철도안전법, 철도기술기준, 1,435mm 표준궤, 25kV 가공전차선 이격거리(2.0m 이상), 4대 중대재해(압착/감전/충돌), 산업안전보건법, 중대재해처벌법 및 2026년 최신 안전 제도, BEPMC 회원 가입 절차 및 유료 회원 제공 서비스(동영상 AI 안전 분석, 관제 연동, 전문 법규 컨설팅 등) 안내.
+    const systemPrompt = `당신은 BEPSMC(Project Safety and Managment Consultancy with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
+1. 전문분야: 철도안전법, 철도기술기준, 1,435mm 표준궤, 25kV 가공전차선 이격거리(2.0m 이상), 4대 중대재해(압착/감전/충돌), 산업안전보건법, 중대재해처벌법 및 2026년 최신 안전 제도, BEPSMC 회원 가입 절차 및 유료 회원 제공 서비스(동영상 AI 안전 분석, 관제 연동, 전문 법규 컨설팅 등) 안내.
 2. 스타일: 신뢰감 있는 비즈니스 어조(~합니다, ~권장합니다), 글머리기호와 표로 명확히 정리.
 3. 사내/공공 안전 문서 인용: 제공된 Safety 문서를 최우선적으로 참조하여 실질적이고 구체적인 안전수칙을 안내.
 4. 실시간 정보: 안전 관련 최신 뉴스 및 법령 개정사항에 한해 Google Search Grounding 결과를 토대로 정확히 안내.
-5. 도메인 제한 지침: 안전 법규, 현장 안전 지침, BEPMC 회원 서비스와 무관한 질문(연예 뉴스, 스포츠 경기, 주식/투자, 오락 등)은 외부 검색을 수행하지 말고 "본 챗봇이 제공하지 않는 서비스입니다" 표준 안내문구만 출력하십시오.
+5. 도메인 제한 지침: 안전 법규, 현장 안전 지침, BEPSMC 회원 서비스와 무관한 질문(연예 뉴스, 스포츠 경기, 주식/투자, 오락 등)은 외부 검색을 수행하지 말고 "본 챗봇이 제공하지 않는 서비스입니다" 표준 안내문구만 출력하십시오.
 6. 면책안내: 답변 말미에 관계 법령 원문 및 주무관청 유권해석 확인 권장 안내.${ragContext}`;
 
     const contents = [];
@@ -2494,7 +2494,7 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
     }
 
     // Fallback domain safety reply
-    const fallbackText = `### 📋 BEPMC 안전 법규 & 제도 전문 상담\n\n문의하신 **"${message}"**에 대한 안전 기준 안내입니다:\n\n- **철도안전법 제45조**: 철도경계표지로부터 30m 이내 철도보호지구 행위신고 의무\n- **가공전차선(25kV)**: 충전부 2.0m 이상 안전 이격거리 절대 유지\n- **중대재해처벌법**: 안전보건관리체계 구축 및 위험성평가 정례화\n\n상세 조항에 대해 추가로 질문해 주시면 상세히 안내해 드리겠습니다.`;
+    const fallbackText = `### 📋 BEPSMC 안전 법규 & 제도 전문 상담\n\n문의하신 **"${message}"**에 대한 안전 기준 안내입니다:\n\n- **철도안전법 제45조**: 철도경계표지로부터 30m 이내 철도보호지구 행위신고 의무\n- **가공전차선(25kV)**: 충전부 2.0m 이상 안전 이격거리 절대 유지\n- **중대재해처벌법**: 안전보건관리체계 구축 및 위험성평가 정례화\n\n상세 조항에 대해 추가로 질문해 주시면 상세히 안내해 드리겠습니다.`;
     await ragService.addMessage(activeRoomId, userId, 'assistant', fallbackText, docSources);
 
     return res.json({
@@ -2503,7 +2503,7 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
       sources: docSources,
       roomId: activeRoomId,
       createdAt: new Date().toISOString(),
-      model: 'BEPMC 안전 법규 전문 지식 엔진 (RAG 연동)',
+      model: 'BEPSMC 안전 법규 전문 지식 엔진 (RAG 연동)',
       quota: geminiQuotaService.getQuotaStatus()
     });
   } catch (err) {

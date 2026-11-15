@@ -162,7 +162,7 @@ function appendGoldenDataset({ imageMeta, hazardData, siteName, inspectorName })
 
   const record = {
     timestamp: new Date().toISOString(),
-    dataset_version: "BEPMC-SAFE-V1",
+    dataset_version: "BEPSMC-SAFE-V1",
     site_name: siteName || "현장",
     inspector: inspectorName || "수석 건설안전기술지도원",
     image_meta: imageMeta || { format: "image/jpeg", width: 1024, height: 768 },

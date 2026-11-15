@@ -1,5 +1,5 @@
 /**
- * BEPMC Railway Safety Analysis Service
+ * BEPSMC Railway Safety Analysis Service
  * - 철도 주행선로 내 작업자 감시 및 안전 확보 분석 파이프라인
  * - 열차 접근 속도, TTC(대피골든타임), 건축한계 지오펜싱, 고시인성 조끼 감시
  * - KRS(한국철도표준규격) 및 철도안전관리체계 기반 종합 기술지도 대책 산출

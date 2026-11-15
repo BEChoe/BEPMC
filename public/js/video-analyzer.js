@@ -864,7 +864,7 @@ async function loadDemoSampleVideo() {
       ctx.fillRect(0, 0, 640, 34);
       ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 13px Pretendard, sans-serif';
-      ctx.fillText('BEPMC 현장 관제 CCTV [판교 복합시설 A구역 3층 골조공사]', 15, 22);
+      ctx.fillText('BEPSMC 현장 관제 CCTV [판교 복합시설 A구역 3층 골조공사]', 15, 22);
 
       if (t < 1.5) {
         // [1위] 단부 추락 위험
@@ -1300,7 +1300,7 @@ async function renderAnalysisResults(report) {
   resultContainer.scrollIntoView({ behavior: 'smooth' });
 
   // 상단 메타데이터
-  document.getElementById('report-id-badge').textContent = report.reportId || `BEPMC-USR-${Date.now().toString().slice(-6)}`;
+  document.getElementById('report-id-badge').textContent = report.reportId || `BEPSMC-USR-${Date.now().toString().slice(-6)}`;
   document.getElementById('report-date-badge').textContent = report.reportDate || new Date().toISOString().split('T')[0];
   document.getElementById('report-site-name').textContent = report.siteName || '스마트 통합 안전 관리 구역';
   document.getElementById('report-file-name').textContent = report.fileName || 'safety_video.mp4';
@@ -1427,7 +1427,7 @@ async function renderAnalysisResults(report) {
 
   if (report.watermark && report.watermark.isTrial) {
     if (trialBanner) trialBanner.classList.remove('hidden');
-    if (trialText) trialText.textContent = report.watermark.label || 'BEPMC 1개월 유료 맛보기 체험용 — 공식·관공서 제출 불가';
+    if (trialText) trialText.textContent = report.watermark.label || 'BEPSMC 1개월 유료 맛보기 체험용 — 공식·관공서 제출 불가';
     if (signBtn) signBtn.classList.add('opacity-60');
   } else {
     if (trialBanner) trialBanner.classList.add('hidden');
@@ -2409,7 +2409,7 @@ async function submitReportSignApproval() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        reportId: report.reportId || 'BEPMC-VIDEO-RPT',
+        reportId: report.reportId || 'BEPSMC-VIDEO-RPT',
         reportType: 'VIDEO_SAFETY',
         sealUsedType,
         approvalPassword,

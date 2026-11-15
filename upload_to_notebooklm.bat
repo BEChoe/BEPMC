@@ -3,7 +3,7 @@ chcp 65001 > nul
 setlocal enabledelayedexpansion
 
 echo ============================================================
-echo   📚 BEPMC NotebookLM 소스 업로드 및 슬라이드 생성 도구
+echo   📚 BEPSMC NotebookLM 소스 업로드 및 슬라이드 생성 도구
 echo ============================================================
 echo.
 
@@ -21,19 +21,19 @@ if %errorlevel% neq 0 (
     )
 )
 
-echo [1/3] 새 노트북 생성 중: "BEPMC 환절기 다발사고 안전대책"...
-for /f "tokens=*" %%i in ('uvx --from notebooklm-mcp-cli nlm notebook create "BEPMC 환절기 다발사고 안전대책" --json') do set CREATE_RES=%%i
+echo [1/3] 새 노트북 생성 중: "BEPSMC 환절기 다발사고 안전대책"...
+for /f "tokens=*" %%i in ('uvx --from notebooklm-mcp-cli nlm notebook create "BEPSMC 환절기 다발사고 안전대책" --json') do set CREATE_RES=%%i
 
 echo %CREATE_RES% | findstr /i "id" > nul
 if %errorlevel% neq 0 (
     echo [안내] 기본 명령어로 노트북 생성 진행...
-    call uvx --from notebooklm-mcp-cli nlm notebook create "BEPMC 환절기 다발사고 안전대책"
+    call uvx --from notebooklm-mcp-cli nlm notebook create "BEPSMC 환절기 다발사고 안전대책"
 )
 
 echo.
 echo [2/3] 슬라이드 소스 문서 업로드 중...
 echo 대상 파일: d:\BEPMC\BEPMC_환절기_안전대책_슬라이드_구성안.md
-for /f "tokens=1" %%a in ('uvx --from notebooklm-mcp-cli nlm list notebooks ^| findstr /i "BEPMC"') do set NOTEBOOK_ID=%%a
+for /f "tokens=1" %%a in ('uvx --from notebooklm-mcp-cli nlm list notebooks ^| findstr /i "BEPSMC"') do set NOTEBOOK_ID=%%a
 
 if "%NOTEBOOK_ID%"=="" (
     echo [안내] 노트북 ID를 조회할 수 없어 최신 노트북으로 업로드합니다.

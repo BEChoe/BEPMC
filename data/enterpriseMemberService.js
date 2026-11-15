@@ -1,6 +1,6 @@
 /**
  * data/enterpriseMemberService.js
- * BEPMC 법인·개인 통합 회원 관리, 4단계 등급(GUEST/FREE/TRIAL/PAID),
+ * BEPSMC 법인·개인 통합 회원 관리, 4단계 등급(GUEST/FREE/TRIAL/PAID),
  * 탈퇴자 ID 영구 차단, 1개월(월30회) 맛보기, Payment Code 월별 정산 및 전자서명/직인 결재 저장 계층
  */
 
@@ -96,7 +96,7 @@ function normalizeSubFromDb(row) {
     ceoName: row.ceo_name || row.ceoName || '',
     businessAddress: row.business_address || row.businessAddress || '',
     agencyRegNo: row.agency_reg_no || row.agencyRegNo || '',
-    planName: row.plan_name || row.planName || 'BEPMC 유료 구독',
+    planName: row.plan_name || row.planName || 'BEPSMC 유료 구독',
     maxSeats: Number(row.max_seats ?? row.maxSeats ?? 10),
     monthlyFee: Number(row.monthly_fee ?? row.monthlyFee ?? 0),
     billingStatus: row.billing_status || row.billingStatus || 'PENDING_PAYMENT',
@@ -897,7 +897,7 @@ async function createSubscription({
   ceoName = '',
   businessAddress = '',
   agencyRegNo = '',
-  planName = 'BEPMC 기업 안전 AI 월간 구독',
+  planName = 'BEPSMC 기업 안전 AI 월간 구독',
   maxSeats = 10,
   monthlyFee = 330000,
   startActive = true

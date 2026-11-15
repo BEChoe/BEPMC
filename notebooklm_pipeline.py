@@ -18,12 +18,12 @@ def run_nlm(args):
 
 def main():
     print("=" * 60)
-    print(" 📚 BEPMC NotebookLM 소스 업로드 및 슬라이드 생성 파이프라인")
+    print(" 📚 BEPSMC NotebookLM 소스 업로드 및 슬라이드 생성 파이프라인")
     print("=" * 60)
 
     # 1. 새 노트북 생성
     print("\n[Step 1] 새 노트북 생성...")
-    res = run_nlm(["notebook", "create", "BEPMC 환절기 다발사고 특별안전대책", "--json"])
+    res = run_nlm(["notebook", "create", "BEPSMC 환절기 다발사고 특별안전대책", "--json"])
     notebook_id = None
     if res.returncode == 0 and res.stdout.strip():
         try:
@@ -39,7 +39,7 @@ def main():
             try:
                 items = json.loads(list_res.stdout)
                 for item in items:
-                    if "BEPMC" in item.get("title", ""):
+                    if "BEPSMC" in item.get("title", ""):
                         notebook_id = item.get("id")
                         break
             except Exception as e:
@@ -66,7 +66,7 @@ def main():
     print(" 🎉 모든 작업이 완료되었습니다!")
     print(f" 노트북 ID: {notebook_id}")
     print(" Google NotebookLM (https://notebooklm.google.com) 에서")
-    print(" 'BEPMC 환절기 다발사고 특별안전대책' 슬라이드를 확인하세요!")
+    print(" 'BEPSMC 환절기 다발사고 특별안전대책' 슬라이드를 확인하세요!")
     print("=" * 60)
 
 if __name__ == "__main__":

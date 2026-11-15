@@ -6,13 +6,13 @@ const DB_PATH = path.join(__dirname, 'db.json');
 // 초기 데이터
 const defaultData = {
   siteSettings: {
-    siteName: "BEPMC (Project Management Consultancy)",
+    siteName: "BEPSMC(Project Safety and Managment Consultancy)",
     mainSlogan: "안전과 프로젝트 성공을 이끄는 신뢰의 파트너",
     subSlogan: "작업 전 10초 안전점검, 나와 가족과 동료를 지키는 가장 확실한 약속",
     emergencyPhone: "긴급구조 xxx-xxxx-xxxx | 산업안전보건 신고 xxx-xxxx-xxxx | 비상상황실 xxx-xxxx-xxxx",
     alertBanner: "★ [안전경보] 환절기 밀폐공간 질식 및 화재 예방 특별 안전점검 기간 운영 중",
     safetyNotice: "안전모, 안전화, 안전대 착용 미흡 시 작업장 출입이 엄격히 제한됩니다.",
-    footerInfo: "BEPMC (Project Management Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx"
+    footerInfo: "BEPSMC(Project Safety and Managment Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx"
   },
   users: [
     {
@@ -199,7 +199,7 @@ const defaultData = {
       name: "차량 비상탈출 2in1 텅스텐 해머 (안전벨트 커터 겸용)",
       price: 12000,
       stock: 180,
-      certification: "BEPMC 추천 차량안전품",
+      certification: "BEPSMC 추천 차량안전품",
       icon: "🔨",
       badge: "차량필수",
       description: "차량 침수나 충돌 사고 시 수압 속에서도 원터치로 측면 강화유리를 파쇄하고 잠긴 안전벨트를 신속히 절단하는 휴대용 비상 탈출기구입니다."
@@ -322,15 +322,15 @@ const defaultData = {
   paymentSubscriptions: [
     {
       id: 1,
-      paymentCode: "BEPMC-C-2026-DEMO01",
+      paymentCode: "BEPSMC-C-2026-DEMO01",
       ownerType: "CORPORATE",
       ownerUserId: 2,
-      companyName: "BEPMC(주) 스마트안전기술단",
+      companyName: "BEPSMC(주) 스마트안전기술단",
       businessRegNo: "1238112345",
       ceoName: "최병억",
       businessAddress: "서울특별시 강남구 테헤란로 152",
       agencyRegNo: "고용노동부 중부-2024-제048호",
-      planName: "BEPMC 법인 AI 통합 안전 구독 (10인)",
+      planName: "BEPSMC 법인 AI 통합 안전 구독 (10인)",
       maxSeats: 10,
       monthlyFee: 330000,
       billingStatus: "ACTIVE",
@@ -347,7 +347,7 @@ const defaultData = {
       billingMonth: "2026-11",
       expectedAmount: 330000,
       paidAmount: 330000,
-      depositorName: "BEPMC(주)",
+      depositorName: "BEPSMC(주)",
       paymentMethod: "계좌이체",
       paymentStatus: "PAID",
       verifiedBy: "admin",

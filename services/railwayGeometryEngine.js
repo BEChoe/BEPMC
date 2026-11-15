@@ -1,5 +1,5 @@
 /**
- * BEPMC Railway Geometry & Speed/TTC Engine
+ * BEPSMC Railway Geometry & Speed/TTC Engine
  * - 표준궤간(1,435mm) 기반 원근 왜곡 보정 (Homography Perspective Helper)
  * - 열차 주행 속도(km/h) 및 이동 벡터 추정
  * - 열차-작업자 간 실측 거리(m) 및 잔여 대피시간(TTC, Time-to-Collision) 산출

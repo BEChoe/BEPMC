@@ -2,7 +2,7 @@
 """
 generate_pitch_deck.py
 정부 지원 사업 기술 창업 11단계 표준 Pitch Deck .pptx 생성 스크립트
-- BEPMC-PTFORGOV 가이드라인 준수:
+- BEPSMC-PTFORGOV 가이드라인 준수:
   1. 글씨체: HY그래픽M (한글), Arial (영문/숫자)
   2. 색상: 슬라이드당 최대 4색 (Background: #FFFFFF/#F8FAFC, Primary: #0F172A, Secondary: #1D4ED8, Accent: #EA580C)
   3. 시각 요소: 슬라이드당 최대 4개 이하 (정돈된 카드 레이아웃)
@@ -76,7 +76,7 @@ def create_deck(output_path="BEPMC_AI_산업안전_정부지원사업_발표자�
         footer_box = slide.shapes.add_textbox(Inches(0.8), Inches(7.0), Inches(11.733), Inches(0.3))
         p = footer_box.text_frame.paragraphs[0]
         run = p.add_run()
-        run.text = "BEPMC (Project Management Consultancy) | AI 기반 산업안전 관리 및 자문 시스템"
+        run.text = "BEPSMC(Project Safety and Managment Consultancy) | AI 기반 산업안전 관리 및 자문 시스템"
         set_font(run, size=Pt(9), bold=False, color=C_SUBTEXT, font_name=FONT_KO)
         p.alignment = PP_ALIGN.RIGHT
 
@@ -122,12 +122,12 @@ def create_deck(output_path="BEPMC_AI_산업안전_정부지원사업_발표자�
     tf2.word_wrap = True
     p = tf2.paragraphs[0]
     r = p.add_run()
-    r.text = "🎯 BEPMC 핵심 가치 정의 (Elevator Pitch)"
+    r.text = "🎯 BEPSMC 핵심 가치 정의 (Elevator Pitch)"
     set_font(r, size=Pt(14), bold=True, color=C_PRIMARY, font_name=FONT_KO)
     
     p = tf2.add_paragraph()
     r = p.add_run()
-    r.text = "\n\"BEPMC는 대규모 플랜트 및 건설 현장의 중대재해를 실시간 엣지 비전 AI로 원천 차단하는 지능형 안전 엔지니어링 전문 기업입니다.\""
+    r.text = "\n\"BEPSMC는 대규모 플랜트 및 건설 현장의 중대재해를 실시간 엣지 비전 AI로 원천 차단하는 지능형 안전 엔지니어링 전문 기업입니다.\""
     set_font(r, size=Pt(13), bold=True, color=C_SECONDARY, font_name=FONT_KO)
     
     p = tf2.add_paragraph()
@@ -478,7 +478,7 @@ def create_deck(output_path="BEPMC_AI_산업안전_정부지원사업_발표자�
     
     p = tf1.add_paragraph()
     r1 = p.add_run()
-    r1.text = "• BEPMC 독점 포지션 (우상단)\n"
+    r1.text = "• BEPSMC 독점 포지션 (우상단)\n"
     set_font(r1, size=Pt(12), bold=True, color=C_SECONDARY, font_name=FONT_KO)
     r2 = p.add_run()
     r2.text = "  0.1초 엣지 초저지연 + 3D 가상 재난 데이터셋으로 가혹한 야외 환경 완벽 적응 및 무오탐 달성"

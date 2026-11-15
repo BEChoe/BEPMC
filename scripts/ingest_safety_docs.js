@@ -151,7 +151,7 @@ async function main() {
 
 function generateSupabaseSql(docs) {
   let sql = `-- ========================================================
--- BEPMC RAG Chatbot Supabase Vector & Chat Schema
+-- BEPSMC RAG Chatbot Supabase Vector & Chat Schema
 -- pgvector 확장 활성화 및 문서 임베딩 / 대화 세션 테이블
 -- ========================================================
 

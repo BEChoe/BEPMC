@@ -7,13 +7,13 @@ let currentAuth = {
 };
 
 let currentSettings = {
-  siteName: "BEPMC (Project Management Consultancy)",
+  siteName: "BEPSMC(Project Safety and Managment Consultancy)",
   mainSlogan: "안전과 프로젝트 성공을 이끄는 신뢰의 파트너",
   subSlogan: "작업 전 10초 안전점검, 나와 가족과 동료를 지키는 가장 확실한 약속",
   emergencyPhone: "긴급구조 xxx-xxxx-xxxx | 산업안전보건 신고 xxx-xxxx-xxxx | 비상상황실 xxx-xxxx-xxxx",
   alertBanner: "★ [안전경보] 환절기 밀폐공간 질식 및 화재 예방 특별 안전점검 기간 운영 중",
   safetyNotice: "안전모, 안전화, 안전대 착용 미흡 시 작업장 출입이 엄격히 제한됩니다.",
-  footerInfo: "BEPMC (Project Management Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx"
+  footerInfo: "BEPSMC(Project Safety and Managment Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx"
 };
 
 // 1. 세션 상태 가져오기
@@ -162,7 +162,7 @@ async function initLayout(activeMenu = '') {
     headerContainer.innerHTML = `
       <header class="bg-[#0f172a] border-b border-blue-900/60 text-white sticky top-0 z-40 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <!-- 1줄: 회사명 BEPMC Title 단독 1.5배 확대 표시 -->
+          <!-- 1줄: 회사명 BEPSMC Title 단독 1.5배 확대 표시 -->
           <div class="flex items-center justify-between py-3.5 border-b border-blue-900/50">
             <a href="/index.html" class="flex items-center gap-4 group min-w-0">
               <div class="h-14 px-4 rounded-xl bg-blue-700 flex items-center justify-center font-black text-white text-2xl shadow-inner border border-blue-500 group-hover:scale-105 transition-transform tracking-tight shrink-0">
@@ -170,11 +170,11 @@ async function initLayout(activeMenu = '') {
               </div>
               <div class="min-w-0">
                 <span class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2 flex-wrap leading-none">
-                  <span>BEPMC</span>
-                  <span class="text-sm sm:text-base font-bold text-blue-300 hidden sm:inline">(Project Management Consultancy)</span>
+                  <span>BEPSMC</span>
+                  <span class="text-sm sm:text-base font-bold text-blue-300 hidden sm:inline">(Project Safety and Managment Consultancy)</span>
                   <span class="inline-block w-3 h-3 rounded-full bg-emerald-400"></span>
                 </span>
-                <span class="block text-xs sm:text-sm text-slate-400 font-semibold tracking-wider leading-snug mt-1">Project Management &amp; Safety Support with Experiences and AI Technologies</span>
+                <span class="block text-xs sm:text-sm text-slate-400 font-semibold tracking-wider leading-snug mt-1">Project Safety and Managment Consultancy with Experiences and AI Technologies</span>
               </div>
             </a>
           </div>
@@ -265,9 +265,9 @@ async function initLayout(activeMenu = '') {
             <div class="md:col-span-2 space-y-3">
               <div class="flex items-center gap-2">
                 <div class="px-2.5 py-1 rounded bg-blue-700 flex items-center justify-center font-black text-white text-xs">
-                  <span>BEPMC</span>
+                  <span>BEPSMC</span>
                 </div>
-                <span class="text-base font-bold text-white">BEPMC(Project Management Consultancy)</span>
+                <span class="text-base font-bold text-white">BEPSMC(Project Safety and Managment Consultancy)</span>
               </div>
               <p class="text-xs text-slate-300 leading-relaxed">
                 ${escapeHtml(currentSettings.mainSlogan)}<br>
@@ -300,7 +300,7 @@ async function initLayout(activeMenu = '') {
             <div>
               <h4 class="text-xs font-bold text-blue-300 uppercase tracking-wider mb-3">고객지원 &amp; 안내</h4>
               <div class="space-y-2.5">
-                <p class="text-[11px] text-slate-400">BEPMC 안전보건 및 사업관리 기준에 따라 엄격하게 운영되는 전문 포털입니다.</p>
+                <p class="text-[11px] text-slate-400">BEPSMC 안전보건 및 사업관리 기준에 따라 엄격하게 운영되는 전문 포털입니다.</p>
                 <div class="pt-1 text-xs text-slate-300 space-y-1 bg-slate-900/60 p-2.5 rounded border border-slate-800">
                   <div class="text-[11px] text-blue-300 font-semibold">• 문의 응답 시간: 평일 09:00 ~ 18:00</div>
                   <div class="text-[11px] text-slate-400">• 긴급 안전사고 발생 시 xxx-xxxx-xxxx 즉시 신고</div>
@@ -321,7 +321,7 @@ async function initLayout(activeMenu = '') {
           <!-- 저작권 및 푸터 정보 -->
           <div class="border-t border-slate-800 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-2">
             <div>${escapeHtml(currentSettings.footerInfo)}</div>
-            <div>© 2026 BEPMC (Project Management Consultancy). ALL RIGHTS RESERVED.</div>
+            <div>© 2026 BEPSMC(Project Safety and Managment Consultancy). ALL RIGHTS RESERVED.</div>
           </div>
         </div>
       </footer>
@@ -335,7 +335,7 @@ async function initLayout(activeMenu = '') {
       floatingBtn.id = 'floating-chat-btn';
       floatingBtn.href = '/chat';
       floatingBtn.className = 'fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white px-4 py-3 rounded-full shadow-2xl transition transform hover:scale-105 active:scale-95 border-2 border-blue-400 font-bold text-sm tracking-tight';
-      floatingBtn.title = 'BEPMC AI 안전 법규 & 제도 챗봇 열기 (유료 전용)';
+      floatingBtn.title = 'BEPSMC AI 안전 법규 & 제도 챗봇 열기 (유료 전용)';
       floatingBtn.innerHTML = `
         <span class="w-2.5 h-2.5 rounded-full bg-cyan-300 animate-ping"></span>
         <span>💬 AI 안전 챗봇</span>

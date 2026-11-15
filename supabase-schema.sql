@@ -13,13 +13,13 @@
 -- 1. 사이트 설정 테이블 (홈페이지 간단 수정 관리)
 CREATE TABLE IF NOT EXISTS site_settings (
   id INT PRIMARY KEY DEFAULT 1,
-  site_name TEXT NOT NULL DEFAULT 'BEPMC (Project Management Consultancy)',
+  site_name TEXT NOT NULL DEFAULT 'BEPSMC(Project Safety and Managment Consultancy)',
   main_slogan TEXT NOT NULL DEFAULT '안전과 프로젝트 성공을 이끄는 신뢰의 파트너',
   sub_slogan TEXT NOT NULL DEFAULT '작업 전 10초 안전점검, 나와 가족과 동료를 지키는 가장 확실한 약속',
   emergency_phone TEXT NOT NULL DEFAULT '긴급구조 xxx-xxxx-xxxx | 산업안전보건 신고 xxx-xxxx-xxxx | 비상상황실 xxx-xxxx-xxxx',
   alert_banner TEXT NOT NULL DEFAULT '★ [안전경보] 환절기 밀폐공간 질식 및 화재 예방 특별 안전점검 기간 운영 중',
   safety_notice TEXT NOT NULL DEFAULT '안전모, 안전화, 안전대 착용 미흡 시 작업장 출입이 엄격히 제한됩니다.',
-  footer_info TEXT NOT NULL DEFAULT 'BEPMC (Project Management Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx',
+  footer_info TEXT NOT NULL DEFAULT 'BEPSMC(Project Safety and Managment Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx',
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -27,13 +27,13 @@ CREATE TABLE IF NOT EXISTS site_settings (
 INSERT INTO site_settings (id, site_name, main_slogan, sub_slogan, emergency_phone, alert_banner, safety_notice, footer_info)
 VALUES (
   1,
-  'BEPMC (Project Management Consultancy)',
+  'BEPSMC(Project Safety and Managment Consultancy)',
   '안전과 프로젝트 성공을 이끄는 신뢰의 파트너',
   '작업 전 10초 안전점검, 나와 가족과 동료를 지키는 가장 확실한 약속',
   '긴급구조 xxx-xxxx-xxxx | 산업안전보건 신고 xxx-xxxx-xxxx | 비상상황실 xxx-xxxx-xxxx',
   '★ [안전경보] 환절기 밀폐공간 질식 및 화재 예방 특별 안전점검 기간 운영 중',
   '안전모, 안전화, 안전대 착용 미흡 시 작업장 출입이 엄격히 제한됩니다.',
-  'BEPMC (Project Management Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx'
+  'BEPSMC(Project Safety and Managment Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx'
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -237,7 +237,7 @@ CREATE POLICY "Allow all operations for service and anon keys" ON products FOR A
 CREATE POLICY "Allow all operations for service and anon keys" ON orders FOR ALL USING (true) WITH CHECK (true);
 
 -- ========================================================
--- 8. BEPMC 법인·개인 통합 회원관리 및 4단계 등급·전자결재 스키마 확장 (Idempotent)
+-- 8. BEPSMC 법인·개인 통합 회원관리 및 4단계 등급·전자결재 스키마 확장 (Idempotent)
 -- ========================================================
 ALTER TABLE users ADD COLUMN IF NOT EXISTS member_type TEXT NOT NULL DEFAULT 'INDIVIDUAL'; -- 'CORPORATE' | 'INDIVIDUAL'
 ALTER TABLE users ADD COLUMN IF NOT EXISTS membership_tier TEXT NOT NULL DEFAULT 'FREE';   -- 'FREE' | 'TRIAL' | 'PAID'
@@ -327,7 +327,7 @@ CREATE TABLE IF NOT EXISTS payment_subscriptions (
   ceo_name TEXT,
   business_address TEXT,
   agency_reg_no TEXT,
-  plan_name TEXT NOT NULL DEFAULT 'BEPMC 기업 안전 AI 월간 구독',
+  plan_name TEXT NOT NULL DEFAULT 'BEPSMC 기업 안전 AI 월간 구독',
   max_seats INT NOT NULL DEFAULT 10,
   monthly_fee INT NOT NULL DEFAULT 0,
   billing_status TEXT NOT NULL DEFAULT 'PENDING_PAYMENT', -- 'PENDING_PAYMENT' | 'ACTIVE' | 'EXPIRED' | 'SUSPENDED'

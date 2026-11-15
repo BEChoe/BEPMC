@@ -1,12 +1,12 @@
 /**
  * services/safetyGuardrailService.js
- * BEPMC AI 안전 법규 & 제도 챗봇 - 질문 도메인 적합성 검증 가드레일 (Topic Guardrail)
+ * BEPSMC AI 안전 법규 & 제도 챗봇 - 질문 도메인 적합성 검증 가드레일 (Topic Guardrail)
  * 
  * - 허용 분야:
  *     1) 산업 / 철도 / 건설 현장 안전 법규 (산안법, 중처법, 철도안전법 등) 및 안전 관리 기술
  *     2) 안전 관련 최신 뉴스, 개정 고시, 정부(고용부/국토부) 정책 동향
  *     3) 4대 중대재해(추락/협착/감전/충돌/질식/화재 등) 예방 및 재해 사례
- *     4) BEPMC 서비스 안내 (회원가입, 로그인, 유료 등급 혜택, 영상 분석 관제 등)
+ *     4) BEPSMC 서비스 안내 (회원가입, 로그인, 유료 등급 혜택, 영상 분석 관제 등)
  *     5) 일상 인사말 및 사용 안내
  * 
  * - 제한 분야 (차단 대상):
@@ -48,7 +48,7 @@ const DISALLOWED_PATTERNS = [
   /쇼핑추천/i, /패션스타일/i, /메이크업/i, /화장품추천/i
 ];
 
-// 3. BEPMC 서비스 및 시스템 안내 허용 키워드
+// 3. BEPSMC 서비스 및 시스템 안내 허용 키워드
 const SERVICE_KEYWORDS = [
   'bepmc', '회원', '가입', '로그인', '유료', '결제', '구독', '멤버십', '요금', '서비스',
   '체험', '트라이얼', '기능', '관제', '동영상', '영상', '분석', '대시보드', '가격', '비용',
@@ -63,7 +63,7 @@ const GREETING_KEYWORDS = [
 // 표준 거절 안내 메시지
 const STANDARD_REFUSAL_MESSAGE = `### ⚠️ 본 챗봇이 제공하지 않는 서비스입니다.
 
-**BEPMC AI 컨설턴트**는 **산업·철도·건설 현장 안전 법규 및 최신 정책 뉴스, 안전 관리 전문 기술 정보, 그리고 BEPMC 회원 서비스 안내**를 전담하는 전문 지식 챗봇입니다.
+**BEPSMC AI 컨설턴트**는 **산업·철도·건설 현장 안전 법규 및 최신 정책 뉴스, 안전 관리 전문 기술 정보, 그리고 BEPSMC 회원 서비스 안내**를 전담하는 전문 지식 챗봇입니다.
 
 문의하신 내용(연예, 스포츠, 주식/투자, 일반 오락 및 상식 등)은 본 챗봇의 전문 서비스 범위에 해당하지 않아 답변 제공 및 검색이 제한됩니다.
 
@@ -72,7 +72,7 @@ const STANDARD_REFUSAL_MESSAGE = `### ⚠️ 본 챗봇이 제공하지 않는 �
 - **철도안전법, 산업안전보건법, 중대재해처벌법** 및 최신 법령·고시 개정사항
 - **가공전차선(25kV) 안전 이격거리, 추락·협착·감전·질식** 등 4대 위험작업 예방 수칙
 - **현장 위험성평가 기준 및 국토안전관리원 안전사고 사례**
-- **BEPMC 회원 가입 절차 및 유료 회원 제공 서비스(동영상 AI 안전 관제 등)** 안내`;
+- **BEPSMC 회원 가입 절차 및 유료 회원 제공 서비스(동영상 AI 안전 관제 등)** 안내`;
 
 /**
  * 질문의 도메인 적합성을 검증합니다.
@@ -102,7 +102,7 @@ function validateSafetyTopic(query) {
     };
   }
 
-  // 3. BEPMC 서비스 안내 및 회원 관련 질문 허용
+  // 3. BEPSMC 서비스 안내 및 회원 관련 질문 허용
   const hasServiceKeyword = SERVICE_KEYWORDS.some(kw => cleanQuery.includes(kw));
   if (hasServiceKeyword) {
     return { isAllowed: true, reason: 'service_domain' };
@@ -114,7 +114,7 @@ function validateSafetyTopic(query) {
     return { isAllowed: true, reason: 'greeting' };
   }
 
-  // 5. 안전/법규/BEPMC 서비스와 전혀 관련 없는 일반 비도메인 질의 (예: "프랑스의 수도는?", "달까지의 거리는?")
+  // 5. 안전/법규/BEPSMC 서비스와 전혀 관련 없는 일반 비도메인 질의 (예: "프랑스의 수도는?", "달까지의 거리는?")
   return {
     isAllowed: false,
     reason: 'out_of_scope',

@@ -1,6 +1,6 @@
 /**
  * services/memberSecurityService.js
- * BEPMC 법인·개인 통합 회원 보안, 검증, 해싱 및 구독 코드 생성 유틸리티
+ * BEPSMC 법인·개인 통합 회원 보안, 검증, 해싱 및 구독 코드 생성 유틸리티
  */
 
 const crypto = require('crypto');
@@ -293,7 +293,7 @@ function isEmailVerifiedInSession(email) {
  * 8. Payment Code 난수 발급기
  */
 function generatePaymentCode(ownerType = 'CORPORATE') {
-  const prefix = ownerType === 'CORPORATE' ? 'BEPMC-C' : 'BEPMC-P';
+  const prefix = ownerType === 'CORPORATE' ? 'BEPSMC-C' : 'BEPSMC-P';
   const year = new Date().getFullYear();
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let suffix = '';

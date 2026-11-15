@@ -26,7 +26,7 @@ export default function ChatPage() {
     {
       id: 'welcome',
       role: 'assistant',
-      text: `반갑습니다. **BEPMC 공식 AI 안전 법규 & 제도 전문 RAG 컨설턴트**입니다.\n\n본 챗봇은 안전 관련 법규, 최신 정보 및 뉴스 등과 당사의 전문성에 기반한 안전 관리 관련 정보 및 분석 의견 등의 기술적인 사항들과 회원 가입 절차, 유료 회원에게 제공되는 서비스 등에 대한 정보를 제공합니다.\n\n모든 대화와 참고 출처는 좌측 대화 목록에 방별로 자동 기록됩니다.`,
+      text: `반갑습니다. **BEPSMC 공식 AI 안전 법규 & 제도 전문 RAG 컨설턴트**입니다.\n\n본 챗봇은 안전 관련 법규, 최신 정보 및 뉴스 등과 당사의 전문성에 기반한 안전 관리 관련 정보 및 분석 의견 등의 기술적인 사항들과 회원 가입 절차, 유료 회원에게 제공되는 서비스 등에 대한 정보를 제공합니다.\n\n모든 대화와 참고 출처는 좌측 대화 목록에 방별로 자동 기록됩니다.`,
       sources: [],
       timestamp: new Date().toISOString()
     },
@@ -308,8 +308,8 @@ export default function ChatPage() {
               <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(true)}>
                 ☰
               </button>
-              <a href="/" className="brand-logo" title="BEPMC 홈으로 이동">
-                <span className="brand-accent">BEPMC</span>
+              <a href="/" className="brand-logo" title="BEPSMC 홈으로 이동">
+                <span className="brand-accent">BEPSMC</span>
               </a>
               <div className="brand-divider"></div>
               <div>
@@ -327,7 +327,7 @@ export default function ChatPage() {
                   </div>
                 </div>
                 <p className="brand-subtitle">
-                  Project Management & Safety Support with Experiences and AI Technologies
+                  Project Safety and Managment Consultancy with Experiences and AI Technologies
                 </p>
               </div>
             </div>
@@ -368,7 +368,7 @@ export default function ChatPage() {
                 <div className={`message-bubble ${msg.role === 'user' ? 'user-bubble' : 'assistant-bubble'}`}>
                   {msg.role === 'assistant' && (
                     <div className="bubble-badge">
-                      <span>{msg.model ? `BEPMC AI (${msg.model})` : 'BEPMC AI RAG 컨설턴트'}</span>
+                      <span>{msg.model ? `BEPSMC AI (${msg.model})` : 'BEPSMC AI RAG 컨설턴트'}</span>
                       <span className="badge-grounded">Safety RAG 검증</span>
                       {msg.timestamp && (
                         <span className="bubble-time">{formatTime(msg.timestamp)}</span>
@@ -524,7 +524,7 @@ export default function ChatPage() {
             </button>
           </div>
           <p className="disclaimer-text">
-            BEPMC AI는 Safety 사내 지침 및 실시간 검색을 참조하여 답변합니다. 인허가 및 법적 분쟁 등 중대 사안은 국가법령정보센터 원문 및 관계 기관의 유권해석을 최종 확인하시기 바랍니다.
+            BEPSMC AI는 Safety 사내 지침 및 실시간 검색을 참조하여 답변합니다. 인허가 및 법적 분쟁 등 중대 사안은 국가법령정보센터 원문 및 관계 기관의 유권해석을 최종 확인하시기 바랍니다.
           </p>
         </footer>
 
@@ -545,7 +545,7 @@ export default function ChatPage() {
               </h2>
               <p style={{ fontSize: '13.5px', color: '#475569', marginBottom: '24px', lineHeight: 1.6 }}>
                 {isGuest
-                  ? 'BEPMC AI 안전 법규 & 제도 RAG 챗봇은 정기구독 유료회원 및 맛보기 체험회원 전용 서비스입니다. 로그인 또는 회원가입 후 이용해 주세요.'
+                  ? 'BEPSMC AI 안전 법규 & 제도 RAG 챗봇은 정기구독 유료회원 및 맛보기 체험회원 전용 서비스입니다. 로그인 또는 회원가입 후 이용해 주세요.'
                   : '현재 고객님은 [일반 무료 회원] 등급입니다. 유료 정기구독(PAID)으로 전환하시면 RAG 기반 안전 법규 챗봇을 제한 없이 이용하실 수 있습니다.'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

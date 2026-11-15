@@ -711,7 +711,7 @@ class UniversalSafetyAnalysisService {
 
     const now = new Date();
     const reportDateStr = now.toISOString().slice(0, 10);
-    const reportId = `BEPMC-USR-${reportDateStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const reportId = `BEPSMC-USR-${reportDateStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     return {
       success: true,
@@ -748,8 +748,8 @@ class UniversalSafetyAnalysisService {
       timelineEvents,
       recommendations,
       consultantCertification: {
-        institution: "BEPMC (Project Management Consultancy)",
-        safetyEngineerGroup: "BEPMC 전방위 AI 안전 빅데이터 엔지니어링 기술자문단",
+        institution: "BEPSMC(Project Safety and Managment Consultancy)",
+        safetyEngineerGroup: "BEPSMC 전방위 AI 안전 빅데이터 엔지니어링 기술자문단",
         validationStandard: "고용노동부 중대재해 통계 & 국민안전처 생활안전기준 & KRS 한국철도표준규격",
         watermark: "OFFICIAL_BEPMC_UNIVERSAL_VERIFIED"
       }

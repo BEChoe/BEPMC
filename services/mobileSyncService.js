@@ -382,7 +382,7 @@ async function processMobileInspection({ imageBase64, siteName, inspectorName, w
     memo: memo,
     photoUrl: photoFileUrl,
     aiResult: aiAnalysis?.data || null,
-    source: aiAnalysis?.source || "BEPMC AI Vision"
+    source: aiAnalysis?.source || "BEPSMC AI Vision"
   };
 
   mobileInspections.unshift(inspectionRecord);
@@ -400,7 +400,7 @@ function getPendingApprovalReports(siteId) {
   if (!allReports || allReports.length === 0) {
     return [
       {
-        reportId: "BEPMC-TG-202611-01",
+        reportId: "BEPSMC-TG-202611-01",
         legalFormTitle: "건설재해예방 기술지도 결과보고서 (시행규칙 별지 제103호)",
         siteName: "판교 복합비즈니스센터 신축공사",
         contractor: "(주)한양종합건설",

@@ -21,7 +21,7 @@ const SITES_DATABASE = [
     siteManager: "김현장 소장",
     managerPhone: "xxx-xxxx-xxxx",
     instructorName: "최안전 부장 (건설안전기술사)",
-    agencyName: "BEPMC(Project Management Consultancy) 건설재해예방지도기관",
+    agencyName: "BEPSMC(Project Safety and Managment Consultancy) 건설재해예방지도기관",
     agencyRegNo: "고용노동부 중부-2024-제048호",
     visits: [
       {
@@ -61,7 +61,7 @@ const SITES_DATABASE = [
     siteManager: "박공사 소장",
     managerPhone: "xxx-xxxx-xxxx",
     instructorName: "이전문 차장 (산업안전기사)",
-    agencyName: "BEPMC(Project Management Consultancy) 건설재해예방지도기관",
+    agencyName: "BEPSMC(Project Safety and Managment Consultancy) 건설재해예방지도기관",
     agencyRegNo: "고용노동부 중부-2024-제048호",
     visits: [
       {
@@ -93,7 +93,7 @@ const SITES_DATABASE = [
     siteManager: "정현장 소장",
     managerPhone: "xxx-xxxx-xxxx",
     instructorName: "최안전 부장 (건설안전기술사)",
-    agencyName: "BEPMC(Project Management Consultancy) 건설재해예방지도기관",
+    agencyName: "BEPSMC(Project Safety and Managment Consultancy) 건설재해예방지도기관",
     agencyRegNo: "고용노동부 중부-2024-제048호",
     visits: [
       {
@@ -141,7 +141,7 @@ async function generateGuidanceReport({
   managerSignature = ""
 }) {
   const site = SITES_DATABASE.find(s => s.id === Number(siteId)) || SITES_DATABASE[0];
-  const reportId = `BEPMC-TG-${Date.now().toString().slice(-6)}`;
+  const reportId = `BEPSMC-TG-${Date.now().toString().slice(-6)}`;
 
   const reportData = {
     reportId,
@@ -236,7 +236,7 @@ function exportK2BFormat(reportId) {
 
   return {
     k2bTransmissionHeader: {
-      systemSource: "BEPMC-AI-TECH-GUIDE-V1",
+      systemSource: "BEPSMC-AI-TECH-GUIDE-V1",
       transmissionTime: new Date().toISOString(),
       institutionCode: "MOEL-INST-048",
       k2bAgencyRegNo: report.agencyInfo.registrationNo

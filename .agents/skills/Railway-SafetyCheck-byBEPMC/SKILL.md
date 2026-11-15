@@ -4,7 +4,7 @@ description: >-
   분석 요청된 동영상이나 사진에서 한국 철도 표준(궤간 1,435mm, 차량 동적 한계 Kinematic Envelope,
   신호기 현시 및 선로전환기 정위/반위, 가공전차선 25kV/1.5kV 이격거리, 진입 열차 속도·정지거리 및
   대피가능시간 TTC)을 기반으로 4대 중대 철도 안전사고 위험(복선 교행 압착, 진로 오인 충돌, 전차선 감전,
-  동일 선로 진입 충돌)을 감지·예측하고 정량적 안전진단 보고서를 생성할 때 사용하는 BEPMC 전용 철도안전 스킬.
+  동일 선로 진입 충돌)을 감지·예측하고 정량적 안전진단 보고서를 생성할 때 사용하는 BEPSMC 전용 철도안전 스킬.
 ---
 
 # Railway-SafetyCheck-byBEPMC: 철도 현장 영상·사진 AI 안전위험 감지 및 예측 스킬
@@ -26,7 +26,7 @@ description: >-
 
 ## 1. 기준 좌표계 및 원근 스케일 캘리브레이션 (Scale Calibration)
 
-화상 내 픽셀 좌표를 실제 미터($\text{m}$) 단위로 환산하기 위해 철도 현장의 불변 물리 규격을 기준자(Reference Ruler)로 사용합니다. *(BEPMC [railwayGeometryEngine.js](file:///d:/BEPMC/services/railwayGeometryEngine.js) 기준 연동)*
+화상 내 픽셀 좌표를 실제 미터($\text{m}$) 단위로 환산하기 위해 철도 현장의 불변 물리 규격을 기준자(Reference Ruler)로 사용합니다. *(BEPSMC [railwayGeometryEngine.js](file:///d:/BEPMC/services/railwayGeometryEngine.js) 기준 연동)*
 
 1. **주 기준자 — 한국 표준 궤간 (Standard Gauge)**:
    $$G = 1,435\text{ mm} = 1.435\text{ m}$$
@@ -188,7 +188,7 @@ $$S_{\text{stop}} = S_{\text{react}} + S_{\text{brake}} = \left(v \cdot t_{\text
      - 중량 공구·장비 철수 필요 시: **$8.0 \sim 15.0\text{ s}$**
    - **실질 대피 여유**: $T_{\text{margin}} = \text{TTC} - T_{\text{evac}}$
 
-#### 4-4. 경보 등급 판정 (BEPMC `railwayGeometryEngine.js` 15초/30초 임계치 연동)
+#### 4-4. 경보 등급 판정 (BEPSMC `railwayGeometryEngine.js` 15초/30초 임계치 연동)
 - **🚨 CRITICAL (즉시 비상 대피! 공구 포기 및 선로 이탈)**:
   - $\text{TTC} \le 15.0\text{ s}$ 이거나, $D_{\text{curr}} < S_{\text{stop}}$ 이면서 $T_{\text{margin}} \le 5.0\text{ s}$ 인 경우
 - **⚠️ WARNING (대피 준비 및 열차 감시원 비상 호각/무전 발령)**:

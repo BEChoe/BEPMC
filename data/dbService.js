@@ -18,15 +18,15 @@ async function getSiteSettings() {
         console.error('Supabase getSiteSettings error:', error.message);
       }
       if (data) {
-        // BEPMC 명칭 및 연락처 xxx-xxxx-xxxx 형식 자동 동기화
+        // BEPSMC 명칭 및 연락처 xxx-xxxx-xxxx 형식 자동 동기화
         let needUpdate = false;
-        let siteName = data.site_name || "BEPMC (Project Management Consultancy)";
+        let siteName = data.site_name || "BEPSMC(Project Safety and Managment Consultancy)";
         let mainSlogan = data.main_slogan || "안전과 프로젝트 성공을 이끄는 신뢰의 파트너";
         let emergencyPhone = data.emergency_phone || "긴급구조 xxx-xxxx-xxxx | 산업안전보건 신고 xxx-xxxx-xxxx | 비상상황실 xxx-xxxx-xxxx";
-        let footerInfo = data.footer_info || "BEPMC (Project Management Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx";
+        let footerInfo = data.footer_info || "BEPSMC(Project Safety and Managment Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx";
 
         if (siteName.includes('대한안전포털')) {
-          siteName = 'BEPMC (Project Management Consultancy)';
+          siteName = 'BEPSMC(Project Safety and Managment Consultancy)';
           mainSlogan = '안전과 프로젝트 성공을 이끄는 신뢰의 파트너';
           needUpdate = true;
         }
@@ -37,7 +37,7 @@ async function getSiteSettings() {
         }
 
         if (footerInfo.includes('02-1234-5678') || footerInfo.includes('대한안전관리협의회')) {
-          footerInfo = 'BEPMC (Project Management Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx';
+          footerInfo = 'BEPSMC(Project Safety and Managment Consultancy) | 주소: 서울특별시 강남구 테헤란로 152 | 대표: xxx-xxxx-xxxx';
           needUpdate = true;
         }
 
@@ -936,7 +936,7 @@ async function createOrder({ buyerName, buyerPhone, buyerEmail, shippingAddress,
 
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const randNum = Math.floor(1000 + Math.random() * 9000);
-  const orderNumber = `BEPMC-${dateStr}-${randNum}`;
+  const orderNumber = `BEPSMC-${dateStr}-${randNum}`;
 
   const newId = db.orders.length > 0 ? Math.max(...db.orders.map(o => o.id)) + 1 : 1;
   const newOrder = {

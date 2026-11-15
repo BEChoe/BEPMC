@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BEPMC 현장 관리자 모바일 안전앱</title>
+  <title>BEPSMC 현장 관리자 모바일 안전앱</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
@@ -58,10 +58,10 @@
         </div>
         <div>
           <div class="flex items-center gap-1.5">
-            <span class="text-sm font-black text-white tracking-tight">BEPMC 모바일 안전앱</span>
+            <span class="text-sm font-black text-white tracking-tight">BEPSMC 모바일 안전앱</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           </div>
-          <span class="text-[10px] text-slate-400 font-medium block -mt-0.5">BEPMC(Project Management Consultancy)</span>
+          <span class="text-[10px] text-slate-400 font-medium block -mt-0.5">BEPSMC(Project Safety and Managment Consultancy)</span>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -222,7 +222,7 @@
           <!-- 워터마크 -->
           <div class="absolute bottom-2 left-2 bg-black/70 text-white text-[9px] px-2 py-0.5 rounded font-mono pointer-events-none flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span>BEPMC SAFETY PHOTO · GPS VERIFIED</span>
+            <span>BEPSMC SAFETY PHOTO · GPS VERIFIED</span>
           </div>
         </div>
 
@@ -562,11 +562,11 @@
     let signatureCanvas = null;
     let signatureCtx = null;
     let hasSigned = false;
-    let currentApprovalReportId = 'BEPMC-TG-202611-01';
+    let currentApprovalReportId = 'BEPSMC-TG-202611-01';
 
     // 전역 크래시 리포팅 및 예외 가드
     window.onerror = function(msg, url, line, col, error) {
-      console.error('BEPMC Mobile Script Error:', msg, error);
+      console.error('BEPSMC Mobile Script Error:', msg, error);
       const crashBanner = document.getElementById('mobile-crash-boundary');
       if (crashBanner) {
         crashBanner.classList.remove('hidden');
@@ -1083,7 +1083,7 @@
 
       ctx.fillStyle = '#facc15';
       ctx.font = 'bold 16px sans-serif';
-      ctx.fillText('🛡️ BEPMC 스마트 현장안전점검 (AI 검측)', 20, canvas.height - 26);
+      ctx.fillText('🛡️ BEPSMC 스마트 현장안전점검 (AI 검측)', 20, canvas.height - 26);
 
       ctx.fillStyle = '#ffffff';
       ctx.font = '13px monospace';
@@ -1130,7 +1130,7 @@
 
           ctx.fillStyle = '#facc15';
           ctx.font = 'bold 16px sans-serif';
-          ctx.fillText('🛡️ BEPMC 스마트 현장안전점검 (모바일 캡처)', 20, canvas.height - 26);
+          ctx.fillText('🛡️ BEPSMC 스마트 현장안전점검 (모바일 캡처)', 20, canvas.height - 26);
 
           ctx.fillStyle = '#ffffff';
           ctx.font = '13px monospace';
@@ -1320,7 +1320,7 @@
       const signatureData = signatureCanvas.toDataURL('image/png');
 
       try {
-        const targetReportId = currentApprovalReportId || 'BEPMC-TG-202611-01';
+        const targetReportId = currentApprovalReportId || 'BEPSMC-TG-202611-01';
         const res = await fetch(getApiUrl(`/api/mobile/reports/${targetReportId}/approve`), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1378,7 +1378,7 @@
           if (badgeDot) badgeDot.classList.remove('hidden');
 
           const report = reports[0];
-          currentApprovalReportId = report.reportId || report.id || 'BEPMC-TG-202611-01';
+          currentApprovalReportId = report.reportId || report.id || 'BEPSMC-TG-202611-01';
           const titleEl = document.getElementById('approval-report-title');
           if (titleEl && report.roundName) {
             titleEl.textContent = `${report.roundName} 기술지도 보고서`;
@@ -1899,7 +1899,7 @@
       <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-xs space-y-2 text-slate-300">
         <div class="flex items-start gap-2">
           <span class="text-amber-400 font-bold">1.</span>
-          <span>권한 거절 또는 <b>'다시 묻지 않음'</b> 상태인 경우, 브라우저 주소창 자물쇠 아이콘 또는 <b>[기기 설정 > 애플리케이션 > BEPMC 현장관리자 > 권한]</b>에서 '카메라'를 허용해 주세요.</span>
+          <span>권한 거절 또는 <b>'다시 묻지 않음'</b> 상태인 경우, 브라우저 주소창 자물쇠 아이콘 또는 <b>[기기 설정 > 애플리케이션 > BEPSMC 현장관리자 > 권한]</b>에서 '카메라'를 허용해 주세요.</span>
         </div>
         <div class="flex items-start gap-2">
           <span class="text-amber-400 font-bold">2.</span>

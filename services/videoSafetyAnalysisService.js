@@ -525,7 +525,7 @@ async function analyzeVideoSafety({
   // 5. 공식 보고서 메타데이터 생성
   const now = new Date();
   const reportDateStr = now.toISOString().slice(0, 10);
-  const reportId = `BEPMC-VSR-${reportDateStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const reportId = `BEPSMC-VSR-${reportDateStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   return {
     success: true,
@@ -562,8 +562,8 @@ async function analyzeVideoSafety({
       administrativePlans
     },
     consultantCertification: {
-      institution: "BEPMC (Project Management Consultancy)",
-      safetyEngineerGroup: "BEPMC 공공안전빅데이터 엔지니어링 기술자문단",
+      institution: "BEPSMC(Project Safety and Managment Consultancy)",
+      safetyEngineerGroup: "BEPSMC 공공안전빅데이터 엔지니어링 기술자문단",
       validationStandard: "고용노동부 중대재해 통계 & 산업안전보건기준에 관한 규칙 & KOSHA GUIDE",
       watermark: "OFFICIAL_BEPMC_VERIFIED"
     }

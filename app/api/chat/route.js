@@ -4,7 +4,7 @@ import path from 'path';
 const ragService = require('../../../services/ragService');
 const safetyGuardrailService = require('../../../services/safetyGuardrailService');
 
-const SYSTEM_PROMPT = `당신은 BEPMC(Project Management & Safety Support with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
+const SYSTEM_PROMPT = `당신은 BEPSMC(Project Safety and Managment Consultancy with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
 
 [역할 및 지침]
 1. 전문 분야:
@@ -12,14 +12,14 @@ const SYSTEM_PROMPT = `당신은 BEPMC(Project Management & Safety Support with 
    - 산업안전보건법 및 시행령/시행규칙, 산업안전보건기준에 관한 규칙 (추락, 협착, 전도, 감전 등 4대 위험작업 예방)
    - 중대재해 처벌 등에 관한 법률(중대재해처벌법) 및 안전보건관리체계 구축 7대 핵심요소
    - 고용노동부, 국토교통부, 한국교통안전공단, 한국산업안전보건공단(KOSHA) 최신 제도 및 지침
-   - BEPMC 회원 가입 절차 및 유료 회원에게 제공되는 서비스(동영상 AI 안전 분석, 관제 연동, 법규 컨설팅 등) 안내
-   - [도메인 제한 지침] 안전 법규, 현장 안전 지침, BEPMC 회원 서비스와 무관한 질문(연예 뉴스, 스포츠 경기, 주식/투자, 일반 오락 등)은 외부 검색을 절대 수행하지 말고 본 챗봇이 제공하지 않는 서비스임을 정중히 안내하십시오.
+   - BEPSMC 회원 가입 절차 및 유료 회원에게 제공되는 서비스(동영상 AI 안전 분석, 관제 연동, 법규 컨설팅 등) 안내
+   - [도메인 제한 지침] 안전 법규, 현장 안전 지침, BEPSMC 회원 서비스와 무관한 질문(연예 뉴스, 스포츠 경기, 주식/투자, 일반 오락 등)은 외부 검색을 절대 수행하지 말고 본 챗봇이 제공하지 않는 서비스임을 정중히 안내하십시오.
 2. 답변 스타일:
    - 명확하고 정중하며 신뢰감 있는 전문 컨설턴트 어조(~합니다, ~권장합니다).
    - 법 조항, 수치(거리, 치수, 과태료, 대상 규모 등), 핵심 기준을 가독성 높은 글머리기호(-, •)와 표로 정리.
    - 최신 개정사항이나 2026년 기준은 실시간 구글 검색(Google Search Grounding) 결과를 토대로 팩트 위주로 안내.
-3. BEPMC 사내 정보 관련:
-   - BEPMC는 철도·건설·산업 현장 안전 관제, AI 비전 분석 및 안전 엔지니어링 컨설팅을 선도하는 전문 기업입니다.
+3. BEPSMC 사내 정보 관련:
+   - BEPSMC는 철도·건설·산업 현장 안전 관제, AI 비전 분석 및 안전 엔지니어링 컨설팅을 선도하는 전문 기업입니다.
    - 특정 사내 비공개 문서나 개별 사업 계약 관련 상세 정보는 별도 승인 절차 후 순차 연동 예정임을 정중히 안내하십시오.
 4. 법적 고지 면책문구:
    - 답변 말미에 항상 간결한 안내문구(AI 자문 의견이며, 법적 인허가 등 최종 판단은 관계 법령 원문 및 주무관청 유권해석 확인 권장)를 포함하십시오.`;
@@ -79,7 +79,7 @@ function generateDomainExpertReply(query) {
    - **철도전기안전관리자 입회**: 전차선로 인근 고소작업 시 감시인 상시 배치
    - **비절연 공구 사용 금지**: 절연 안전모, 절연 장화, 검전기 착용 의무화
 
-※ 본 답변은 철도기술기준 및 안전보건규칙에 근거한 BEPMC AI 전문 지식 자문입니다. 상세 작업 전 철도공사·교통공사의 승인된 단전 일정을 반드시 재확인하시기 바랍니다.`;
+※ 본 답변은 철도기술기준 및 안전보건규칙에 근거한 BEPSMC AI 전문 지식 자문입니다. 상세 작업 전 철도공사·교통공사의 승인된 단전 일정을 반드시 재확인하시기 바랍니다.`;
   }
 
   if (q.includes('4대') || q.includes('압착') || q.includes('충돌') || q.includes('궤도')) {
@@ -140,7 +140,7 @@ function generateDomainExpertReply(query) {
   }
 
   // General Safety Guidance fallback
-  return `### 📋 BEPMC 안전 법규 & 제도 전문 상담
+  return `### 📋 BEPSMC 안전 법규 & 제도 전문 상담
 
 문의하신 **"${query}"**에 대한 안전 관계 법규 및 기준 안내입니다:
 
@@ -149,7 +149,7 @@ function generateDomainExpertReply(query) {
    - **철도안전법 및 기술기준**: 궤도, 전차선(25kV 2.0m 이상), 차량 한계 및 열차운행선 안전관리
    - **중대재해처벌법**: 안전보건관리체계 구축, 위험성평가 이행, 중대재해 예방 의무
 
-2. **BEPMC 안전 권고사항**
+2. **BEPSMC 안전 권고사항**
    - 작업 착수 전 **TBM(Tool Box Meeting)**을 통해 위험요인을 상호 공유하고 필수 보호구를 착용하십시오.
    - 위험 상황 인지 시 근로자의 **작업중지권**을 적극 보장해야 합니다.
 
@@ -193,7 +193,7 @@ export async function POST(request) {
     }
     await ragService.addMessage(activeRoomId, userId, 'user', message, []);
 
-    // 1-1. 도메인 가드레일: 안전/법규/BEPMC 서비스 무관 질의 필터링
+    // 1-1. 도메인 가드레일: 안전/법규/BEPSMC 서비스 무관 질의 필터링
     const topicValidation = safetyGuardrailService.validateSafetyTopic(message);
     if (!topicValidation.isAllowed) {
       const refusalReply = topicValidation.refusalMessage || safetyGuardrailService.STANDARD_REFUSAL_MESSAGE;
@@ -205,7 +205,7 @@ export async function POST(request) {
         isOutOfScope: true,
         roomId: activeRoomId,
         createdAt: new Date().toISOString(),
-        model: 'BEPMC 안전 도메인 가드레일',
+        model: 'BEPSMC 안전 도메인 가드레일',
         quota: getQuotaStatus()
       });
     }
@@ -386,7 +386,7 @@ export async function POST(request) {
     // Step 4: Intelligent Domain Safety Knowledge Fallback
     const domainReply = generateDomainExpertReply(message);
     const quotaNotice = isQuotaError
-      ? `> ⚠️ **Google API 할당량 안내**: 현재 Google AI Studio 프로젝트의 실시간 검색 쿼터가 일시 소진되어, **BEPMC 내장 안전 법규 전문 지식 엔진**으로 정확히 분석하여 즉시 답변해 드립니다.\n\n`
+      ? `> ⚠️ **Google API 할당량 안내**: 현재 Google AI Studio 프로젝트의 실시간 검색 쿼터가 일시 소진되어, **BEPSMC 내장 안전 법규 전문 지식 엔진**으로 정확히 분석하여 즉시 답변해 드립니다.\n\n`
       : '';
 
     const fallbackReply = quotaNotice + domainReply;
@@ -398,7 +398,7 @@ export async function POST(request) {
       sources: docSources,
       roomId: activeRoomId,
       createdAt: new Date().toISOString(),
-      model: 'BEPMC 안전 법규 전문 지식 엔진 (RAG 연동)',
+      model: 'BEPSMC 안전 법규 전문 지식 엔진 (RAG 연동)',
       quotaExceeded: isQuotaError,
       quota: updatedQuota,
     });
