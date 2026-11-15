@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 const ragService = require('../../../services/ragService');
+const safetyGuardrailService = require('../../../services/safetyGuardrailService');
 
 const SYSTEM_PROMPT = `당신은 BEPMC(Project Management & Safety Support with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
 
@@ -12,6 +13,7 @@ const SYSTEM_PROMPT = `당신은 BEPMC(Project Management & Safety Support with 
    - 중대재해 처벌 등에 관한 법률(중대재해처벌법) 및 안전보건관리체계 구축 7대 핵심요소
    - 고용노동부, 국토교통부, 한국교통안전공단, 한국산업안전보건공단(KOSHA) 최신 제도 및 지침
    - BEPMC 회원 가입 절차 및 유료 회원에게 제공되는 서비스(동영상 AI 안전 분석, 관제 연동, 법규 컨설팅 등) 안내
+   - [도메인 제한 지침] 안전 법규, 현장 안전 지침, BEPMC 회원 서비스와 무관한 질문(연예 뉴스, 스포츠 경기, 주식/투자, 일반 오락 등)은 외부 검색을 절대 수행하지 말고 본 챗봇이 제공하지 않는 서비스임을 정중히 안내하십시오.
 2. 답변 스타일:
    - 명확하고 정중하며 신뢰감 있는 전문 컨설턴트 어조(~합니다, ~권장합니다).
    - 법 조항, 수치(거리, 치수, 과태료, 대상 규모 등), 핵심 기준을 가독성 높은 글머리기호(-, •)와 표로 정리.
@@ -181,8 +183,6 @@ export async function POST(request) {
       );
     }
 
-    // Update local quota
-    const updatedQuota = incrementQuota();
     const userId = body.userId || 'guest';
     let activeRoomId = body.roomId;
 
@@ -192,6 +192,26 @@ export async function POST(request) {
       activeRoomId = newRoom.id;
     }
     await ragService.addMessage(activeRoomId, userId, 'user', message, []);
+
+    // 1-1. 도메인 가드레일: 안전/법규/BEPMC 서비스 무관 질의 필터링
+    const topicValidation = safetyGuardrailService.validateSafetyTopic(message);
+    if (!topicValidation.isAllowed) {
+      const refusalReply = topicValidation.refusalMessage || safetyGuardrailService.STANDARD_REFUSAL_MESSAGE;
+      await ragService.addMessage(activeRoomId, userId, 'assistant', refusalReply, []);
+      return NextResponse.json({
+        success: true,
+        reply: refusalReply,
+        sources: [],
+        isOutOfScope: true,
+        roomId: activeRoomId,
+        createdAt: new Date().toISOString(),
+        model: 'BEPMC 안전 도메인 가드레일',
+        quota: getQuotaStatus()
+      });
+    }
+
+    // Update local quota (안전 도메인 질문에 대해서만 쿼터 차감)
+    const updatedQuota = incrementQuota();
 
     // 2. RAG: Safety 문서 벡터 유사도 검색 (Gemini gemini-embedding-001)
     let safetyDocs = [];

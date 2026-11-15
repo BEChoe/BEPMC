@@ -2292,6 +2292,7 @@ app.post('/api/mobile/auth/logout', (req, res) => {
 // AI 안전 법규 & 제도 챗봇 (Gemini + RAG + Chat Rooms)
 // ========================================================
 const ragService = require('./services/ragService');
+const safetyGuardrailService = require('./services/safetyGuardrailService');
 
 app.get('/chat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
@@ -2375,6 +2376,23 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
     // 2. 사용자 질문 채팅방 저장
     await ragService.addMessage(activeRoomId, userId, 'user', message, []);
 
+    // 2-1. 도메인 가드레일: 안전/법규/BEPMC 서비스 무관 질의 필터링
+    const topicValidation = safetyGuardrailService.validateSafetyTopic(message);
+    if (!topicValidation.isAllowed) {
+      const refusalReply = topicValidation.refusalMessage || safetyGuardrailService.STANDARD_REFUSAL_MESSAGE;
+      await ragService.addMessage(activeRoomId, userId, 'assistant', refusalReply, []);
+      return res.json({
+        success: true,
+        reply: refusalReply,
+        sources: [],
+        isOutOfScope: true,
+        roomId: activeRoomId,
+        createdAt: new Date().toISOString(),
+        model: 'BEPMC 안전 도메인 가드레일',
+        quota: geminiQuotaService.getQuotaStatus()
+      });
+    }
+
     // 3. RAG: Safety 문서 벡터 유사도 검색 (Gemini gemini-embedding-001)
     let safetyDocs = [];
     try {
@@ -2398,8 +2416,9 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
 1. 전문분야: 철도안전법, 철도기술기준, 1,435mm 표준궤, 25kV 가공전차선 이격거리(2.0m 이상), 4대 중대재해(압착/감전/충돌), 산업안전보건법, 중대재해처벌법 및 2026년 최신 안전 제도, BEPMC 회원 가입 절차 및 유료 회원 제공 서비스(동영상 AI 안전 분석, 관제 연동, 전문 법규 컨설팅 등) 안내.
 2. 스타일: 신뢰감 있는 비즈니스 어조(~합니다, ~권장합니다), 글머리기호와 표로 명확히 정리.
 3. 사내/공공 안전 문서 인용: 제공된 Safety 문서를 최우선적으로 참조하여 실질적이고 구체적인 안전수칙을 안내.
-4. 실시간 정보: Google Search Grounding 결과를 토대로 최신 뉴스 및 법령 개정사항을 정확히 안내.
-5. 면책안내: 답변 말미에 관계 법령 원문 및 주무관청 유권해석 확인 권장 안내.${ragContext}`;
+4. 실시간 정보: 안전 관련 최신 뉴스 및 법령 개정사항에 한해 Google Search Grounding 결과를 토대로 정확히 안내.
+5. 도메인 제한 지침: 안전 법규, 현장 안전 지침, BEPMC 회원 서비스와 무관한 질문(연예 뉴스, 스포츠 경기, 주식/투자, 오락 등)은 외부 검색을 수행하지 말고 "본 챗봇이 제공하지 않는 서비스입니다" 표준 안내문구만 출력하십시오.
+6. 면책안내: 답변 말미에 관계 법령 원문 및 주무관청 유권해석 확인 권장 안내.${ragContext}`;
 
     const contents = [];
     if (Array.isArray(history)) {
