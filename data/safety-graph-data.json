@@ -1,0 +1,390 @@
+{
+  "version": "1.0.0",
+  "name": "BEPSMC Safety Knowledge Graph Dataset",
+  "description": "철도·산업·건설 안전 법규, 엔지니어링 표준(1435mm, 25kV), 중대 위험요인, 필수 안전조치, 책임 주체 및 벌칙 관계망",
+  "nodes": [
+    {
+      "id": "L01",
+      "label": "Law",
+      "name": "철도안전법 제45조 (철도보호지구 및 선로작업 안전)",
+      "category": "법규",
+      "code": "철도안전법 제45조",
+      "summary": "선로 내 작업 및 철도보호지구(선로 경계표 30m 이내) 작업 시 관제 승인, 안전관리자 배치, 열차 감시원 지정 및 안전수칙 준수 의무 규정."
+    },
+    {
+      "id": "L02",
+      "label": "Law",
+      "name": "산업안전보건법 제38조 (안전조치 의무)",
+      "category": "법규",
+      "code": "산안법 제38조",
+      "summary": "사업주는 추락, 붕괴, 감전, 협착 등 근로자의 위험을 예방하기 위하여 필요한 안전 조치를 취해야 함."
+    },
+    {
+      "id": "L03",
+      "label": "Law",
+      "name": "중대재해 처벌 등에 관한 법률 제4조 (안전 및 보건 확보의무)",
+      "category": "법규",
+      "code": "중대재해처벌법 제4조",
+      "summary": "사업주 및 경영책임자등은 재해예방 인력·예산 확보, 유해·위험요인 확인 및 개선, 안전보건관리체계를 구축·이행해야 함."
+    },
+    {
+      "id": "L04",
+      "label": "Law",
+      "name": "산업안전보건기준에 관한 규칙 제38조 (추락 등의 방지)",
+      "category": "법규",
+      "code": "안전보건규칙 제38조",
+      "summary": "높이 2m 이상인 장소에서 추락 위험이 있는 경우 비계 조립, 작업발판 설치, 안전난간 설치 및 안전대 착용 필수."
+    },
+    {
+      "id": "L05",
+      "label": "Law",
+      "name": "산업안전보건기준에 관한 규칙 제618조 (밀폐공간 보건조치)",
+      "category": "법규",
+      "code": "안전보건규칙 제618조",
+      "summary": "밀폐공간 작업 시 산소결핍 및 유해가스 농도 측정, 지속적 환기, 보호구(송기마스크/공기호흡기) 구비, 감시인 배치 필수."
+    },
+    {
+      "id": "L06",
+      "label": "Law",
+      "name": "산업안전보건기준에 관한 규칙 제301조 (전기 위험방지)",
+      "category": "법규",
+      "code": "안전보건규칙 제301조",
+      "summary": "충전전로 인근 작업 시 절연용 방호구 장착, 유효 이격거리 확보, 정전 작업 시 전원 차단 및 접지걸이 시공."
+    },
+    {
+      "id": "L07",
+      "label": "Law",
+      "name": "철도건설규칙 제13조 (건축한계 및 차량한계)",
+      "category": "법규",
+      "code": "철도건설규칙 제13조",
+      "summary": "열차의 안전 운행을 위한 동적 차량한계(Kinematic Envelope) 외측 건축한계선 침범 금지."
+    },
+    {
+      "id": "S01",
+      "label": "Standard",
+      "name": "한국철도 표준궤간 (1,435mm)",
+      "category": "공학기준",
+      "spec": "궤간 1,435mm (허용공차: 일반선 +10/-2mm)",
+      "summary": "한국 철도 노선의 표준 궤간 치수로서 열차 윤축 및 궤도시설 안전 기준선."
+    },
+    {
+      "id": "S02",
+      "label": "Standard",
+      "name": "25kV 가공전차선 안전 이격거리 (최소 2.0m)",
+      "category": "공학기준",
+      "spec": "교류 25kV 전차선 충전부와 작업자/장비 간 최소 2,000mm(2m) 이상 이격",
+      "summary": "고압 교류 전차선에 근접할 경우 유도감전 및 섬락(Flashover) 방지를 위한 절대 안전 이격거리."
+    },
+    {
+      "id": "S03",
+      "label": "Standard",
+      "name": "차량 동적 한계 (Kinematic Envelope)",
+      "category": "공학기준",
+      "spec": "주행 중 흔들림 및 편요(Yawing/Rolling)를 포함한 최대 동적 팽창 한계선",
+      "summary": "선로 작업자가 이 경계선 내에 위치할 경우 진입 열차와의 충돌/협착이 100% 발생하므로 반드시 회피해야 함."
+    },
+    {
+      "id": "S04",
+      "label": "Standard",
+      "name": "밀폐공간 적정 산소 농도 (18% ~ 23.5%)",
+      "category": "공학기준",
+      "spec": "산소(O2) 18% 이상 23.5% 미만, 황화수소(H2S) 10ppm 미만, 일산화탄소(CO) 30ppm 미만",
+      "summary": "질식사고 예방을 위한 3개소(상·중·하) 동시 측정 적정 공기 환경 기준."
+    },
+    {
+      "id": "S05",
+      "label": "Standard",
+      "name": "안전난간 상부난간대 높이 (90cm ~ 120cm)",
+      "category": "공학기준",
+      "spec": "바닥면으로부터 900mm 이상 1,200mm 이하, 중간난간대 중앙 설치, 100kg 하중 지지",
+      "summary": "추락 방지를 위해 작업 발판 단부 및 개구부에 의무 설치해야 하는 표준 안전난간 규격."
+    },
+    {
+      "id": "H01",
+      "label": "Hazard",
+      "name": "복선 교행 열차 압착 및 협착",
+      "category": "위험요인",
+      "riskLevel": "CRITICAL (치명적)",
+      "summary": "복선 궤도 구간에서 상·하행 열차가 동시 교행할 때 선간 대피공간 부족으로 작업자가 열차 사이에 압착되는 4대 중대재해."
+    },
+    {
+      "id": "H02",
+      "label": "Hazard",
+      "name": "25kV 가공전차선 고압 감전",
+      "category": "위험요인",
+      "riskLevel": "CRITICAL (치명적)",
+      "summary": "크레인 붐대, 비계 파이프, 안전대 고리 등이 전차선 충전부 2m 이내에 근접하여 아크 방전으로 인한 감전/화상 재해."
+    },
+    {
+      "id": "H03",
+      "label": "Hazard",
+      "name": "고소작업 개구부 및 단부 추락 (떨어짐)",
+      "category": "위험요인",
+      "riskLevel": "HIGH (높음)",
+      "summary": "2m 이상 비계, 교각, 작업발판, 지붕 개구부 등에서 안전대 미체결 및 안전난간 미설치로 인한 추락 사망 재해."
+    },
+    {
+      "id": "H04",
+      "label": "Hazard",
+      "name": "밀폐공간 급성 질식 및 중독",
+      "category": "위험요인",
+      "riskLevel": "CRITICAL (치명적)",
+      "summary": "맨홀, 정화조, 지하공동구 내 산소결핍(18% 미만) 또는 황화수소 흡입으로 1회 호흡만으로 의식 상실 및 즉사."
+    },
+    {
+      "id": "H05",
+      "label": "Hazard",
+      "name": "선로 동일 진입 열차 충돌",
+      "category": "위험요인",
+      "riskLevel": "CRITICAL (치명적)",
+      "summary": "차단공사 미승인, 운전취급 착오, 신호 오인 등으로 작업 선로에 열차가 진입하여 발생하는 정면 충돌 재해."
+    },
+    {
+      "id": "A01",
+      "label": "Action",
+      "name": "전담 열차감시원 배치 및 무전 점호",
+      "category": "안전조치",
+      "summary": "작업 장소 전·후방 가시거리 확보 위치에 전담 열차감시원을 배치하고 운전관제실과 상시 양방향 무전 통신 유지."
+    },
+    {
+      "id": "A02",
+      "label": "Action",
+      "name": "안전 대피구역 사전 지정 및 즉시대피",
+      "category": "안전조치",
+      "summary": "열차 접근 시 선간 대피 금지, 반드시 건축한계선 외측의 지정된 안전 대피로 및 대피소로 전원 철수."
+    },
+    {
+      "id": "A03",
+      "label": "Action",
+      "name": "25kV 전차선 단전 확인 및 접지걸이 시공",
+      "category": "안전조치",
+      "summary": "작업 전 관제 승인 하에 급전 차단, 검전기로 무전압 확인 후 전차선 양단에 단락접지용구(접지걸이) 체결."
+    },
+    {
+      "id": "A04",
+      "label": "Action",
+      "name": "안전대 체결 (2줄걸이) 및 방호망 설치",
+      "category": "안전조치",
+      "summary": "2m 이상 고소작업 시 안전그네형 보호구 착용, 수직 구명줄 또는 2중 걸이 체결, 추락방호망 수평 설치."
+    },
+    {
+      "id": "A05",
+      "label": "Action",
+      "name": "3점 산소/유해가스 측정 및 연속 강제환기",
+      "category": "안전조치",
+      "summary": "밀폐공간 진입 전 복합가스측정기로 상·중·하 3개소 측정, 송풍기로 5회 이상 환기 후 작업 중 연속 환기 유지."
+    },
+    {
+      "id": "R01",
+      "label": "Role",
+      "name": "사업주 및 경영책임자 (원청 대표)",
+      "category": "책임주체",
+      "summary": "중대재해처벌법상 안전보건관리체계 구축 총괄 및 재해 예방 예산/인력 편성 최종 책임자."
+    },
+    {
+      "id": "R02",
+      "label": "Role",
+      "name": "안전보건총괄책임자 / 도급인",
+      "category": "책임주체",
+      "summary": "산안법상 수급인(협력사) 근로자의 산업재해 예방을 위한 안전조치 총괄 및 협의체 운영 책임자."
+    },
+    {
+      "id": "R03",
+      "label": "Role",
+      "name": "관리감독자 / 현장 안전관리자",
+      "category": "책임주체",
+      "summary": "당일 작업 전 TBM(Tool Box Meeting) 실시, 보호구 착용 점검, 위험요인 발굴 및 작업중지권 발동 권한자."
+    },
+    {
+      "id": "R04",
+      "label": "Role",
+      "name": "전담 열차감시원",
+      "category": "책임주체",
+      "summary": "선로 작업 중 타 작업 겸무 금지, 열차 접근 감시 및 대피 신호(호각/경보기) 발령 전담자."
+    },
+    {
+      "id": "P01",
+      "label": "Penalty",
+      "name": "중대재해처벌법 형사처벌 (1년 이상 징역 / 10억원 이하 벌금)",
+      "category": "벌칙",
+      "summary": "안전보건의무 위반으로 사망자 1명 이상 발생 시 경영책임자 1년 이상 징역 또는 10억원 이하 벌금 (법인 최대 50억원 벌금 및 징벌적 손해배상)."
+    },
+    {
+      "id": "P02",
+      "label": "Penalty",
+      "name": "산업안전보건법 제167조 (7년 이하 징역 / 1억원 이하 벌금)",
+      "category": "벌칙",
+      "summary": "안전보건조치 의무 위반으로 근로자 사망 재해 발생 시 사업주/도급인 7년 이하 징역 또는 1억원 이하 벌금."
+    },
+    {
+      "id": "P03",
+      "label": "Penalty",
+      "name": "철도안전법 제78조 (2년 이하 징역 / 2천만원 이하 벌금)",
+      "category": "벌칙",
+      "summary": "철도보호지구 내 무단 선로 작업, 관제 승인 미취득, 안전수칙 위반으로 열차 운행 위험 초래 시 벌칙."
+    },
+    {
+      "id": "P04",
+      "label": "Penalty",
+      "name": "산안법 안전규칙 위반 과태료 (최대 5,000만원)",
+      "category": "벌칙",
+      "summary": "밀폐공간 가스 미측정, 안전난간 미설치, 안전대 미지급 등 적발 시 조항별 500만원~5,000만원 과태료 즉시 부과."
+    }
+  ],
+  "relationships": [
+    {
+      "source": "L01",
+      "target": "S01",
+      "type": "DEFINES",
+      "label": "기준규정",
+      "description": "철도안전법은 1,435mm 표준궤 선로의 안전 관리 기준을 규정함"
+    },
+    {
+      "source": "L01",
+      "target": "S03",
+      "type": "DEFINES",
+      "label": "기준규정",
+      "description": "철도안전법 및 운전규칙은 열차 차량 동적 한계(Kinematic Envelope) 준수를 규정함"
+    },
+    {
+      "source": "L01",
+      "target": "H01",
+      "type": "REGULATES_RISK",
+      "label": "위험규제",
+      "description": "선로 내 복선 교행 열차 압착 위험을 방지하기 위한 통제 기준 명시"
+    },
+    {
+      "source": "L01",
+      "target": "H05",
+      "type": "REGULATES_RISK",
+      "label": "위험규제",
+      "description": "작업 선로에 동일 열차 진입으로 인한 충돌 방지 절차 명시"
+    },
+    {
+      "source": "L01",
+      "target": "P03",
+      "type": "PENALIZES_WITH",
+      "label": "처벌연계",
+      "description": "철도안전법 위반 시 2년 이하 징역 또는 2천만원 이하 벌금 부과"
+    },
+    {
+      "source": "H01",
+      "target": "A01",
+      "type": "MITIGATED_BY",
+      "label": "예방조치",
+      "description": "복선 교행 압착 위험은 전담 열차감시원의 감시와 조기 경보로 예방"
+    },
+    {
+      "source": "H01",
+      "target": "A02",
+      "type": "MITIGATED_BY",
+      "label": "예방조치",
+      "description": "열차 접근 시 선간 대피를 금지하고 안전 대피구역으로 철수해야 함"
+    },
+    {
+      "source": "H01",
+      "target": "S03",
+      "type": "VIOLATES_STANDARD",
+      "label": "한계침범",
+      "description": "작업자가 동적 한계선(Kinematic Envelope) 내 체류 시 압착 사고 발생"
+    },
+    {
+      "source": "A01",
+      "target": "R04",
+      "type": "EXECUTED_BY",
+      "label": "수행주체",
+      "description": "전담 열차감시원이 배치되어 타 작업 겸무 없이 감시 업무만 수행"
+    },
+    {
+      "source": "L06",
+      "target": "S02",
+      "type": "DEFINES",
+      "label": "이격기준",
+      "description": "산업안전보건기준은 25kV 고압 전차선과 2.0m 이상 안전 이격거리 유지를 명시"
+    },
+    {
+      "source": "H02",
+      "target": "S02",
+      "type": "VIOLATES_STANDARD",
+      "label": "이격위반",
+      "description": "25kV 전차선에 2m 이내로 근접 시 아크 방전으로 감전 재해 발생"
+    },
+    {
+      "source": "H02",
+      "target": "A03",
+      "type": "MITIGATED_BY",
+      "label": "예방조치",
+      "description": "25kV 단전 확인 및 단락접지걸이 시공을 통해 감전 위험 원천 차단"
+    },
+    {
+      "source": "L04",
+      "target": "S05",
+      "type": "DEFINES",
+      "label": "규격규정",
+      "description": "안전보건규칙은 상부난간대 높이 90~120cm 등 안전난간 규격을 규정"
+    },
+    {
+      "source": "H03",
+      "target": "A04",
+      "type": "MITIGATED_BY",
+      "label": "예방조치",
+      "description": "2m 이상 추락 위험은 안전대 2줄걸이 체결 및 안전난간으로 방호"
+    },
+    {
+      "source": "L05",
+      "target": "S04",
+      "type": "DEFINES",
+      "label": "농도기준",
+      "description": "안전보건규칙은 적정 산소 농도 18%~23.5% 및 유해가스 허용기준 규정"
+    },
+    {
+      "source": "H04",
+      "target": "A05",
+      "type": "MITIGATED_BY",
+      "label": "예방조치",
+      "description": "밀폐공간 질식 위험은 3점 가스측정과 연속 강제환기로 예방"
+    },
+    {
+      "source": "L02",
+      "target": "R02",
+      "type": "MANDATES",
+      "label": "의무부여",
+      "description": "산안법은 도급인(원청) 및 안전보건총괄책임자에게 전반적인 안전조치 의무 부여"
+    },
+    {
+      "source": "L02",
+      "target": "P02",
+      "type": "PENALIZES_WITH",
+      "label": "처벌연계",
+      "description": "산안법 안전조치 위반 사망사고 발생 시 7년 이하 징역 또는 1억원 이하 벌금"
+    },
+    {
+      "source": "L03",
+      "target": "R01",
+      "type": "MANDATES",
+      "label": "의무부여",
+      "description": "중대재해처벌법은 경영책임자(대표이사)에게 안전보건관리체계 구축 의무 부과"
+    },
+    {
+      "source": "L03",
+      "target": "P01",
+      "type": "PENALIZES_WITH",
+      "label": "처벌연계",
+      "description": "중대재해 발생 시 경영책임자에게 1년 이상 징역 또는 10억원 이하 벌금"
+    },
+    {
+      "source": "R03",
+      "target": "A01",
+      "type": "SUPERVISES",
+      "label": "배치감독",
+      "description": "현장 관리감독자는 작업 전 열차감시원 배치 및 장비 작동 여부 확인"
+    },
+    {
+      "source": "R03",
+      "target": "A05",
+      "type": "SUPERVISES",
+      "label": "측정감독",
+      "description": "현장 관리감독자는 밀폐공간 진입 전 3점 가스 측정 결과를 확인 및 기록"
+    }
+  ]
+}

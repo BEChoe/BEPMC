@@ -213,12 +213,17 @@ export async function POST(request) {
     // Update local quota (안전 도메인 질문에 대해서만 쿼터 차감)
     const updatedQuota = incrementQuota();
 
-    // 2. RAG: Safety 문서 벡터 유사도 검색 (Gemini gemini-embedding-001)
+    // 2. Hybrid RAG: Safety 문서 벡터 검색 + Neo4j/로컬 지식 그래프 다단계 관계망 탐색
     let safetyDocs = [];
+    let graphContext = '';
+    let graphResult = null;
     try {
-      safetyDocs = await ragService.searchSafetyDocuments(message, { topK: 3 });
+      const hybrid = await ragService.searchHybridRAG(message, { topK: 3 });
+      safetyDocs = hybrid.safetyDocs || [];
+      graphContext = hybrid.graphContext || '';
+      graphResult = hybrid.graphResult || null;
     } catch (e) {
-      console.warn('[Next.js RAG Search Warning]:', e.message);
+      console.warn('[Next.js Hybrid RAG Search Warning]:', e.message);
     }
 
     const docSources = safetyDocs.map(doc => ({
@@ -230,12 +235,24 @@ export async function POST(request) {
       similarity: doc.similarity
     }));
 
-    // RAG 컨텍스트 주입
+    const graphSources = (graphResult?.nodes || []).slice(0, 4).map(node => ({
+      type: 'graph',
+      source: `지식그래프 (${node.category || node.label})`,
+      title: node.name,
+      category: node.label,
+      snippet: `${node.summary || node.spec || ''}`,
+      similarity: 0.99
+    }));
+
+    // RAG 컨텍스트 주입 (사내/공공 안전문서 + 지식그래프 다단계 관계망)
     let ragContext = '';
     if (safetyDocs.length > 0) {
-      ragContext = `\n\n[참고 안전 사내/공공 문서 (Safety RAG 검색 결과)]\n` +
+      ragContext += `\n\n[참고 안전 사내/공공 문서 (Safety RAG 검색 결과)]\n` +
         safetyDocs.map((doc, idx) => `[문서 ${idx + 1}] 출처: ${doc.source} | 항목: ${doc.title}\n내용: ${doc.content}`).join('\n\n') +
         `\n\n위 [참고 안전 문서]의 구체적인 수치, 안전 조치 기준, 사고 원인 및 재발방지대책을 답변에 적극 인용하여 전문적으로 설명하십시오.`;
+    }
+    if (graphContext) {
+      ragContext += `\n\n${graphContext}`;
     }
 
     const effectiveSystemPrompt = `${SYSTEM_PROMPT}${ragContext}`;
@@ -367,7 +384,7 @@ export async function POST(request) {
       const uniqueWebSources = Array.from(
         new Map(webSources.map((s) => [s.uri, s])).values()
       );
-      const allSources = [...docSources, ...uniqueWebSources];
+      const allSources = [...docSources, ...graphSources, ...uniqueWebSources];
 
       // Save assistant reply to room
       await ragService.addMessage(activeRoomId, userId, 'assistant', replyText, allSources);
@@ -389,13 +406,14 @@ export async function POST(request) {
       ? `> ⚠️ **Google API 할당량 안내**: 현재 Google AI Studio 프로젝트의 실시간 검색 쿼터가 일시 소진되어, **BEPSMC 내장 안전 법규 전문 지식 엔진**으로 정확히 분석하여 즉시 답변해 드립니다.\n\n`
       : '';
 
+    const allFallbackSources = [...docSources, ...graphSources];
     const fallbackReply = quotaNotice + domainReply;
-    await ragService.addMessage(activeRoomId, userId, 'assistant', fallbackReply, docSources);
+    await ragService.addMessage(activeRoomId, userId, 'assistant', fallbackReply, allFallbackSources);
 
     return NextResponse.json({
       success: true,
       reply: fallbackReply,
-      sources: docSources,
+      sources: allFallbackSources,
       roomId: activeRoomId,
       createdAt: new Date().toISOString(),
       model: 'BEPSMC 안전 법규 전문 지식 엔진 (RAG 연동)',

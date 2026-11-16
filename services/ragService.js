@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+const neo4jGraphService = require('./neo4jGraphService');
 
 const EMBEDDINGS_FILE = path.join(process.cwd(), 'data', 'safety-embeddings.json');
 const CHAT_ROOMS_FILE = path.join(process.cwd(), 'data', 'chat-rooms.json');
@@ -158,6 +159,37 @@ async function searchSafetyDocuments(query, options = {}) {
     console.warn('[RAG] Local document search error:', err.message);
     return [];
   }
+}
+
+// --------------------------------------------------------------------------
+// 3-1. Hybrid GraphRAG (Vector Search + Neo4j / Local Knowledge Graph)
+// --------------------------------------------------------------------------
+async function searchHybridRAG(query, options = {}) {
+  // 1) 벡터 검색 (Supabase pgvector or 로컬 임베딩)
+  let safetyDocs = [];
+  try {
+    safetyDocs = await searchSafetyDocuments(query, options);
+  } catch (err) {
+    console.warn('[Hybrid RAG] Vector search error:', err.message);
+  }
+
+  // 2) 지식 그래프 다단계 관계망 탐색 (100% 무료 로컬 내장 엔진 or Neo4j AuraDB)
+  let graphResult = null;
+  let graphContext = '';
+  try {
+    graphResult = await neo4jGraphService.searchSafetyGraph(query, options);
+    if (graphResult) {
+      graphContext = neo4jGraphService.formatGraphContext(graphResult);
+    }
+  } catch (err) {
+    console.warn('[Hybrid RAG] Graph traversal error:', err.message);
+  }
+
+  return {
+    safetyDocs,
+    graphResult,
+    graphContext
+  };
 }
 
 // --------------------------------------------------------------------------
@@ -325,6 +357,8 @@ async function deleteRoom(roomId, userId) {
 module.exports = {
   getQueryEmbedding,
   searchSafetyDocuments,
+  searchHybridRAG,
+  neo4jGraphService,
   listRooms,
   createRoom,
   getRoom,

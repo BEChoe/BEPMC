@@ -2393,23 +2393,31 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
       });
     }
 
-    // 3. RAG: Safety 문서 벡터 유사도 검색 (Gemini gemini-embedding-001)
+    // 3. Hybrid RAG: Safety 문서 벡터 검색 + Neo4j/로컬 지식 그래프 다단계 관계망 탐색
     let safetyDocs = [];
+    let graphContext = '';
+    let graphResult = null;
     try {
-      safetyDocs = await ragService.searchSafetyDocuments(message, { topK: 3 });
+      const hybrid = await ragService.searchHybridRAG(message, { topK: 3 });
+      safetyDocs = hybrid.safetyDocs || [];
+      graphContext = hybrid.graphContext || '';
+      graphResult = hybrid.graphResult || null;
     } catch (e) {
-      console.warn('[RAG Search Warning]:', e.message);
+      console.warn('[Hybrid RAG Search Warning]:', e.message);
     }
 
     geminiQuotaService.consumeQuota({ fileName: 'chat-query' });
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 
-    // RAG 컨텍스트 주입
+    // RAG 컨텍스트 주입 (문서 텍스트 + 지식 그래프 다단계 관계망)
     let ragContext = '';
     if (safetyDocs.length > 0) {
-      ragContext = `\n\n[참고 안전 사내/공공 문서 (Safety RAG 검색 결과)]\n` +
+      ragContext += `\n\n[참고 안전 사내/공공 문서 (Safety RAG 검색 결과)]\n` +
         safetyDocs.map((doc, idx) => `[문서 ${idx + 1}] 출처: ${doc.source} | 항목: ${doc.title}\n내용: ${doc.content}`).join('\n\n') +
         `\n\n위 [참고 안전 문서]의 구체적인 수치, 안전 조치 기준, 사고 원인 및 재발방지대책을 답변에 적극 인용하여 전문적으로 설명하십시오.`;
+    }
+    if (graphContext) {
+      ragContext += `\n\n${graphContext}`;
     }
 
     const systemPrompt = `당신은 BEPSMC(Project Safety and Managment Consultancy with Experiences and AI Technologies)의 공식 AI 안전 법규 & 제도 전문 수석 컨설턴트입니다.
@@ -2473,7 +2481,15 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
               uri: c.web.uri
             }));
           const uniqueWebSources = Array.from(new Map(webSources.map(s => [s.uri, s])).values());
-          const allSources = [...docSources, ...uniqueWebSources];
+          const graphSources = (graphResult?.nodes || []).slice(0, 4).map(node => ({
+            type: 'graph',
+            source: `지식그래프 (${node.category || node.label})`,
+            title: node.name,
+            category: node.label,
+            snippet: `${node.summary || node.spec || ''}`,
+            similarity: 0.99
+          }));
+          const allSources = [...docSources, ...graphSources, ...uniqueWebSources];
 
           // AI 답변 대화 내역 저장
           await ragService.addMessage(activeRoomId, userId, 'assistant', replyText, allSources);
@@ -2484,7 +2500,7 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
             sources: allSources,
             roomId: activeRoomId,
             createdAt: new Date().toISOString(),
-            model: 'gemini-3.8-flash (RAG + Google Search)',
+            model: 'gemini-3.8-flash (Hybrid GraphRAG + Search)',
             quota: geminiQuotaService.getQuotaStatus()
           });
         }
@@ -2494,16 +2510,26 @@ app.post('/api/chat', requirePaidOrAdmin, async (req, res) => {
     }
 
     // Fallback domain safety reply
+    const graphSources = (graphResult?.nodes || []).slice(0, 4).map(node => ({
+      type: 'graph',
+      source: `지식그래프 (${node.category || node.label})`,
+      title: node.name,
+      category: node.label,
+      snippet: `${node.summary || node.spec || ''}`,
+      similarity: 0.99
+    }));
+    const allFallbackSources = [...docSources, ...graphSources];
+
     const fallbackText = `### 📋 BEPSMC 안전 법규 & 제도 전문 상담\n\n문의하신 **"${message}"**에 대한 안전 기준 안내입니다:\n\n- **철도안전법 제45조**: 철도경계표지로부터 30m 이내 철도보호지구 행위신고 의무\n- **가공전차선(25kV)**: 충전부 2.0m 이상 안전 이격거리 절대 유지\n- **중대재해처벌법**: 안전보건관리체계 구축 및 위험성평가 정례화\n\n상세 조항에 대해 추가로 질문해 주시면 상세히 안내해 드리겠습니다.`;
-    await ragService.addMessage(activeRoomId, userId, 'assistant', fallbackText, docSources);
+    await ragService.addMessage(activeRoomId, userId, 'assistant', fallbackText, allFallbackSources);
 
     return res.json({
       success: true,
       reply: fallbackText,
-      sources: docSources,
+      sources: allFallbackSources,
       roomId: activeRoomId,
       createdAt: new Date().toISOString(),
-      model: 'BEPSMC 안전 법규 전문 지식 엔진 (RAG 연동)',
+      model: 'BEPSMC 안전 법규 전문 지식 엔진 (Hybrid GraphRAG 연동)',
       quota: geminiQuotaService.getQuotaStatus()
     });
   } catch (err) {
