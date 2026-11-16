@@ -2308,6 +2308,16 @@ app.get('/api/chat', (req, res) => {
   }
 });
 
+// RAG & Knowledge Graph (GraphRAG) 시스템 현황 및 확장 권고 진단 API
+app.get('/api/system/rag-status', (req, res) => {
+  try {
+    const metrics = ragService.getSystemRAGMetrics();
+    res.json(metrics);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 채팅방 목록 조회
 app.get('/api/chat/rooms', async (req, res) => {
   try {

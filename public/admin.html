@@ -93,6 +93,11 @@
       <button onclick="switchAdminTab('shop')" id="tab-btn-shop" class="py-3.5 px-5 text-xs sm:text-sm font-bold border-b-2 text-center transition whitespace-nowrap flex items-center gap-1.5">
         <span>🛒</span> 5. 안전몰 상품·주문 관리
       </button>
+
+      <button onclick="switchAdminTab('graphrag')" id="tab-btn-graphrag" class="py-3.5 px-5 text-xs sm:text-sm font-bold border-b-2 text-center transition whitespace-nowrap flex items-center gap-1.5">
+        <span>🕸️</span> 6. RAG &amp; 지식그래프 모니터링
+        <span id="graphrag-badge" class="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded font-black ml-1">최적</span>
+      </button>
     </div>
 
     <!-- ============================================================== -->
@@ -351,6 +356,134 @@
 
     </section>
 
+    <!-- ============================================================== -->
+    <!-- TAB 6: RAG & 지식그래프(GraphRAG) 모니터링 및 확장 제안 -->
+    <!-- ============================================================== -->
+    <section id="admin-view-graphrag" class="hidden space-y-6">
+      
+      <!-- 1) 헤더 및 가동 현황 진단 배너 -->
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🕸️</span>
+              <h2 class="text-base font-bold text-slate-900">BEPSMC Hybrid GraphRAG &amp; 지식그래프 시스템 모니터링</h2>
+              <span id="rag-status-pill" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                ✅ 최적 운용 중 (비용 ₩0)
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              현재 시스템은 추가 비용이 전혀 없는 <strong>100% 무료 로컬 내장 지식 그래프 엔진</strong>으로 초고속 운용 중이며, 용량/속도 한계 도달 시 최적의 확장 옵션을 자동으로 권고합니다.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span id="rag-last-updated" class="text-[11px] text-slate-400"></span>
+            <button onclick="loadAdminGraphRAG()" class="btn-safety-black px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1">
+              <span>🔄</span> 진단 새로고침
+            </button>
+          </div>
+        </div>
+
+        <!-- 진단 알림 바 -->
+        <div id="rag-alert-banner" class="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
+          <span class="text-lg">💡</span>
+          <div>
+            <span class="text-xs font-bold text-emerald-900 block" id="rag-alert-title">시스템 진단 통과</span>
+            <p class="text-xs text-emerald-800 mt-0.5" id="rag-alert-desc">
+              현재 로컬 내장 지식 그래프 엔진으로 비용 없이 최적 운용 중입니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- 4개 핵심 지표 카드 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5 mt-5">
+          <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <span class="text-[11px] text-slate-500 font-bold block mb-1">지식그래프 엔진</span>
+            <span id="metric-graph-engine" class="text-sm font-black text-slate-900 block truncate">Local In-Memory</span>
+            <span id="metric-neo4j-status" class="text-[10px] text-emerald-600 font-bold">100% 무료 모드</span>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <span class="text-[11px] text-slate-500 font-bold block mb-1">적재 노드 / 관계망</span>
+            <div class="flex items-baseline gap-1">
+              <span id="metric-node-count" class="text-xl font-black text-blue-600">30</span>
+              <span class="text-xs text-slate-400">노드 /</span>
+              <span id="metric-rel-count" class="text-sm font-bold text-slate-600">22</span>
+              <span class="text-xs text-slate-400">관계</span>
+            </div>
+            <span class="text-[10px] text-slate-500">소프트 한도: 500개</span>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <span class="text-[11px] text-slate-500 font-bold block mb-1">평균 탐색 지연시간</span>
+            <div class="flex items-baseline gap-1">
+              <span id="metric-latency" class="text-xl font-black text-emerald-600">1.17</span>
+              <span class="text-xs text-slate-500">ms</span>
+            </div>
+            <span class="text-[10px] text-emerald-600 font-bold">초고속 (목표 &lt; 150ms)</span>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <span class="text-[11px] text-slate-500 font-bold block mb-1">벡터 안전 문서 (RAG)</span>
+            <div class="flex items-baseline gap-1">
+              <span id="metric-doc-count" class="text-xl font-black text-slate-900">18</span>
+              <span class="text-xs text-slate-500">건</span>
+            </div>
+            <span id="metric-vector-engine" class="text-[10px] text-blue-600 font-bold">Supabase pgvector</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2) 향후 용량/속도 한계 시 단계별 확장 선택지 (Advisory Panel) -->
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5">
+        <div class="mb-4">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+            <span>🚀</span> 향후 확장 필요 시 선택 사항 가이드 (용량 및 속도 한계 대비)
+          </h3>
+          <p class="text-xs text-slate-500 mt-1">
+            규정 데이터가 급증하거나 사내 보안/대규모 트래픽 확장이 필요할 때 아래 3가지 경로 중 최적안을 선택하여 즉시 전환하실 수 있습니다.
+          </p>
+        </div>
+
+        <div id="expansion-options-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- 동적 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 3) 실시간 지식 그래프 다단계 관계망 탐색 테스트기 -->
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5">
+        <div class="mb-3">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+            <span>🧪</span> 실시간 지식 그래프 다단계(Multi-hop) 탐색 시뮬레이션
+          </h3>
+          <p class="text-xs text-slate-500">
+            사용자 질문 키워드를 입력하여 지식 그래프에서 법규, 공학수치, 위험요인, 조치, 벌칙이 어떻게 연결 탐색되는지 실시간 테스트합니다.
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 mb-3">
+          <input type="text" id="graph-test-query" value="선로에서 작업하다가 열차가 오면 압착 위험과 대피는 어떻게 하나요?" class="flex-1 text-xs p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500" placeholder="테스트 질문을 입력하세요...">
+          <button onclick="testAdminGraphQuery()" class="btn-safety-green px-4 py-2 rounded text-xs font-bold shrink-0">
+            탐색 테스트 실행
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <span class="text-[11px] text-slate-400 self-center">추천 예시:</span>
+          <button onclick="setTestQuery('선로에서 작업하다가 열차가 오면 압착 위험과 대피는 어떻게 하나요?')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded">철도 선로 압착 및 대피</button>
+          <button onclick="setTestQuery('25kV 전차선 감전 위험과 이격거리 및 접지 기준은?')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded">25kV 전차선 감전 및 이격거리</button>
+          <button onclick="setTestQuery('밀폐공간 질식 사고 예방을 위한 산소 농도와 필수 안전수칙은?')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded">밀폐공간 질식 및 산소농도</button>
+          <button onclick="setTestQuery('중대재해처벌법과 산업안전보건법 위반 시 벌칙 및 사업주 처벌은?')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded">중처법/산안법 벌칙 및 처벌</button>
+        </div>
+
+        <!-- 탐색 결과 출력 콘솔 -->
+        <div id="graph-test-result" class="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto max-h-80 border border-slate-800">
+          // 위 버튼을 눌러 실시간 지식 그래프 탐색 테스트를 실행해 보세요.
+        </div>
+      </div>
+
+    </section>
+
   </main>
 
   <div id="global-footer"></div>
@@ -374,7 +507,7 @@
 
     function switchAdminTab(tab) {
       activeAdminTab = tab;
-      const tabs = ['qna', 'users', 'posts', 'settings', 'shop'];
+      const tabs = ['qna', 'users', 'posts', 'settings', 'shop', 'graphrag'];
 
       tabs.forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -396,6 +529,153 @@
       if (tab === 'shop') {
         loadAdminOrders();
         loadAdminProducts();
+      }
+      if (tab === 'graphrag') {
+        loadAdminGraphRAG();
+      }
+    }
+
+    // ==============================================================
+    // TAB 6: RAG & 지식그래프 모니터링 및 확장 제안 로더
+    // ==============================================================
+    let currentRagMetrics = null;
+
+    async function loadAdminGraphRAG() {
+      try {
+        const res = await fetch('/api/system/rag-status');
+        const data = await res.json();
+        currentRagMetrics = data;
+
+        const g = data.graph || {};
+        document.getElementById('rag-last-updated').textContent = `최근 점검: ${new Date().toLocaleTimeString()}`;
+
+        // 상단 배너 상태
+        const pill = document.getElementById('rag-status-pill');
+        const alertBanner = document.getElementById('rag-alert-banner');
+        const alertTitle = document.getElementById('rag-alert-title');
+        const alertDesc = document.getElementById('rag-alert-desc');
+        const badge = document.getElementById('graphrag-badge');
+
+        if (g.status === 'OPTIMAL') {
+          pill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+          pill.textContent = '✅ 최적 운용 중 (비용 ₩0)';
+          alertBanner.className = 'mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3';
+          alertTitle.textContent = '시스템 진단: 정상 최적 운용 중';
+          alertTitle.className = 'text-xs font-bold text-emerald-900 block';
+          alertDesc.textContent = g.alertMessage || '현재 로컬 내장 지식 그래프 엔진으로 비용 없이 최적 운용 중입니다.';
+          alertDesc.className = 'text-xs text-emerald-800 mt-0.5';
+          if (badge) { badge.textContent = '최적'; badge.className = 'bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded font-black ml-1'; }
+        } else if (g.status === 'RECOMMENDED_AURA_FREE') {
+          pill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300';
+          pill.textContent = '⚡ AuraDB 무료 전환 권고';
+          alertBanner.className = 'mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3';
+          alertTitle.textContent = '용량 확장 권고: Neo4j AuraDB Free 전환 추천';
+          alertTitle.className = 'text-xs font-bold text-amber-900 block';
+          alertDesc.textContent = g.alertMessage;
+          alertDesc.className = 'text-xs text-amber-800 mt-0.5';
+          if (badge) { badge.textContent = '권고'; badge.className = 'bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded font-black ml-1'; }
+        } else {
+          pill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300';
+          pill.textContent = '⚠️ 확장 필요';
+          alertBanner.className = 'mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-3';
+          alertTitle.textContent = '시스템 확장 알림: 임계치 도달';
+          alertTitle.className = 'text-xs font-bold text-rose-900 block';
+          alertDesc.textContent = g.alertMessage;
+          alertDesc.className = 'text-xs text-rose-800 mt-0.5';
+          if (badge) { badge.textContent = '확장필요'; badge.className = 'bg-rose-100 text-rose-800 text-[10px] px-1.5 py-0.2 rounded font-black ml-1'; }
+        }
+
+        // 지표 카드
+        document.getElementById('metric-graph-engine').textContent = g.isNeo4jConnected ? 'Neo4j AuraDB' : 'Local In-Memory';
+        document.getElementById('metric-neo4j-status').textContent = g.isNeo4jConnected ? '🟢 클라우드 연동됨' : '100% 무료 로컬 모드';
+        document.getElementById('metric-node-count').textContent = g.nodeCount || 0;
+        document.getElementById('metric-rel-count').textContent = g.relationshipCount || 0;
+        document.getElementById('metric-latency').textContent = g.avgLatencyMs || 1.0;
+        document.getElementById('metric-doc-count').textContent = data.vectorDocsCount || 0;
+        document.getElementById('metric-vector-engine').textContent = data.vectorEngine || 'Supabase pgvector';
+
+        // 확장 옵션 카드 렌더링
+        renderExpansionOptions(g.expansionOptions || []);
+      } catch (err) {
+        console.warn('loadAdminGraphRAG error:', err);
+      }
+    }
+
+    function renderExpansionOptions(options) {
+      const container = document.getElementById('expansion-options-container');
+      if (!container) return;
+
+      container.innerHTML = options.map(opt => `
+        <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50 flex flex-col justify-between hover:border-blue-400 transition">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${opt.badgeClass}">
+                ${escapeHtml(opt.tag)}
+              </span>
+              <span class="text-xs font-black text-slate-800">${escapeHtml(opt.cost)}</span>
+            </div>
+            <h4 class="text-xs font-bold text-slate-900 mb-1.5">${escapeHtml(opt.title)}</h4>
+            <div class="space-y-1.5 text-[11.5px] text-slate-600 mb-3">
+              <p><strong>전환 시점:</strong> ${escapeHtml(opt.triggerCondition)}</p>
+              <p><strong>수용 용량:</strong> ${escapeHtml(opt.capacity)}</p>
+              <p><strong>장점:</strong> ${escapeHtml(opt.pros)}</p>
+              <p class="text-slate-500"><strong>고려사항:</strong> ${escapeHtml(opt.cons)}</p>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 block mb-1">조치 가이드:</span>
+            <pre class="text-[10px] bg-white p-2 rounded border border-slate-200 text-slate-700 font-mono whitespace-pre-wrap select-all">${escapeHtml(opt.actionGuide)}</pre>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function setTestQuery(q) {
+      const el = document.getElementById('graph-test-query');
+      if (el) el.value = q;
+      testAdminGraphQuery();
+    }
+
+    async function testAdminGraphQuery() {
+      const query = document.getElementById('graph-test-query').value.trim();
+      const output = document.getElementById('graph-test-result');
+      if (!query) {
+        alert('테스트할 질문을 입력해 주세요.');
+        return;
+      }
+
+      output.textContent = `// 탐색 실행 중: "${query}" ...`;
+      const t0 = performance.now();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: query, history: [] })
+        });
+        const elapsed = (performance.now() - t0).toFixed(1);
+        const data = await res.json();
+
+        const graphSources = (data.sources || []).filter(s => s.type === 'graph');
+        const docSources = (data.sources || []).filter(s => s.type === 'document');
+
+        output.innerHTML = `
+<span class="text-emerald-400 font-bold">=== 지식 그래프 & RAG 실시간 탐색 결과 (소요: ${elapsed}ms) ===</span>
+
+<span class="text-cyan-300 font-bold">1. 탐색된 지식그래프 연계 노드 (${graphSources.length}건):</span>
+${graphSources.length === 0 ? '  (연계 노드 없음)' : graphSources.map((s, i) => `  [${i+1}] ${s.source} - ${s.title}\n      ↳ ${s.snippet}`).join('\n')}
+
+<span class="text-amber-300 font-bold">2. 벡터 검색 사내/공공 안전문서 (${docSources.length}건):</span>
+${docSources.length === 0 ? '  (연계 문서 없음)' : docSources.map((s, i) => `  [${i+1}] ${s.source} - ${s.title} (유사도: ${s.similarity})`).join('\n')}
+
+<span class="text-blue-300 font-bold">3. 사용된 모델 엔진:</span>
+  ${data.model || 'BEPSMC Hybrid GraphRAG'}
+
+<span class="text-slate-400 font-bold">4. AI 생성 요약 답변 발췌:</span>
+${(data.reply || '').slice(0, 300)}...
+        `.trim();
+      } catch (err) {
+        output.textContent = `// 오류 발생: ${err.message}`;
       }
     }
 

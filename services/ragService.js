@@ -354,10 +354,35 @@ async function deleteRoom(roomId, userId) {
   return { success: true };
 }
 
+// --------------------------------------------------------------------------
+// 5. System RAG & Graph Monitoring Diagnostics
+// --------------------------------------------------------------------------
+function getSystemRAGMetrics() {
+  let docCount = 0;
+  try {
+    if (fs.existsSync(EMBEDDINGS_FILE)) {
+      const docs = JSON.parse(fs.readFileSync(EMBEDDINGS_FILE, 'utf8'));
+      docCount = docs.length || 0;
+    }
+  } catch (e) {}
+
+  const graphMetrics = neo4jGraphService.getGraphSystemMetrics();
+
+  return {
+    success: true,
+    timestamp: new Date().toISOString(),
+    vectorEngine: supabaseClient ? 'Supabase pgvector (Cloud DB)' : 'Local In-Memory Vector Search (Fallback)',
+    supabaseConnected: !!supabaseClient,
+    vectorDocsCount: docCount,
+    graph: graphMetrics
+  };
+}
+
 module.exports = {
   getQueryEmbedding,
   searchSafetyDocuments,
   searchHybridRAG,
+  getSystemRAGMetrics,
   neo4jGraphService,
   listRooms,
   createRoom,

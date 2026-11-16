@@ -333,18 +333,118 @@ function formatGraphContext(graphResult) {
 }
 
 // --------------------------------------------------------------------------
-// 5. 통합 검색 API (Unified Graph Search)
+// 5. 통합 검색 API (Unified Graph Search) & 지연시간 기록
 // --------------------------------------------------------------------------
+const recentLatencies = [1.2, 0.8, 1.5]; // 초기 기준 지연시간(ms)
+
+function recordLatency(ms) {
+  recentLatencies.push(ms);
+  if (recentLatencies.length > 50) recentLatencies.shift();
+}
+
 async function searchSafetyGraph(query, options = {}) {
+  const start = performance.now();
   try {
+    let result = null;
     if (isNeo4jConnected) {
-      return await queryNeo4jAura(query, options);
+      result = await queryNeo4jAura(query, options);
+    } else {
+      result = traverseLocalGraph(query, options);
     }
-    return traverseLocalGraph(query, options);
+    const duration = Number((performance.now() - start).toFixed(2));
+    recordLatency(duration);
+    return result;
   } catch (err) {
+    const duration = Number((performance.now() - start).toFixed(2));
+    recordLatency(duration);
     console.warn('[GraphRAG] searchSafetyGraph error:', err.message);
     return null;
   }
+}
+
+// --------------------------------------------------------------------------
+// 6. 시스템 진단 및 향후 확장 제안 모니터링 (Auto Scaling Advisory)
+// --------------------------------------------------------------------------
+function getGraphSystemMetrics() {
+  const graph = loadLocalGraph();
+  const nodeCount = graph.nodes ? graph.nodes.length : 0;
+  const relCount = graph.relationships ? graph.relationships.length : 0;
+  const avgLatency = recentLatencies.length > 0 
+    ? Number((recentLatencies.reduce((a, b) => a + b, 0) / recentLatencies.length).toFixed(2)) 
+    : 1.0;
+
+  let jsonSize = 0;
+  try {
+    if (fs.existsSync(GRAPH_DATA_PATH)) {
+      jsonSize = fs.statSync(GRAPH_DATA_PATH).size;
+    }
+  } catch (e) {}
+  const memoryKb = Number((jsonSize / 1024).toFixed(1));
+
+  // 임계치 평가 (Thresholds)
+  let status = 'OPTIMAL';
+  let alertMessage = '현재 로컬 내장 지식 그래프 엔진으로 비용 없이 최적 운용 중입니다.';
+
+  if (nodeCount >= 500 && !isNeo4jConnected) {
+    status = 'RECOMMENDED_AURA_FREE';
+    alertMessage = `노드 수(${nodeCount}개)가 500개를 초과했습니다. 시각화 및 안정적 관리를 위해 완전 무료인 Neo4j AuraDB Free 전환을 권장합니다.`;
+  } else if (nodeCount >= 200000 || avgLatency > 150) {
+    status = 'EXPANSION_NEEDED';
+    alertMessage = `용량 또는 탐색 지연시간(${avgLatency}ms)이 무료 티어 임계치에 도달했습니다. 엔터프라이즈 또는 사내 온프레미스 확장이 권장됩니다.`;
+  }
+
+  const expansionOptions = [
+    {
+      id: 'option-1',
+      tag: '추천 (비용 0원)',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      title: '옵션 1: [비용 0원] Neo4j AuraDB Free 클라우드 전환',
+      cost: '₩0 / 평생 무료 (신용카드 등록 불필요)',
+      triggerCondition: '노드 500개 초과 시 또는 브라우저 기반 GUI 그래프 시각화가 필요할 때',
+      capacity: '노드 200,000개 / 관계망 400,000개 지원 (BEPSMC 기준 규정 수만 건 수용)',
+      pros: '관리형 클라우드 인프라, 자동 백업, 대화형 시각화(Neo4j Browser & Bloom) 기본 제공',
+      cons: '단일 인스턴스 제한, 30일간 접근 없을 시 일시 정지(Aura 콘솔에서 클릭 한 번으로 즉시 재개)',
+      actionGuide: '1. https://neo4j.com/cloud/platform/aura-graph-database/ 접속 후 무료 계정 생성\n2. Free Database 인스턴스 1개 생성 및 비밀번호 발급\n3. .env 파일에 NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD 입력\n4. 터미널에서 node scripts/seed_neo4j_graph.js 실행 (자동 전환)'
+    },
+    {
+      id: 'option-2',
+      tag: '사내/보안 (비용 0원)',
+      badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
+      title: '옵션 2: [비용 0원] Neo4j Community 자체 호스팅 (사내 서버/폐쇄망)',
+      cost: '₩0 (GPLv3 오픈소스 라이선스)',
+      triggerCondition: '노드 20만 개 초과 대용량 데이터 적재 시 또는 철도/공공 보안 폐쇄망(사내 인트라넷) 운영 시',
+      capacity: '사내 서버 디스크 및 RAM 한도 내 무제한 노드/관계망 저장',
+      pros: '데이터 외부 유출을 원천 차단하는 사내 보안성, 용량 제한 완전 해제',
+      cons: '자체 서버 리소스 필요 및 백업/보안 관리 사내 전담 필요',
+      actionGuide: '사내 서버 또는 Docker 컨테이너에서 실행:\n$ docker run -d --name neo4j -p 7474:7474 -p 7687:7687 neo4j:community\n이후 .env의 NEO4J_URI를 사내 서버 IP(예: bolt://192.168.1.100:7687)로 지정'
+    },
+    {
+      id: 'option-3',
+      tag: '기업형 확장 (유료)',
+      badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
+      title: '옵션 3: [기업형 유료] Neo4j AuraDB Professional 클러스터',
+      cost: '월 $65 ~ 인스턴스 규모별 종량 과금',
+      triggerCondition: '전국 철도·건설 현장 수백만 건의 실시간 센서/위험 데이터 동기화 및 대규모 동시 접속자 발생 시',
+      capacity: '수억 개 이상의 노드 및 페타바이트급 관계망 확장 가능',
+      pros: '99.95% 가용성 보장(SLA), 다중 리전 복제 및 고가용성 클러스터, 전담 기술 지원',
+      cons: '월간 유료 구독 비용 발생',
+      actionGuide: 'AuraDB 콘솔에서 Free 인스턴스를 Professional 티어로 즉시 인플레이스(In-place) 업그레이드'
+    }
+  ];
+
+  return {
+    engine: isNeo4jConnected ? 'Neo4j AuraDB (Cloud Free Tier)' : 'Local In-Memory Knowledge Graph (100% Free)',
+    isNeo4jConnected,
+    neo4jConfigured: !!(NEO4J_URI && NEO4J_USERNAME && NEO4J_PASSWORD),
+    nodeCount,
+    relationshipCount: relCount,
+    nodeSoftLimit: isNeo4jConnected ? 200000 : 500,
+    avgLatencyMs: avgLatency,
+    memoryKb,
+    status,
+    alertMessage,
+    expansionOptions
+  };
 }
 
 module.exports = {
@@ -352,5 +452,6 @@ module.exports = {
   traverseLocalGraph,
   formatGraphContext,
   loadLocalGraph,
+  getGraphSystemMetrics,
   isNeo4jConnected: () => isNeo4jConnected
 };
