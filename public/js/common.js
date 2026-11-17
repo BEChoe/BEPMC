@@ -226,6 +226,11 @@ async function initLayout(activeMenu = '') {
                 <span>건설기술지도 AI관제</span>
                 <span class="text-[10px] bg-red-600 text-white px-1.5 py-0.2 rounded font-black tracking-tight">K2B</span>
               </a>
+              <a href="/technical-guidance-completion.html" class="${canUsePaidOnly ? 'inline-flex' : 'hidden'} px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap items-center gap-1.5 shrink-0 transition ${activeMenu === 'completion-certificate' ? 'text-amber-400 bg-blue-950/90 ring-1 ring-amber-400/50' : 'text-amber-300 hover:text-white hover:bg-blue-950/60'}">
+                <span>📄</span>
+                <span>완료증명서 발급</span>
+                <span class="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-black">별지105호</span>
+              </a>
               <a href="/mobile-app.html" target="_blank" class="${canUsePaidOnly ? 'inline-flex' : 'hidden'} px-3 py-1.5 rounded-md text-xs font-black bg-amber-400 text-slate-950 hover:bg-amber-300 transition whitespace-nowrap items-center gap-1 shrink-0 shadow-sm">
                 <span>📱</span>
                 <span>현장앱</span>

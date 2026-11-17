@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>기술지도 완료증명서 자동 작성 [별지 제105호서식] - BEPSMC</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800;900&family=Noto+Serif+KR:wght@400;600;700;900&display=swap');
+    body { font-family: 'Pretendard', sans-serif; }
+    
+    /* 법정 공문서 공식 서식 폰트 */
+    .font-official-serif { font-family: 'Noto Serif KR', 'Batang', serif; }
+
+    /* 인쇄 최적화 (A4 210mm x 297mm 정밀 1페이지 맞춤) */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 15mm 12mm 15mm;
+      }
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print, #global-header, #global-footer, #global-alert-banner, nav, .header-banner {
+        display: none !important;
+      }
+      #print-area {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .official-form-sheet {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    /* 실물 서식 테이블 선 규격 */
+    .cert-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+      color: #000;
+    }
+    .cert-table th, .cert-table td {
+      border: 1px solid #000;
+      padding: 6px 6px;
+      font-size: 11px;
+      line-height: 1.35;
+      vertical-align: middle;
+    }
+    .cert-table th {
+      background-color: #fafafa;
+      font-weight: 600;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+
+  <!-- 글로벌 상단 알림 띠배너 -->
+  <div id="global-alert-banner"></div>
+
+  <!-- 공통 헤더 & 내비게이션 -->
+  <div id="global-header"></div>
+
+  <!-- 게이트키퍼 모달 (비로그인/일반 무료 회원 차단) -->
+  <div id="gatekeeper-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-center space-y-4">
+      <div class="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto text-3xl font-black">
+        🔒
+      </div>
+      <div>
+        <h3 class="text-lg font-black text-slate-900">유료 회원 전용 서비스</h3>
+        <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+          <strong>산업안전보건법 [별지 제105호서식] 기술지도 완료증명서 자동 작성 시스템</strong>은<br>
+          <span class="text-blue-600 font-bold">BEPSMC 유료 회원사(PRO/ENTERPRISE)</span> 및 관리자 전용 기능입니다.
+        </p>
+      </div>
+      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-left text-xs space-y-1.5 text-slate-700">
+        <div class="flex items-center gap-2">
+          <span class="text-emerald-600 font-bold">✓</span>
+          <span>산업안전보건법 시행규칙 제89조의2 공인 서식 원클릭 생성</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-emerald-600 font-bold">✓</span>
+          <span>A4 1페이지 규격 PDF 다운로드 및 실물 인쇄 지원</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-emerald-600 font-bold">✓</span>
+          <span>전자 서명 및 지도기관 공인 직인 날인 자동화</span>
+        </div>
+      </div>
+      <div class="pt-2 flex flex-col gap-2">
+        <a href="/checkout.html" class="btn-safety-yellow w-full py-2.5 rounded-xl text-xs font-black shadow-md block text-center">
+          유료 멤버십 구독 신청하기 &rarr;
+        </a>
+        <a href="/login.html?redirect=/technical-guidance-completion.html" class="btn-safety-black w-full py-2.5 rounded-xl text-xs font-bold block text-center">
+          로그인 페이지로 이동
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 상단 타이틀 배너 -->
+  <section class="header-banner bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] text-white py-6 border-b-4 border-amber-400 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav class="flex items-center gap-2 text-xs text-blue-300 py-1 mb-2">
+        <a href="/index.html" class="hover:text-amber-300 transition">홈</a>
+        <span>&gt;</span>
+        <a href="/technical-guidance.html" class="hover:text-amber-300 transition">건설재해예방 기술지도 AI 관제</a>
+        <span>&gt;</span>
+        <span class="text-white font-bold">기술지도 완료증명서 [별지 제105호]</span>
+        <span id="tier-badge" class="ml-2 inline-flex items-center gap-1 bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[10px] font-black">
+          유료 전용
+        </span>
+      </nav>
+
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-1">
+        <div>
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded">
+              산업안전보건법 시행규칙 [별지 제105호서식]
+            </span>
+            <span class="text-xs text-blue-200">
+              제89조의2제2항 법정 완료증명서
+            </span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+            <span>기술지도 완료증명서 자동 작성 및 발급</span>
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1">
+            발주자, 시공사, 지도기관 정보를 입력하시면 <strong>법정 [별지 제105호서식] 규격에 맞추어 실물 완료증명서를 1초 만에 자동 작성</strong>하고 A4 PDF로 즉시 인쇄·저장합니다.
+          </p>
+        </div>
+
+        <!-- 상단 빠른 액션 버튼 -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="fillSampleData()" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <span>⚡</span> 예시 데이터 자동입력
+          </button>
+          <button onclick="saveFormData()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <span>💾</span> 입력 내용 임시저장
+          </button>
+          <a href="/technical-guidance.html" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border border-slate-700">
+            <span>&larr;</span> 관제센터 복귀
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+    <!-- 탭 전환 컨트롤러 (작성 입력 모드 vs 서식 인쇄 미리보기) -->
+    <div class="no-print flex items-center justify-between border-b border-slate-300 mb-6 pb-2">
+      <div class="flex items-center gap-2">
+        <button id="tab-btn-form" onclick="switchView('form')" class="py-2.5 px-5 rounded-lg text-xs sm:text-sm font-bold bg-blue-700 text-white shadow-sm flex items-center gap-2 transition">
+          <span>📝</span> 1. 증명서 항목 입력
+        </button>
+        <button id="tab-btn-preview" onclick="switchView('preview')" class="py-2.5 px-5 rounded-lg text-xs sm:text-sm font-bold bg-white text-slate-700 hover:bg-slate-100 border border-slate-300 flex items-center gap-2 transition">
+          <span>📄</span> 2. 별지 제105호서식 완성본 확인 및 출력
+        </button>
+      </div>
+      <div class="hidden sm:flex items-center gap-2">
+        <button onclick="printOfficialCertificate()" class="btn-safety-yellow px-4 py-2 rounded-lg text-xs font-black shadow-md flex items-center gap-1.5">
+          <span>🖨️</span> 공식 서식 인쇄 / PDF 저장
+        </button>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 1: 입력 폼 (웹 브라우저 최적화) -->
+    <!-- ============================================================== -->
+    <div id="view-form" class="no-print space-y-6">
+
+      <form id="completion-cert-form" onsubmit="event.preventDefault(); switchView('preview');" class="space-y-6">
+
+        <!-- 섹션 1: 건설공사 발주자 또는 건설공사시공주도 총괄·관리자 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center">1</span>
+              건설공사 발주자 또는 건설공사시공주도 총괄ㆍ관리자
+            </h2>
+            <span class="text-[11px] text-slate-400">서식 상단 발주기관 정보</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">성명 또는 사업자명 <span class="text-rose-500">*</span></label>
+              <input type="text" id="ordererName" required placeholder="예: 한국철도도시공사 / (주)한강건설" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">대표자 성명 <span class="text-rose-500">*</span></label>
+              <input type="text" id="ordererCeo" required placeholder="예: 홍길동" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">법인등록번호 (사업자등록번호) <span class="text-rose-500">*</span></label>
+              <input type="text" id="ordererCorpNo" required placeholder="예: 123-45-67890" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">사업장관리번호</label>
+              <input type="text" id="ordererBizMgmtNo" placeholder="예: 987654321-0" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+
+            <div class="lg:col-span-3">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">주소 <span class="text-rose-500">*</span></label>
+              <input type="text" id="ordererAddress" required placeholder="예: 서울특별시 용산구 한강대로 123" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">연락처 <span class="text-rose-500">*</span></label>
+              <input type="text" id="ordererPhone" required placeholder="예: 02-1234-5678" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+
+            <!-- 발주자 유형 선택 -->
+            <div class="sm:col-span-2 lg:col-span-4 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+              <label class="block text-xs font-bold text-slate-800 mb-2">발주자 유형 구분 (서식 체크항목) <span class="text-rose-500">*</span></label>
+              <div class="space-y-2">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-700">
+                  <span class="font-bold text-slate-900">(공공):</span>
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="ordererType" value="pub_gov" class="text-blue-600 focus:ring-blue-500"> 정부
+                  </label>
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="ordererType" value="pub_local" class="text-blue-600 focus:ring-blue-500"> 지방자치단체
+                  </label>
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="ordererType" value="pub_agency" class="text-blue-600 focus:ring-blue-500"> 공공기관
+                  </label>
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="ordererType" value="pub_corp" class="text-blue-600 focus:ring-blue-500"> 지방공기업
+                  </label>
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="ordererType" value="pub_etc" class="text-blue-600 focus:ring-blue-500"> 기타 국가기관
+                  </label>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-700 pt-1 border-t border-slate-200/60">
+                  <span class="font-bold text-slate-900">(민간):</span>
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="ordererType" value="priv_corp" checked class="text-blue-600 focus:ring-blue-500"> 기업
+                  </label>
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="ordererType" value="priv_indiv" class="text-blue-600 focus:ring-blue-500"> 개인
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 2: 기술지도 위탁 사업장 (현장 & 본사) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center">2</span>
+              기술지도 위탁 사업장 (현장 및 시공 본사)
+            </h2>
+            <span class="text-[11px] text-slate-400">시공 현장 및 본사 기본 정보</span>
+          </div>
+
+          <!-- 2-1. 현장 정보 -->
+          <div class="mb-5">
+            <h3 class="text-xs font-bold text-blue-800 bg-blue-50 px-3 py-1.5 rounded-md mb-3 flex items-center gap-1.5">
+              <span>📍</span> 1) 공사 현장 정보
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">공사명 <span class="text-rose-500">*</span></label>
+                <input type="text" id="siteProjectName" required placeholder="예: 평택 고덕 복선전철 제2공구 노반신설공사" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">사업개시번호 <span class="text-rose-500">*</span></label>
+                <input type="text" id="siteOpenNo" required placeholder="예: 2026-901-002345" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">공사기간 (착공일 ~ 준공일) <span class="text-rose-500">*</span></label>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="date" id="sitePeriodStart" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+                  <input type="date" id="sitePeriodEnd" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+                </div>
+              </div>
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">공사금액 (원) <span class="text-rose-500">*</span></label>
+                <input type="text" id="siteContractAmount" required placeholder="예: 4,850,000,000" oninput="formatCurrencyInput(this)" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">현장책임자 성명 <span class="text-rose-500">*</span></label>
+                <input type="text" id="siteManager" required placeholder="예: 김현장 현장소장" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">현장 연락처 <span class="text-rose-500">*</span></label>
+                <input type="text" id="sitePhone" required placeholder="예: 010-3344-5566" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">현장 소재지 (주소) <span class="text-rose-500">*</span></label>
+                <input type="text" id="siteAddress" required placeholder="예: 경기도 평택시 고덕동 1024-5 현장사무소" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- 2-2. 본사 정보 -->
+          <div>
+            <h3 class="text-xs font-bold text-slate-800 bg-slate-100 px-3 py-1.5 rounded-md mb-3 flex items-center gap-1.5">
+              <span>🏢</span> 2) 시공업체 본사 정보
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">건설업체명 <span class="text-rose-500">*</span></label>
+                <input type="text" id="hqCompanyName" required placeholder="예: (주)대현건설" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">본사 대표자 성명 <span class="text-rose-500">*</span></label>
+                <input type="text" id="hqCeo" required placeholder="예: 이대표" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">법인등록번호 (사업자등록번호) <span class="text-rose-500">*</span></label>
+                <input type="text" id="hqCorpNo" required placeholder="예: 211-81-99887" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">건설면허번호 <span class="text-rose-500">*</span></label>
+                <input type="text" id="hqLicenseNo" required placeholder="예: 토목건축공사업 제01-0987호" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+
+              <div class="lg:col-span-3">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">본사 주소 <span class="text-rose-500">*</span></label>
+                <input type="text" id="hqAddress" required placeholder="예: 경기도 성남시 분당구 판교역로 235" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">본사 연락처 <span class="text-rose-500">*</span></label>
+                <input type="text" id="hqPhone" required placeholder="예: 031-700-1122" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 3: 건설재해예방전문지도기관 정보 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center">3</span>
+              건설재해예방전문지도기관
+            </h2>
+            <button type="button" onclick="fillBEPSMCAgency()" class="text-xs text-blue-700 hover:text-blue-900 font-bold bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded transition">
+              ⚡ BEPSMC 공식 지도기관 정보 적용
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">지도기관 명칭 <span class="text-rose-500">*</span></label>
+              <input type="text" id="agencyName" required value="(주)비이피에스엠씨(BEPSMC) 재해예방지도기관" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">지도기관 대표자 <span class="text-rose-500">*</span></label>
+              <input type="text" id="agencyCeo" required value="조범은" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">지도기관 소재지 <span class="text-rose-500">*</span></label>
+              <input type="text" id="agencyAddress" required value="서울특별시 강남구 테헤란로 152 강남파이낸스센터 18층" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">지정서 발급번호 <span class="text-rose-500">*</span></label>
+              <input type="text" id="agencyCertNo" required value="제2026-서울청-0042호" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">담당 기술지도요원 (담당자) <span class="text-rose-500">*</span></label>
+              <input type="text" id="agencyManager" required value="박안전 수석기술사" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">전화번호 <span class="text-rose-500">*</span></label>
+              <input type="text" id="agencyPhone" required value="02-555-8899" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 4: 기술지도 계약 및 실시 내용 (1~12회차) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center">4</span>
+              기술지도 계약 상세 및 회차별 실시일자 (1~12회차)
+            </h2>
+            <button type="button" onclick="autoGenerateRounds()" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded transition">
+              ⚡ 계약기간 기준 15일 간격 일자 자동채우기
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+            <!-- 기술지도 구분 -->
+            <div class="sm:col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <label class="block text-xs font-bold text-slate-800 mb-1.5">기술지도 구분 <span class="text-rose-500">*</span></label>
+              <div class="flex items-center gap-6 text-xs text-slate-700">
+                <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="guidanceCategory" value="construction" checked class="text-blue-600 focus:ring-blue-500">
+                  <span>건설공사</span>
+                </label>
+                <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="guidanceCategory" value="electrical" class="text-blue-600 focus:ring-blue-500">
+                  <span>전기 및 정보통신 공사</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 대가 및 횟수 -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">기술지도 대가 (원) <span class="text-rose-500">*</span></label>
+              <input type="text" id="guidanceFee" required placeholder="예: 2,400,000" oninput="formatCurrencyInput(this)" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">총 지도 횟수 <span class="text-rose-500">*</span></label>
+              <div class="flex items-center gap-1">
+                <span class="text-xs text-slate-500">총</span>
+                <input type="number" id="guidanceTotalCount" required min="1" max="12" value="12" class="w-20 text-xs p-2.5 text-center font-bold border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+                <span class="text-xs text-slate-500">회</span>
+              </div>
+            </div>
+
+            <!-- 계약기간 -->
+            <div class="sm:col-span-2 lg:col-span-4">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">기술지도 계약기간 <span class="text-rose-500">*</span></label>
+              <div class="grid grid-cols-2 gap-3 max-w-md">
+                <input type="date" id="contractStart" required class="text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+                <input type="date" id="contractEnd" required class="text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- 1회차 ~ 12회차 실시일자 입력 표 -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-bold text-slate-900">
+                실시 내용 (1회차 ~ 12회차 실시일자 입력)
+              </label>
+              <span class="text-[11px] text-slate-500">서식 규격: "00월/00일" 형태 자동 기재</span>
+            </div>
+            <div class="overflow-x-auto border border-slate-200 rounded-lg">
+              <table class="w-full text-center text-xs">
+                <thead class="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                  <tr>
+                    <th class="p-2 border-r border-slate-200">회차</th>
+                    <th class="p-2 border-r border-slate-200">1</th>
+                    <th class="p-2 border-r border-slate-200">2</th>
+                    <th class="p-2 border-r border-slate-200">3</th>
+                    <th class="p-2 border-r border-slate-200">4</th>
+                    <th class="p-2 border-r border-slate-200">5</th>
+                    <th class="p-2 border-r border-slate-200">6</th>
+                    <th class="p-2 border-r border-slate-200">7</th>
+                    <th class="p-2 border-r border-slate-200">8</th>
+                    <th class="p-2 border-r border-slate-200">9</th>
+                    <th class="p-2 border-r border-slate-200">10</th>
+                    <th class="p-2 border-r border-slate-200">11</th>
+                    <th class="p-2">12</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="divide-x divide-slate-200">
+                    <td class="p-2 font-bold bg-slate-50 text-[11px] whitespace-nowrap">실시일자</td>
+                    <td class="p-1"><input type="text" id="round-1" placeholder="05월/12일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-2" placeholder="05월/26일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-3" placeholder="06월/09일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-4" placeholder="06월/23일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-5" placeholder="07월/07일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-6" placeholder="07월/21일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-7" placeholder="08월/04일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-8" placeholder="08월/18일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-9" placeholder="09월/01일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-10" placeholder="09월/15일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-11" placeholder="09월/29일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                    <td class="p-1"><input type="text" id="round-12" placeholder="10월/13일" class="w-full text-[11px] text-center p-1.5 border border-slate-200 rounded focus:border-blue-500"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 5: 완료증명서 발급일자 및 전자 서명/날인 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center">5</span>
+              발급일자 및 전자 서명 / 날인
+            </h2>
+            <span class="text-[11px] text-slate-400">증명서 하단 공인 서명 날인</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+            <!-- 발급일자 -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">증명서 발급일자 <span class="text-rose-500">*</span></label>
+              <input type="date" id="issueDate" required class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+              <p class="text-[11px] text-slate-500 mt-1">완료증명서 하단에 "0000년 00월 00일"로 표시됩니다.</p>
+            </div>
+
+            <!-- 발주자/관리자 서명 패드 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">발주자/총괄관리자 전자서명</label>
+                <button type="button" onclick="clearSignPad('orderer-pad')" class="text-[10px] text-slate-500 hover:text-slate-800 underline">서명 지우기</button>
+              </div>
+              <div class="border border-slate-300 rounded-lg bg-slate-50 relative overflow-hidden">
+                <canvas id="orderer-sign-canvas" width="260" height="90" class="w-full h-24 cursor-crosshair"></canvas>
+                <span class="absolute bottom-1 right-2 text-[10px] text-slate-400 pointer-events-none">마우스/터치로 서명</span>
+              </div>
+            </div>
+
+            <!-- 지도기관 대표자 직인 날인 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">지도기관 직인(도장) 선택</label>
+                <button type="button" onclick="toggleSealType()" id="seal-toggle-btn" class="text-[10px] text-blue-600 underline">공식직인 / 서명 전환</button>
+              </div>
+              <div id="agency-seal-preview-box" class="border border-slate-300 rounded-lg bg-slate-50 h-24 flex items-center justify-center p-2 relative">
+                <div id="official-seal-graphic" class="w-16 h-16 rounded-full border-2 border-rose-600 text-rose-600 flex flex-col items-center justify-center font-bold text-[9px] leading-tight select-none shadow-xs rotate-[-3deg]">
+                  <span>(주)비이피</span>
+                  <span>에스엠씨</span>
+                  <span class="text-[8px] font-black">직인</span>
+                </div>
+                <canvas id="agency-sign-canvas" width="260" height="90" class="w-full h-24 cursor-crosshair hidden"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 하단 제출 버튼 -->
+        <div class="pt-4 flex flex-col sm:flex-row items-center justify-end gap-3">
+          <button type="button" onclick="saveFormData()" class="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition">
+            💾 입력값 브라우저에 임시저장
+          </button>
+          <button type="submit" class="w-full sm:w-auto btn-safety-yellow px-8 py-3.5 rounded-xl text-sm font-black shadow-lg flex items-center justify-center gap-2">
+            <span>📄 [별지 제105호서식] 완료증명서 자동 완성하기</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 2: 별지 제105호서식 실물 완성본 뷰어 (인쇄 및 A4 1페이지 규격) -->
+    <!-- ============================================================== -->
+    <div id="view-preview" class="hidden space-y-6">
+
+      <!-- 상단 액션 바 -->
+      <div class="no-print bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button onclick="switchView('form')" class="px-3.5 py-2 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5">
+            <span>&larr;</span> 입력 폼 수정하기
+          </button>
+          <span class="text-xs text-slate-500">|</span>
+          <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 flex items-center gap-1">
+            <span>✅</span> 별지 제105호서식 자동 생성 완료
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="printOfficialCertificate()" class="btn-safety-yellow px-5 py-2.5 rounded-xl text-xs font-black shadow-md flex items-center gap-2">
+            <span>🖨️</span> 공식 서식 인쇄 / PDF 다운로드
+          </button>
+        </div>
+      </div>
+
+      <!-- 실물 공문서 컨테이너 (A4 1페이지 비율 210mm x 297mm) -->
+      <div id="print-area" class="flex justify-center">
+        <div class="official-form-sheet bg-white w-full max-w-[800px] p-8 sm:p-12 shadow-xl border border-slate-300 text-black font-official-serif">
+
+          <!-- 1. 상단 법령 표기 -->
+          <div class="text-[10px] text-slate-800 mb-6 font-sans">
+            ■ 산업안전보건법 시행규칙 [별지 제105호서식] &lt;개정 2023. 9. 27.&gt;
+          </div>
+
+          <!-- 2. 문서 제목 -->
+          <div class="text-center mb-8">
+            <h1 class="text-2xl sm:text-3xl font-black tracking-[0.25em] text-black">
+              기술지도 완료증명서
+            </h1>
+          </div>
+
+          <!-- 3. 실물 표 (Table Grid) -->
+          <table class="cert-table mb-8">
+            <colgroup>
+              <col style="width: 14%;">
+              <col style="width: 8%;">
+              <col style="width: 16%;">
+              <col style="width: 26%;">
+              <col style="width: 16%;">
+              <col style="width: 20%;">
+            </colgroup>
+            <tbody>
+              <!-- 섹션 1: 발주자/시공주도총괄관리자 -->
+              <tr>
+                <th rowspan="4" class="text-center font-bold">
+                  건설공사<br>발주자<br>또는 건설<br>공사시공주도<br>총괄ㆍ관리자
+                </th>
+                <th colspan="2" class="text-center">성명 또는 사업자명</th>
+                <td id="pv-ordererName" class="font-sans">-</td>
+                <th class="text-center">대표자</th>
+                <td id="pv-ordererCeo" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th colspan="2" class="text-center leading-tight">법인등록번호<br>(사업자등록번호)</th>
+                <td id="pv-ordererCorpNo" class="font-sans">-</td>
+                <th class="text-center">사업장관리번호</th>
+                <td id="pv-ordererBizMgmtNo" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th colspan="2" class="text-center">주소</th>
+                <td id="pv-ordererAddress" class="font-sans text-[10px]">-</td>
+                <th class="text-center">연락처</th>
+                <td id="pv-ordererPhone" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th colspan="2" class="text-center">유형</th>
+                <td colspan="3" class="text-[10px] leading-relaxed font-sans">
+                  (공공) 
+                  <span id="pv-type-pub-gov">[ ]</span>정부&nbsp;&nbsp;
+                  <span id="pv-type-pub-local">[ ]</span>지방자치단체&nbsp;&nbsp;
+                  <span id="pv-type-pub-agency">[ ]</span>공공기관&nbsp;&nbsp;
+                  <span id="pv-type-pub-corp">[ ]</span>지방공기업&nbsp;&nbsp;
+                  <span id="pv-type-pub-etc">[ ]</span>기타 국가기관<br>
+                  (민간) 
+                  <span id="pv-type-priv-corp">[ ]</span>기업&nbsp;&nbsp;
+                  <span id="pv-type-priv-indiv">[ ]</span>개인
+                </td>
+              </tr>
+
+              <!-- 섹션 2: 위탁 사업장 (현장) -->
+              <tr>
+                <th rowspan="7" class="text-center font-bold">
+                  기술지도<br>위탁<br>사업장
+                </th>
+                <th rowspan="4" class="text-center">현장</th>
+                <th class="text-center">공사명</th>
+                <td id="pv-siteProjectName" class="font-sans font-bold text-[10.5px]">-</td>
+                <th class="text-center">사업개시번호</th>
+                <td id="pv-siteOpenNo" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th class="text-center">공사기간</th>
+                <td id="pv-sitePeriod" class="font-sans text-[10px]">-</td>
+                <th class="text-center">공사금액</th>
+                <td id="pv-siteAmount" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th class="text-center">현장책임자</th>
+                <td id="pv-siteManager" class="font-sans">-</td>
+                <th class="text-center">연락처</th>
+                <td id="pv-sitePhone" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th class="text-center">소재지</th>
+                <td colspan="3" id="pv-siteAddress" class="font-sans text-[10px]">-</td>
+              </tr>
+
+              <!-- 섹션 2: 위탁 사업장 (본사) -->
+              <tr>
+                <th rowspan="3" class="text-center">본사</th>
+                <th class="text-center">건설업체명</th>
+                <td id="pv-hqCompanyName" class="font-sans">-</td>
+                <th class="text-center">대표자</th>
+                <td id="pv-hqCeo" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th class="text-center leading-tight">법인등록번호<br>(사업자등록번호)</th>
+                <td id="pv-hqCorpNo" class="font-sans">-</td>
+                <th class="text-center">건설면허번호</th>
+                <td id="pv-hqLicenseNo" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th class="text-center">주소</th>
+                <td id="pv-hqAddress" class="font-sans text-[10px]">-</td>
+                <th class="text-center">연락처</th>
+                <td id="pv-hqPhone" class="font-sans">-</td>
+              </tr>
+
+              <!-- 섹션 3: 지도기관 -->
+              <tr>
+                <th rowspan="3" class="text-center font-bold">
+                  건설재해<br>예방전문<br>지도기관
+                </th>
+                <th colspan="2" class="text-center">명칭</th>
+                <td id="pv-agencyName" class="font-sans font-bold">-</td>
+                <th class="text-center">대표자</th>
+                <td id="pv-agencyCeo" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th colspan="2" class="text-center">소재지</th>
+                <td id="pv-agencyAddress" class="font-sans text-[10px]">-</td>
+                <th class="text-center">지정서 발급번호</th>
+                <td id="pv-agencyCertNo" class="font-sans">-</td>
+              </tr>
+              <tr>
+                <th colspan="2" class="text-center">담당자</th>
+                <td id="pv-agencyManager" class="font-sans">-</td>
+                <th class="text-center">전화번호</th>
+                <td id="pv-agencyPhone" class="font-sans">-</td>
+              </tr>
+
+              <!-- 섹션 4: 기술지도 개요 -->
+              <tr>
+                <th rowspan="4" class="text-center font-bold">기술지도</th>
+                <th colspan="2" class="text-center">기술지도<br>구분</th>
+                <td colspan="3" class="font-sans text-xs">
+                  <span id="pv-cat-const">[ ]</span> 건설공사&nbsp;&nbsp;&nbsp;&nbsp;
+                  <span id="pv-cat-elec">[ ]</span> 전기 및 정보통신 공사
+                </td>
+              </tr>
+              <tr>
+                <th colspan="2" class="text-center">기술지도<br>대가</th>
+                <td class="font-sans text-right pr-4"><span id="pv-guidanceFee">0</span> 원</td>
+                <th class="text-center">기술지도<br>횟수</th>
+                <td class="font-sans text-center">총 ( <span id="pv-guidanceTotalCount">12</span> ) 회</td>
+              </tr>
+              <tr>
+                <th colspan="2" class="text-center">계약기간</th>
+                <td colspan="3" id="pv-contractPeriod" class="font-sans text-center">
+                  0000년 00월 00일부터 0000년 00월 00일까지
+                </td>
+              </tr>
+
+              <!-- 섹션 4: 1~12회차 실시내용 테이블 -->
+              <tr>
+                <th colspan="2" class="text-center">실시<br>내용</th>
+                <td colspan="3" class="p-0 border-0">
+                  <table class="w-full text-center border-collapse" style="font-size: 9.5px;">
+                    <colgroup>
+                      <col style="width: 14%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                      <col style="width: 7.16%;">
+                    </colgroup>
+                    <tbody>
+                      <tr class="border-b border-black bg-slate-50">
+                        <th class="p-1 border-r border-black font-semibold">회차</th>
+                        <th class="p-1 border-r border-black">1</th>
+                        <th class="p-1 border-r border-black">2</th>
+                        <th class="p-1 border-r border-black">3</th>
+                        <th class="p-1 border-r border-black">4</th>
+                        <th class="p-1 border-r border-black">5</th>
+                        <th class="p-1 border-r border-black">6</th>
+                        <th class="p-1 border-r border-black">7</th>
+                        <th class="p-1 border-r border-black">8</th>
+                        <th class="p-1 border-r border-black">9</th>
+                        <th class="p-1 border-r border-black">10</th>
+                        <th class="p-1 border-r border-black">11</th>
+                        <th class="p-1">12</th>
+                      </tr>
+                      <tr>
+                        <th class="p-1 border-r border-black font-semibold whitespace-nowrap">실시일자</th>
+                        <td id="pv-r-1" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-2" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-3" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-4" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-5" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-6" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-7" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-8" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-9" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-10" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-11" class="p-1 border-r border-black font-sans leading-tight text-[9px]">-</td>
+                        <td id="pv-r-12" class="p-1 font-sans leading-tight text-[9px]">-</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 4. 법정 증명 문구 -->
+          <div class="text-center font-normal text-xs sm:text-[13px] leading-relaxed my-8 px-4 text-black">
+            「산업안전보건법 시행령」 제60조, 별표 18 및 같은 법 시행규칙 제89조의2제2항에 따라 기술지도를 실시하였음을 증명합니다.
+          </div>
+
+          <!-- 5. 증명 날짜 -->
+          <div id="pv-issueDate-text" class="text-center text-sm font-bold tracking-widest my-8 text-black">
+            2026년&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;일
+          </div>
+
+          <!-- 6. 서명부 (발주자/관리자 & 지도기관) -->
+          <div class="space-y-6 pt-4 text-xs sm:text-[13px] text-black">
+            
+            <!-- 발주자 서명 행 -->
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="block">건설공사발주자 또는 건설공사시공주도총괄ㆍ관리자</span>
+                <span class="font-bold">사업주 또는 대표자&nbsp;&nbsp;<span id="pv-sign-orderer-name" class="font-sans font-bold">홍길동</span></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div id="pv-orderer-sign-img-container" class="w-24 h-12 flex items-center justify-center">
+                  <!-- 서명 이미지 또는 텍스트 -->
+                </div>
+                <span class="text-xs text-slate-800">(서명 또는 인)</span>
+              </div>
+            </div>
+
+            <!-- 지도기관 서명 행 -->
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="block text-slate-700">건설재해예방전문지도기관 명칭&nbsp;&nbsp;<span id="pv-sign-agency-name" class="font-sans font-bold text-black">(주)비이피에스엠씨(BEPSMC) 재해예방지도기관</span></span>
+                <span class="font-bold">건설재해예방전문지도기관 대표자&nbsp;&nbsp;<span id="pv-sign-agency-ceo" class="font-sans font-bold text-black">조범은</span></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div id="pv-agency-sign-img-container" class="w-24 h-12 flex items-center justify-center">
+                  <!-- 직인 이미지 -->
+                </div>
+                <span class="text-xs text-slate-800">(서명 또는 인)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 7. 하단 용지 규격 표기 -->
+          <div class="text-right text-[9.5px] text-slate-500 mt-12 pt-4 border-t border-slate-300 font-sans">
+            210mm×297mm[백상지(80g/㎡) 또는 중질지(80g/㎡)]
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <div id="global-footer"></div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    // --------------------------------------------------------------------------
+    // 1. 인증 및 권한 확인 (유료 회원 / 관리자 전용)
+    // --------------------------------------------------------------------------
+    let isDrawing = false;
+    let ordererSignatureData = null;
+    let useSealStamp = true;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initLayout('technical-guidance');
+
+      // 권한 검증: 정기구독 유료회원(PAID), 맛보기(TRIAL), 또는 관리자(ADMIN)
+      const isPaidUser = currentAuth.isLoggedIn && (
+        currentAuth.user?.tier === 'PAID' || 
+        currentAuth.user?.tier === 'TRIAL' || 
+        currentAuth.mode === 'admin'
+      );
+
+      if (!isPaidUser) {
+        document.getElementById('gatekeeper-modal').classList.remove('hidden');
+        return;
+      }
+
+      // 오늘 날짜 기본 세팅
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('issueDate').value = today;
+
+      initSignPad();
+      loadSavedFormData();
+    });
+
+    // --------------------------------------------------------------------------
+    // 2. 캔버스 전자 서명 패드 초기화
+    // --------------------------------------------------------------------------
+    function initSignPad() {
+      const canvas = document.getElementById('orderer-sign-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top
+        };
+      }
+
+      function startDraw(e) {
+        isDrawing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      }
+
+      function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+
+      function endDraw() {
+        if (isDrawing) {
+          isDrawing = false;
+          ordererSignatureData = canvas.toDataURL('image/png');
+        }
+      }
+
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', endDraw);
+      canvas.addEventListener('mouseleave', endDraw);
+
+      canvas.addEventListener('touchstart', startDraw);
+      canvas.addEventListener('touchmove', draw);
+      canvas.addEventListener('touchend', endDraw);
+    }
+
+    function clearSignPad(id) {
+      const canvas = document.getElementById('orderer-sign-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ordererSignatureData = null;
+    }
+
+    function toggleSealType() {
+      useSealStamp = !useSealStamp;
+      const btn = document.getElementById('seal-toggle-btn');
+      const graphic = document.getElementById('official-seal-graphic');
+      const canvas = document.getElementById('agency-sign-canvas');
+
+      if (useSealStamp) {
+        btn.textContent = '공식직인 / 서명 전환';
+        graphic.classList.remove('hidden');
+        canvas.classList.add('hidden');
+      } else {
+        btn.textContent = '서명패드 활성화됨';
+        graphic.classList.add('hidden');
+        canvas.classList.remove('hidden');
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // 3. 편의 기능: 예시 데이터 자동 입력 & BEPSMC 공식 지도기관 입력
+    // --------------------------------------------------------------------------
+    function fillBEPSMCAgency() {
+      document.getElementById('agencyName').value = '(주)비이피에스엠씨(BEPSMC) 재해예방지도기관';
+      document.getElementById('agencyCeo').value = '조범은';
+      document.getElementById('agencyAddress').value = '서울특별시 강남구 테헤란로 152 강남파이낸스센터 18층';
+      document.getElementById('agencyCertNo').value = '제2026-서울청-0042호';
+      document.getElementById('agencyManager').value = '박안전 수석기술사';
+      document.getElementById('agencyPhone').value = '02-555-8899';
+    }
+
+    function fillSampleData() {
+      // 1. 발주자
+      document.getElementById('ordererName').value = '국가철도공단 강원인프라건설단';
+      document.getElementById('ordererCeo').value = '김철도';
+      document.getElementById('ordererCorpNo').value = '114-82-01928';
+      document.getElementById('ordererBizMgmtNo').value = '801294819-2';
+      document.getElementById('ordererAddress').value = '강원특별자치도 원주시 봉원로 27';
+      document.getElementById('ordererPhone').value = '033-740-8800';
+      const pubAgencyRadio = document.querySelector('input[name="ordererType"][value="pub_agency"]');
+      if (pubAgencyRadio) pubAgencyRadio.checked = true;
+
+      // 2. 현장
+      document.getElementById('siteProjectName').value = '춘천-속초 동서고속화철도 제4공구 노반신설 및 궤도공사';
+      document.getElementById('siteOpenNo').value = '2026-401-009182';
+      document.getElementById('sitePeriodStart').value = '2026-05-01';
+      document.getElementById('sitePeriodEnd').value = '2026-10-31';
+      document.getElementById('siteContractAmount').value = '5,420,000,000';
+      document.getElementById('siteManager').value = '황현장 소장';
+      document.getElementById('sitePhone').value = '010-4499-1234';
+      document.getElementById('siteAddress').value = '강원특별자치도 화천군 간동면 간척리 일원 현장사무소';
+
+      // 본사
+      document.getElementById('hqCompanyName').value = '(주)대현종합건설';
+      document.getElementById('hqCeo').value = '이대현';
+      document.getElementById('hqCorpNo').value = '201-81-77334';
+      document.getElementById('hqLicenseNo').value = '토목건축공사업 제01-0482호';
+      document.getElementById('hqAddress').value = '서울특별시 서초구 서초대로 301';
+      document.getElementById('hqPhone').value = '02-3480-1100';
+
+      // 3. 지도기관
+      fillBEPSMCAgency();
+
+      // 4. 계약 및 회차
+      const constRadio = document.querySelector('input[name="guidanceCategory"][value="construction"]');
+      if (constRadio) constRadio.checked = true;
+      document.getElementById('guidanceFee').value = '2,400,000';
+      document.getElementById('guidanceTotalCount').value = '12';
+      document.getElementById('contractStart').value = '2026-05-01';
+      document.getElementById('contractEnd').value = '2026-10-31';
+
+      autoGenerateRounds();
+      alert('⚡ [예시 데이터 적용 완료]\n실제 공사 및 계약 현장에 맞게 데이터를 자유롭게 수정하신 후 [증명서 자동 완성하기]를 클릭하세요.');
+    }
+
+    function autoGenerateRounds() {
+      const dates = [
+        '05월/12일', '05월/26일', '06월/09일', '06월/23일',
+        '07월/07일', '07월/21일', '08월/04일', '08월/18일',
+        '09월/01일', '09월/15일', '09월/29일', '10월/13일'
+      ];
+      for (let i = 1; i <= 12; i++) {
+        const input = document.getElementById(`round-${i}`);
+        if (input) input.value = dates[i - 1] || '';
+      }
+    }
+
+    function formatCurrencyInput(el) {
+      let val = el.value.replace(/[^0-9]/g, '');
+      if (val) {
+        el.value = Number(val).toLocaleString();
+      } else {
+        el.value = '';
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // 4. 뷰 전환 및 완성본 렌더링 (View Switching & Realtime Document Rendering)
+    // --------------------------------------------------------------------------
+    function switchView(view) {
+      const formEl = document.getElementById('view-form');
+      const prevEl = document.getElementById('view-preview');
+      const btnForm = document.getElementById('tab-btn-form');
+      const btnPrev = document.getElementById('tab-btn-preview');
+
+      if (view === 'preview') {
+        renderOfficialCertificate();
+        formEl.classList.add('hidden');
+        prevEl.classList.remove('hidden');
+        btnPrev.className = 'py-2.5 px-5 rounded-lg text-xs sm:text-sm font-bold bg-blue-700 text-white shadow-sm flex items-center gap-2 transition';
+        btnForm.className = 'py-2.5 px-5 rounded-lg text-xs sm:text-sm font-bold bg-white text-slate-700 hover:bg-slate-100 border border-slate-300 flex items-center gap-2 transition';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        formEl.classList.remove('hidden');
+        prevEl.classList.add('hidden');
+        btnForm.className = 'py-2.5 px-5 rounded-lg text-xs sm:text-sm font-bold bg-blue-700 text-white shadow-sm flex items-center gap-2 transition';
+        btnPrev.className = 'py-2.5 px-5 rounded-lg text-xs sm:text-sm font-bold bg-white text-slate-700 hover:bg-slate-100 border border-slate-300 flex items-center gap-2 transition';
+      }
+    }
+
+    function renderOfficialCertificate() {
+      // 1. 발주자
+      document.getElementById('pv-ordererName').textContent = document.getElementById('ordererName').value || '-';
+      document.getElementById('pv-ordererCeo').textContent = document.getElementById('ordererCeo').value || '-';
+      document.getElementById('pv-ordererCorpNo').textContent = document.getElementById('ordererCorpNo').value || '-';
+      document.getElementById('pv-ordererBizMgmtNo').textContent = document.getElementById('ordererBizMgmtNo').value || '-';
+      document.getElementById('pv-ordererAddress').textContent = document.getElementById('ordererAddress').value || '-';
+      document.getElementById('pv-ordererPhone').textContent = document.getElementById('ordererPhone').value || '-';
+
+      // 유형 체크박스 리셋 및 세팅
+      ['pub-gov', 'pub-local', 'pub-agency', 'pub-corp', 'pub-etc', 'priv-corp', 'priv-indiv'].forEach(id => {
+        const el = document.getElementById(`pv-type-${id}`);
+        if (el) el.textContent = '[ ]';
+      });
+      const selectedType = document.querySelector('input[name="ordererType"]:checked')?.value;
+      if (selectedType === 'pub_gov') document.getElementById('pv-type-pub-gov').textContent = '[✓]';
+      if (selectedType === 'pub_local') document.getElementById('pv-type-pub-local').textContent = '[✓]';
+      if (selectedType === 'pub_agency') document.getElementById('pv-type-pub-agency').textContent = '[✓]';
+      if (selectedType === 'pub_corp') document.getElementById('pv-type-pub-corp').textContent = '[✓]';
+      if (selectedType === 'pub_etc') document.getElementById('pv-type-pub-etc').textContent = '[✓]';
+      if (selectedType === 'priv_corp') document.getElementById('pv-type-priv-corp').textContent = '[✓]';
+      if (selectedType === 'priv_indiv') document.getElementById('pv-type-priv-indiv').textContent = '[✓]';
+
+      // 2. 위탁 사업장 (현장)
+      document.getElementById('pv-siteProjectName').textContent = document.getElementById('siteProjectName').value || '-';
+      document.getElementById('pv-siteOpenNo').textContent = document.getElementById('siteOpenNo').value || '-';
+      
+      const pStart = document.getElementById('sitePeriodStart').value;
+      const pEnd = document.getElementById('sitePeriodEnd').value;
+      document.getElementById('pv-sitePeriod').textContent = (pStart && pEnd) ? `${pStart} ~ ${pEnd}` : '-';
+      document.getElementById('pv-siteAmount').textContent = document.getElementById('siteContractAmount').value ? `${document.getElementById('siteContractAmount').value} 원` : '-';
+      document.getElementById('pv-siteManager').textContent = document.getElementById('siteManager').value || '-';
+      document.getElementById('pv-sitePhone').textContent = document.getElementById('sitePhone').value || '-';
+      document.getElementById('pv-siteAddress').textContent = document.getElementById('siteAddress').value || '-';
+
+      // 본사
+      document.getElementById('pv-hqCompanyName').textContent = document.getElementById('hqCompanyName').value || '-';
+      document.getElementById('pv-hqCeo').textContent = document.getElementById('hqCeo').value || '-';
+      document.getElementById('pv-hqCorpNo').textContent = document.getElementById('hqCorpNo').value || '-';
+      document.getElementById('pv-hqLicenseNo').textContent = document.getElementById('hqLicenseNo').value || '-';
+      document.getElementById('pv-hqAddress').textContent = document.getElementById('hqAddress').value || '-';
+      document.getElementById('pv-hqPhone').textContent = document.getElementById('hqPhone').value || '-';
+
+      // 3. 지도기관
+      const agencyNameVal = document.getElementById('agencyName').value || '-';
+      const agencyCeoVal = document.getElementById('agencyCeo').value || '-';
+      document.getElementById('pv-agencyName').textContent = agencyNameVal;
+      document.getElementById('pv-agencyCeo').textContent = agencyCeoVal;
+      document.getElementById('pv-agencyAddress').textContent = document.getElementById('agencyAddress').value || '-';
+      document.getElementById('pv-agencyCertNo').textContent = document.getElementById('agencyCertNo').value || '-';
+      document.getElementById('pv-agencyManager').textContent = document.getElementById('agencyManager').value || '-';
+      document.getElementById('pv-agencyPhone').textContent = document.getElementById('agencyPhone').value || '-';
+
+      // 4. 기술지도 계약
+      const catVal = document.querySelector('input[name="guidanceCategory"]:checked')?.value;
+      document.getElementById('pv-cat-const').textContent = (catVal === 'construction') ? '[✓]' : '[ ]';
+      document.getElementById('pv-cat-elec').textContent = (catVal === 'electrical') ? '[✓]' : '[ ]';
+
+      document.getElementById('pv-guidanceFee').textContent = document.getElementById('guidanceFee').value || '0';
+      document.getElementById('pv-guidanceTotalCount').textContent = document.getElementById('guidanceTotalCount').value || '12';
+
+      const cStart = document.getElementById('contractStart').value;
+      const cEnd = document.getElementById('contractEnd').value;
+      if (cStart && cEnd) {
+        const sParts = cStart.split('-');
+        const eParts = cEnd.split('-');
+        document.getElementById('pv-contractPeriod').textContent = 
+          `${sParts[0]}년 ${sParts[1]}월 ${sParts[2]}일부터  ${eParts[0]}년 ${eParts[1]}월 ${eParts[2]}일까지`;
+      } else {
+        document.getElementById('pv-contractPeriod').textContent = '-';
+      }
+
+      // 회차별 일자 1~12
+      for (let i = 1; i <= 12; i++) {
+        const val = document.getElementById(`round-${i}`)?.value?.trim();
+        const cell = document.getElementById(`pv-r-${i}`);
+        if (cell) cell.textContent = val || '-';
+      }
+
+      // 5. 날짜 및 서명부
+      const issueDateVal = document.getElementById('issueDate').value;
+      if (issueDateVal) {
+        const d = issueDateVal.split('-');
+        document.getElementById('pv-issueDate-text').innerHTML = 
+          `${d[0]}년&nbsp;&nbsp;&nbsp;&nbsp;${d[1]}월&nbsp;&nbsp;&nbsp;&nbsp;${d[2]}일`;
+      }
+
+      const ordererCeoName = document.getElementById('ordererCeo').value || '대표자';
+      document.getElementById('pv-sign-orderer-name').textContent = ordererCeoName;
+      document.getElementById('pv-sign-agency-name').textContent = agencyNameVal;
+      document.getElementById('pv-sign-agency-ceo').textContent = agencyCeoVal;
+
+      // 발주자 서명 렌더링
+      const ordererSignContainer = document.getElementById('pv-orderer-sign-img-container');
+      if (ordererSignatureData) {
+        ordererSignContainer.innerHTML = `<img src="${ordererSignatureData}" class="max-h-11 object-contain filter contrast-125" alt="발주자 서명">`;
+      } else {
+        ordererSignContainer.innerHTML = `<span class="text-xs font-bold text-slate-700 underline decoration-slate-400 font-sans">${escapeHtml(ordererCeoName)}</span>`;
+      }
+
+      // 지도기관 직인/서명 렌더링
+      const agencySignContainer = document.getElementById('pv-agency-sign-img-container');
+      agencySignContainer.innerHTML = `
+        <div class="w-12 h-12 rounded-full border-2 border-rose-600 text-rose-600 flex flex-col items-center justify-center font-bold text-[8px] leading-tight select-none rotate-[-4deg]">
+          <span>(주)비이피</span>
+          <span>에스엠씨</span>
+          <span class="text-[7px] font-black">직인</span>
+        </div>
+      `;
+    }
+
+    // --------------------------------------------------------------------------
+    // 5. 인쇄 및 로컬스토리지 저장
+    // --------------------------------------------------------------------------
+    function printOfficialCertificate() {
+      // 뷰가 preview가 아니면 먼저 렌더링
+      renderOfficialCertificate();
+      window.print();
+    }
+
+    function saveFormData() {
+      const form = document.getElementById('completion-cert-form');
+      const data = {};
+      const inputs = form.querySelectorAll('input');
+      inputs.forEach(inp => {
+        if (inp.type === 'radio') {
+          if (inp.checked) data[inp.name] = inp.value;
+        } else {
+          data[inp.id] = inp.value;
+        }
+      });
+      data.ordererSignatureData = ordererSignatureData;
+
+      localStorage.setItem('bepsmc_completion_cert_data', JSON.stringify(data));
+      alert('💾 기술지도 완료증명서 작성 데이터가 브라우저에 안전하게 저장되었습니다.');
+    }
+
+    function loadSavedFormData() {
+      const raw = localStorage.getItem('bepsmc_completion_cert_data');
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        Object.keys(data).forEach(k => {
+          if (k === 'ordererType' || k === 'guidanceCategory') {
+            const r = document.querySelector(`input[name="${k}"][value="${data[k]}"]`);
+            if (r) r.checked = true;
+          } else if (k === 'ordererSignatureData') {
+            ordererSignatureData = data[k];
+          } else {
+            const el = document.getElementById(k);
+            if (el) el.value = data[k];
+          }
+        });
+      } catch (e) {
+        console.warn('loadSavedFormData error:', e);
+      }
+    }
+  </script>
+</body>
+</html>
