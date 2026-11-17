@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 const dbService = require('./data/dbService');
 const { isSupabaseConfigured } = require('./data/supabaseClient');
 const publicApiService = require('./services/publicApiService');
@@ -1778,6 +1779,84 @@ app.get('/api/technical-guidance/reports/:id/k2b', requirePaidOrAdmin, (req, res
   } catch (err) {
     console.error('K2B export error:', err);
     res.status(500).json({ success: false, message: err.message || 'K2B 데이터 추출 실패' });
+  }
+});
+
+// --------------------------------------------------------------------------
+// 기술지도 완료증명서 [별지 제105호서식] 저장 및 조회 API (유료 회원 전용)
+// --------------------------------------------------------------------------
+const COMPLETION_CERTS_FILE = path.join(process.cwd(), 'data', 'completion-certificates.json');
+
+function readCompletionCerts() {
+  if (!fs.existsSync(COMPLETION_CERTS_FILE)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(COMPLETION_CERTS_FILE, 'utf8'));
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeCompletionCerts(certs) {
+  const dir = path.dirname(COMPLETION_CERTS_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(COMPLETION_CERTS_FILE, JSON.stringify(certs, null, 2), 'utf8');
+}
+
+// 기술지도 완료증명서 저장/발급
+app.post('/api/technical-guidance/completion-certificates', requirePaidOrAdmin, (req, res) => {
+  try {
+    const userId = req.session.user ? (req.session.user.id || req.session.user.username) : 'paid_member';
+    const certData = req.body;
+    
+    if (!certData || !certData.ordererName || !certData.siteProjectName) {
+      return res.status(400).json({ success: false, message: '발주자명과 공사명 등 필수 항목을 입력해 주세요.' });
+    }
+
+    const certs = readCompletionCerts();
+    const newCert = {
+      id: `cert-105-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      userId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      ...certData
+    };
+
+    certs.unshift(newCert);
+    writeCompletionCerts(certs);
+
+    res.json({ success: true, certificate: newCert });
+  } catch (err) {
+    console.error('Save completion certificate error:', err);
+    res.status(500).json({ success: false, message: '완료증명서 저장 실패: ' + err.message });
+  }
+});
+
+// 기술지도 완료증명서 목록 조회
+app.get('/api/technical-guidance/completion-certificates', requirePaidOrAdmin, (req, res) => {
+  try {
+    const userId = req.session.user ? (req.session.user.id || req.session.user.username) : null;
+    const certs = readCompletionCerts();
+    const userCerts = (req.session.user && req.session.user.mode === 'admin') 
+      ? certs 
+      : certs.filter(c => c.userId === userId || !c.userId);
+
+    res.json({ success: true, count: userCerts.length, certificates: userCerts });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '완료증명서 목록 조회 실패' });
+  }
+});
+
+// 특정 완료증명서 단건 조회
+app.get('/api/technical-guidance/completion-certificates/:id', requirePaidOrAdmin, (req, res) => {
+  try {
+    const certs = readCompletionCerts();
+    const cert = certs.find(c => c.id === req.params.id);
+    if (!cert) {
+      return res.status(404).json({ success: false, message: '해당 완료증명서를 찾을 수 없습니다.' });
+    }
+    res.json({ success: true, certificate: cert });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '완료증명서 조회 실패' });
   }
 });
 

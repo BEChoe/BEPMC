@@ -113,6 +113,30 @@
     </div>
   </div>
 
+  <!-- 발급 이력 관리 모달 -->
+  <div id="history-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📋</span>
+          <h3 class="text-base font-bold text-slate-900">기술지도 완료증명서 발급 및 저장 이력</h3>
+        </div>
+        <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 divide-y divide-slate-100" id="history-list-container">
+        <!-- 동적 로드 -->
+        <div class="py-8 text-center text-xs text-slate-400">저장된 완료증명서 이력을 불러오는 중...</div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeHistoryModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 상단 타이틀 배너 -->
   <section class="header-banner bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#0f172a] text-white py-6 border-b-4 border-amber-400 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -151,7 +175,10 @@
             <span>⚡</span> 예시 데이터 자동입력
           </button>
           <button onclick="saveFormData()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-            <span>💾</span> 입력 내용 임시저장
+            <span>💾</span> 입력 내용 저장
+          </button>
+          <button onclick="openHistoryModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <span>📋</span> 발급 이력 관리
           </button>
           <a href="/technical-guidance.html" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border border-slate-700">
             <span>&larr;</span> 관제센터 복귀
@@ -1176,7 +1203,7 @@
     }
 
     // --------------------------------------------------------------------------
-    // 5. 인쇄 및 로컬스토리지 저장
+    // 5. 인쇄 및 서버/로컬 저장 및 이력 관리
     // --------------------------------------------------------------------------
     function printOfficialCertificate() {
       // 뷰가 preview가 아니면 먼저 렌더링
@@ -1184,7 +1211,7 @@
       window.print();
     }
 
-    function saveFormData() {
+    async function saveFormData(silent = false) {
       const form = document.getElementById('completion-cert-form');
       const data = {};
       const inputs = form.querySelectorAll('input');
@@ -1197,8 +1224,30 @@
       });
       data.ordererSignatureData = ordererSignatureData;
 
+      // 1. 브라우저 LocalStorage에 캐시
       localStorage.setItem('bepsmc_completion_cert_data', JSON.stringify(data));
-      alert('💾 기술지도 완료증명서 작성 데이터가 브라우저에 안전하게 저장되었습니다.');
+
+      // 2. 서버 영구 저장 시도
+      try {
+        const res = await fetch('/api/technical-guidance/completion-certificates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          const result = await res.json();
+          if (!silent) {
+            alert(`💾 [저장 및 발급 등록 완료]\n\n기술지도 완료증명서 데이터가 서버에 안전하게 보관되었습니다.\n문서 관리번호: ${result.certificate?.id || '정상저장'}`);
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('Server save fallback:', e);
+      }
+
+      if (!silent) {
+        alert('💾 기술지도 완료증명서 작성 데이터가 브라우저에 안전하게 저장되었습니다.');
+      }
     }
 
     function loadSavedFormData() {
@@ -1206,20 +1255,97 @@
       if (!raw) return;
       try {
         const data = JSON.parse(raw);
-        Object.keys(data).forEach(k => {
-          if (k === 'ordererType' || k === 'guidanceCategory') {
-            const r = document.querySelector(`input[name="${k}"][value="${data[k]}"]`);
-            if (r) r.checked = true;
-          } else if (k === 'ordererSignatureData') {
-            ordererSignatureData = data[k];
-          } else {
-            const el = document.getElementById(k);
-            if (el) el.value = data[k];
-          }
-        });
+        populateForm(data);
       } catch (e) {
         console.warn('loadSavedFormData error:', e);
       }
+    }
+
+    function populateForm(data) {
+      Object.keys(data).forEach(k => {
+        if (k === 'ordererType' || k === 'guidanceCategory') {
+          const r = document.querySelector(`input[name="${k}"][value="${data[k]}"]`);
+          if (r) r.checked = true;
+        } else if (k === 'ordererSignatureData') {
+          ordererSignatureData = data[k];
+          if (ordererSignatureData) {
+            const canvas = document.getElementById('orderer-sign-canvas');
+            if (canvas) {
+              const ctx = canvas.getContext('2d');
+              const img = new Image();
+              img.onload = () => ctx.drawImage(img, 0, 0);
+              img.src = ordererSignatureData;
+            }
+          }
+        } else {
+          const el = document.getElementById(k);
+          if (el) el.value = data[k];
+        }
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // 6. 발급 이력 모달 관리
+    // --------------------------------------------------------------------------
+    async function openHistoryModal() {
+      const modal = document.getElementById('history-modal');
+      const container = document.getElementById('history-list-container');
+      modal.classList.remove('hidden');
+      container.innerHTML = '<div class="py-8 text-center text-xs text-slate-400">발급 이력을 불러오는 중...</div>';
+
+      try {
+        const res = await fetch('/api/technical-guidance/completion-certificates');
+        const data = await res.json();
+        const certs = data.certificates || [];
+
+        if (certs.length === 0) {
+          container.innerHTML = `
+            <div class="py-12 text-center text-slate-400 text-xs space-y-2">
+              <span class="text-3xl block">📭</span>
+              <span>아직 저장된 완료증명서 발급 이력이 없습니다.</span>
+              <p class="text-[11px] text-slate-500">입력 항목을 작성한 후 [입력 내용 저장]을 누르시면 이곳에 자동 기록됩니다.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = certs.map(c => `
+          <div class="py-3 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50 rounded-lg transition">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-900">${escapeHtml(c.siteProjectName || '공사명 미입력')}</span>
+                <span class="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold">${escapeHtml(c.guidanceCategory === 'electrical' ? '전기/정보통신' : '건설공사')}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5 space-x-2">
+                <span>발주자: <b>${escapeHtml(c.ordererName || '-')}</b></span>
+                <span>•</span>
+                <span>총 ${escapeHtml(c.guidanceTotalCount || '12')}회</span>
+                <span>•</span>
+                <span>발급일자: ${escapeHtml(c.issueDate || c.createdAt?.slice(0, 10) || '-')}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick='loadCertData(${JSON.stringify(c).replace(/'/g, "&apos;")})' class="btn-safety-black px-3 py-1.5 rounded text-xs font-semibold">
+                불러오기
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        container.innerHTML = `<div class="py-8 text-center text-xs text-rose-500">이력을 불러오는 중 오류가 발생했습니다: ${err.message}</div>`;
+      }
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('history-modal').classList.add('hidden');
+    }
+
+    function loadCertData(cert) {
+      populateForm(cert);
+      closeHistoryModal();
+      switchView('preview');
+      alert(`📋 [${cert.siteProjectName || '완료증명서'}] 데이터를 성공적으로 불러왔습니다.`);
     }
   </script>
 </body>

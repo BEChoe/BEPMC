@@ -297,6 +297,7 @@ async function initLayout(activeMenu = '') {
                 <li class="${canUseMemberMenus ? '' : 'hidden'}"><a href="/boards.html?type=member" class="hover:text-amber-300 transition">회원 전용 게시판 (회원전용)</a></li>
                 <li class="${canUseTrialOrPaid ? '' : 'hidden'}"><a href="/video-safety-analysis.html" class="hover:text-amber-300 transition text-amber-200 font-semibold flex items-center gap-1"><span>🎬</span> 10대 재해 동영상 AI 안전분석 (${tier === 'TRIAL' ? '맛보기' : '유료'})</a></li>
                 <li class="${canUsePaidOnly ? '' : 'hidden'}"><a href="/technical-guidance.html" class="hover:text-amber-300 transition text-amber-400 font-semibold flex items-center gap-1"><span>🤖</span> 건설재해예방 기술지도 AI 관제 (K2B)</a></li>
+                <li class="${canUsePaidOnly ? '' : 'hidden'}"><a href="/technical-guidance-completion.html" class="hover:text-amber-300 transition text-amber-300 font-semibold flex items-center gap-1"><span>📄</span> 기술지도 완료증명서 발급 [별지 제105호]</a></li>
                 <li class="${canUsePaidOnly ? '' : 'hidden'}"><a href="/mobile-app.html" target="_blank" class="hover:text-amber-300 transition text-amber-300 font-bold flex items-center gap-1"><span>📱</span> 현장 관리자 모바일앱 (동영상·점검·전자결재)</a></li>
               </ul>
             </div>
