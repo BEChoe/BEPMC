@@ -1783,8 +1783,34 @@ app.get('/api/technical-guidance/reports/:id/k2b', requirePaidOrAdmin, (req, res
 });
 
 // --------------------------------------------------------------------------
-// 기술지도 완료증명서 [별지 제105호서식] 저장 및 조회 API (유료 회원 전용)
+// 기술지도 완료증명서 [별지 제105호서식] 저장 및 조회 API (정기구독 유료회원 전용)
 // --------------------------------------------------------------------------
+function requireStrictPaidOrAdmin(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      requireLogin: true,
+      message: '로그인이 필요한 서비스입니다. 먼저 로그인해주세요.'
+    });
+  }
+  if (req.session.user.status !== 'approved') {
+    return res.status(403).json({
+      success: false,
+      message: '관리자의 가입 승인이 완료되지 않은 계정입니다.'
+    });
+  }
+  const tier = req.session.user.membershipTier;
+  const isPaid = (req.session.user.role === 'admin' || req.session.user.role === 'paid_member' || tier === 'PAID');
+  if (!isPaid) {
+    return res.status(403).json({
+      success: false,
+      requirePaid: true,
+      message: '기술지도 완료증명서 발급은 정기구독 유료 회원(PRO/ENTERPRISE) 및 관리자 전용 서비스입니다. 유료 멤버십 가입 후 이용하실 수 있습니다.'
+    });
+  }
+  next();
+}
+
 const COMPLETION_CERTS_FILE = path.join(process.cwd(), 'data', 'completion-certificates.json');
 
 function readCompletionCerts() {
@@ -1802,8 +1828,8 @@ function writeCompletionCerts(certs) {
   fs.writeFileSync(COMPLETION_CERTS_FILE, JSON.stringify(certs, null, 2), 'utf8');
 }
 
-// 기술지도 완료증명서 저장/발급
-app.post('/api/technical-guidance/completion-certificates', requirePaidOrAdmin, (req, res) => {
+// 기술지도 완료증명서 저장/발급 (유료 회원 전용)
+app.post('/api/technical-guidance/completion-certificates', requireStrictPaidOrAdmin, (req, res) => {
   try {
     const userId = req.session.user ? (req.session.user.id || req.session.user.username) : 'paid_member';
     const certData = req.body;
@@ -1831,8 +1857,8 @@ app.post('/api/technical-guidance/completion-certificates', requirePaidOrAdmin, 
   }
 });
 
-// 기술지도 완료증명서 목록 조회
-app.get('/api/technical-guidance/completion-certificates', requirePaidOrAdmin, (req, res) => {
+// 기술지도 완료증명서 목록 조회 (유료 회원 전용)
+app.get('/api/technical-guidance/completion-certificates', requireStrictPaidOrAdmin, (req, res) => {
   try {
     const userId = req.session.user ? (req.session.user.id || req.session.user.username) : null;
     const certs = readCompletionCerts();
@@ -1846,8 +1872,8 @@ app.get('/api/technical-guidance/completion-certificates', requirePaidOrAdmin, (
   }
 });
 
-// 특정 완료증명서 단건 조회
-app.get('/api/technical-guidance/completion-certificates/:id', requirePaidOrAdmin, (req, res) => {
+// 특정 완료증명서 단건 조회 (유료 회원 전용)
+app.get('/api/technical-guidance/completion-certificates/:id', requireStrictPaidOrAdmin, (req, res) => {
   try {
     const certs = readCompletionCerts();
     const cert = certs.find(c => c.id === req.params.id);

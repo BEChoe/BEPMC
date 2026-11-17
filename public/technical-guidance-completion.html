@@ -75,17 +75,17 @@
   <!-- 공통 헤더 & 내비게이션 -->
   <div id="global-header"></div>
 
-  <!-- 게이트키퍼 모달 (비로그인/일반 무료 회원 차단) -->
+  <!-- 게이트키퍼 모달 (유료 회원 전용 제한) -->
   <div id="gatekeeper-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-center space-y-4">
       <div class="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto text-3xl font-black">
         🔒
       </div>
       <div>
-        <h3 class="text-lg font-black text-slate-900">유료 회원 전용 서비스</h3>
-        <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+        <h3 id="gatekeeper-title" class="text-lg font-black text-slate-900">유료 회원(PRO) 전용 서비스</h3>
+        <p id="gatekeeper-desc" class="text-xs text-slate-600 mt-1 leading-relaxed">
           <strong>산업안전보건법 [별지 제105호서식] 기술지도 완료증명서 자동 작성 시스템</strong>은<br>
-          <span class="text-blue-600 font-bold">BEPSMC 유료 회원사(PRO/ENTERPRISE)</span> 및 관리자 전용 기능입니다.
+          <span class="text-blue-600 font-bold">BEPSMC 정기구독 유료 회원사(PRO/ENTERPRISE)</span> 전용 기능입니다.
         </p>
       </div>
       <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-left text-xs space-y-1.5 text-slate-700">
@@ -102,7 +102,7 @@
           <span>전자 서명 및 지도기관 공인 직인 날인 자동화</span>
         </div>
       </div>
-      <div class="pt-2 flex flex-col gap-2">
+      <div id="gatekeeper-actions" class="pt-2 flex flex-col gap-2">
         <a href="/checkout.html" class="btn-safety-yellow w-full py-2.5 rounded-xl text-xs font-black shadow-md block text-center">
           유료 멤버십 구독 신청하기 &rarr;
         </a>
@@ -891,15 +891,14 @@
     document.addEventListener('DOMContentLoaded', async () => {
       await initLayout('technical-guidance');
 
-      // 권한 검증: 정기구독 유료회원(PAID), 맛보기(TRIAL), 또는 관리자(ADMIN)
+      // 권한 검증: 오직 정기구독 유료회원(PAID) 및 최고관리자(ADMIN)만 접근 허용
       const isPaidUser = currentAuth.isLoggedIn && (
         currentAuth.user?.tier === 'PAID' || 
-        currentAuth.user?.tier === 'TRIAL' || 
         currentAuth.mode === 'admin'
       );
 
       if (!isPaidUser) {
-        document.getElementById('gatekeeper-modal').classList.remove('hidden');
+        showGatekeeperModal();
         return;
       }
 
@@ -910,6 +909,40 @@
       initSignPad();
       loadSavedFormData();
     });
+
+    function showGatekeeperModal() {
+      const modal = document.getElementById('gatekeeper-modal');
+      const title = document.getElementById('gatekeeper-title');
+      const desc = document.getElementById('gatekeeper-desc');
+      const actions = document.getElementById('gatekeeper-actions');
+
+      modal.classList.remove('hidden');
+
+      if (!currentAuth.isLoggedIn) {
+        title.textContent = '로그인 및 유료 회원 인증 필요';
+        desc.innerHTML = `<strong>산업안전보건법 [별지 제105호서식] 기술지도 완료증명서 자동 작성 시스템</strong>은<br><span class="text-blue-600 font-bold">BEPSMC 정기구독 유료 회원사(PRO/ENTERPRISE)</span> 및 관리자 전용 기능입니다.<br>먼저 로그인해 주세요.`;
+        actions.innerHTML = `
+          <a href="/login.html?redirect=/technical-guidance-completion.html" class="btn-safety-yellow w-full py-2.5 rounded-xl text-xs font-black shadow-md block text-center">
+            로그인하기 &rarr;
+          </a>
+          <a href="/register.html" class="btn-safety-black w-full py-2.5 rounded-xl text-xs font-bold block text-center">
+            신규 회원가입
+          </a>
+        `;
+      } else {
+        const tierName = currentAuth.user?.tier === 'TRIAL' ? '1개월 맛보기 체험 회원' : '일반 무료 회원';
+        title.textContent = '유료 회원(PRO/ENTERPRISE) 전용 서비스';
+        desc.innerHTML = `현재 로그인하신 계정은 <strong>[${tierName}]</strong> 등급입니다.<br>산업안전보건법 [별지 제105호서식] 기술지도 완료증명서 발급 및 저장은 <span class="text-blue-600 font-bold">정기구독 유료 회원사</span> 전용 서비스입니다.`;
+        actions.innerHTML = `
+          <a href="/checkout.html" class="btn-safety-yellow w-full py-2.5 rounded-xl text-xs font-black shadow-md block text-center">
+            유료 멤버십(PRO) 구독 신청하기 &rarr;
+          </a>
+          <a href="/technical-guidance.html" class="btn-safety-black w-full py-2.5 rounded-xl text-xs font-bold block text-center">
+            관제 대시보드로 이동
+          </a>
+        `;
+      }
+    }
 
     // --------------------------------------------------------------------------
     // 2. 캔버스 전자 서명 패드 초기화
